@@ -3,3 +3,40 @@
   grid-gap: 2rem;
   grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
 }
+
+.quote {
+  border-left: 3px solid #605D53;
+  padding-left: 6px;
+  background-color: #D5D5D2;
+}
+
+code {
+  color: #605D53;
+}
+
+.commit {
+  margin-top: 4px;
+  padding: 10px;
+  color: #586069;
+  background-color: #f1f8ff;
+  border: 1px solid #c8e1ff;
+}
+
+.glow-box {
+  padding: 10px;
+  background-color: #F8F8F8;
+  border: 1px solid #DDDDDB;
+  border-radius: 5px;
+}
+
+.glow-box + .glow-box {
+  margin-top: 10px;
+}
+
+.glow-box:hover {
+  background-color: #f6f8fa;
+}
+
+.stack > * + * {
+  margin-top: 2rem;
+}

@@ -43,7 +43,7 @@ const data = [
         {
           link: "#",
           title: "Pictures are to slow on mobile",
-          by: "molliestephenson"
+          by: "mulliestephenson"
         }
       ]
     }
@@ -65,25 +65,25 @@ const data = [
         {
           link: "#",
           title: "Implement DoubleEndedStream",
-          by: "felipesere",
+          by: "felipesere"
         },
         {
           link: "#",
           title: "Make channels faster",
-          by: "stjepjang",
-        },
+          by: "stjepjang"
+        }
       ],
       issues: [
         {
           link: "#",
           title: "Better support for byte ordered reads and writes?",
-          by: "yoshwyut",
+          by: "yoshwyut"
         },
         {
           link: "#",
           title: "Make errors more verbose",
-          by: "zkat",
-        },
+          by: "zkat"
+        }
       ]
     }
   },
@@ -104,8 +104,8 @@ const data = [
         {
           link: "#",
           title: "Refactor API",
-          by: "someone",
-        },
+          by: "someone"
+        }
       ],
       issues: []
     }
@@ -117,74 +117,80 @@ var root = document.getElementById("app");
 var LastCommit = {
   view: vnode => [
     "Last commit on ",
-    m("em", vnode.attrs.branch),
+    m("code", vnode.attrs.branch),
     " ",
     vnode.attrs.on,
     " by ",
     vnode.attrs.by,
-    " - ",
-    vnode.attrs.comment
+    ":",
+    m("div.commit", vnode.attrs.comment)
   ]
 };
 
 var Master = {
-  view: vnode => [vnode.attrs.commits, " new commits on master"]
+  view: vnode => [vnode.attrs.commits, " new commits on ", m("code", "master")]
 };
 
-var Link = {
-  view: vnode => m("a", { href: vnode.attrs.link }, vnode.attrs.title)
-};
+var GlowBox = {
+  view: (vnode) => {
+    return m('div.glow-box.is-size-7', [
+      m("a", { href: vnode.attrs.link }, vnode.attrs.title),
+      m("div", `by ${vnode.attrs.by}`),
+    ])
+  }
+}
 
 var PullRequests = {
   view: vnode => {
-    return [
+    return m("div", [
       vnode.attrs.prs.length,
       " new Pull Requests:",
-      m("ol", vnode.attrs.prs.map(pr => m("li", [m(Link, pr), " by ", pr.by])))
-    ];
+      vnode.attrs.prs.map(pr => m(GlowBox, pr))
+    ]);
   }
 };
 
+
 var Issues = {
   view: vnode => {
-    return [
+    return m("div", [
       vnode.attrs.issues.length,
       " new Issues:",
-      m(
-        "ol",
-        vnode.attrs.issues.map(issue =>
-          m("li", [m(Link, issue), " by ", issue.by])
-        )
-      )
-    ];
+        vnode.attrs.issues.map(issue => m(GlowBox, issue))
+    ]);
   }
 };
 
 var RecentActivity = {
   view: vnode => [
-    m("h4", "Recent activity"),
+    m("h2.subtitle.is-5", "Recent activity"),
     m(Master, vnode.attrs.master),
-    m(PullRequests, { prs: vnode.attrs.prs }),
-    m(Issues, { issues: vnode.attrs.issues })
+    m('div.stack', [
+      m(PullRequests, { prs: vnode.attrs.prs }),
+      m(Issues, { issues: vnode.attrs.issues })
+    ])
   ]
 };
 
 var Repo = {
   view: vnode => {
     return m("article.card", [
-      m("p.card-header-title", vnode.attrs.title),
-      m("div.card-content", [
-        m(LastCommit, vnode.attrs.lastCommit),
-        m(RecentActivity, vnode.attrs.activity),
-      ])
+      m("header.card-header", m("p.card-header-title", vnode.attrs.title)),
+      m(
+        "div.card-content",
+        m("div.content", [
+          m(LastCommit, vnode.attrs.lastCommit),
+          m(RecentActivity, vnode.attrs.activity)
+        ])
+      )
     ]);
   }
 };
 
 var AllRepos = {
   view: vnode => {
-    return m("div.grid", vnode.attrs.repos.map(repo => m(Repo, repo)))
+    return m("div.grid", vnode.attrs.repos.map(repo => m(Repo, repo)));
   }
-}
+};
 
-m.render(root, m(AllRepos, {repos: data}))
+m.render(root, m(AllRepos, { repos: data }));
