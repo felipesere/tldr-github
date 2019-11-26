@@ -171,12 +171,20 @@ var RecentActivity = {
 
 var Repo = {
   view: vnode => {
-    return m("article", [
-      m("h3", vnode.attrs.title),
-      m(LastCommit, vnode.attrs.lastCommit),
-      m(RecentActivity, vnode.attrs.activity)
+    return m("article.card", [
+      m("p.card-header-title", vnode.attrs.title),
+      m("div.card-content", [
+        m(LastCommit, vnode.attrs.lastCommit),
+        m(RecentActivity, vnode.attrs.activity),
+      ])
     ]);
   }
 };
 
-m.render(root, m("h1", ["My first app", ...data.map(repo => m(Repo, repo))]));
+var AllRepos = {
+  view: vnode => {
+    return m("div.grid", vnode.attrs.repos.map(repo => m(Repo, repo)))
+  }
+}
+
+m.render(root, m(AllRepos, {repos: data}))
