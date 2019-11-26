@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>TLDR GitHub</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
-  <script defer src="https://use.fontawesome.com/releases/v5.3.1/js/all.js"></script>
-	<link rel="stylesheet" href="style.css">
+  <script src="https://unpkg.com/mithril/mithril.js"></script>
 </head>
 <body>
   <section class="section">
@@ -19,52 +18,7 @@
       </p>
     </div>
   </section>
-  <section>
-    <h3>felipesere/advisor</h3>
-    Last commit on <em>master</em> 14 min ago by felipesere: a11dfa26e15f4 - Add new questions
-    <h4>Recent activity yesterday</h4>
-    8 new commits on master
-    3 new Pull Requests:
-    <ol>
-      <li><a href="#">Add new JSON backend for qeustions</a> - cgockel</li>
-      <li><a href="#">Use FSUnit for testing</a> - fsere</li>
-      <li><a href="#">Introduce external advisors</a> - cfereday</li>
-    </ol>
-    3 new Issues
-    <ol>
-      <li><a href="#">Crashes using non-ASCII characters</a> - ukutaht</li>
-      <li><a href="#">Needs more questions about leadership</a> - ndyer</li>
-      <li><a href="#">Pictures are to slow on mobile</a> - molliestephenson</li>
-    </ol>
-  </section>
-
-  <section>
-    <h3>async-rs/async-std</h3>
-    Last commit on <em>master</em> 2 hours ago by yoshwyut : 850b8ae9d06df - Merge pull request #344
-    <h4>Recent activity yesterday</h4>
-    34 new commits on master
-    2 new Pull Requests:
-    <ol>
-      <li><a href="#">Implement DoubleEndedStream</a> - felipesere</li>
-      <li><a href="#">Make channels faster</a> - stjepjang</li>
-    </ol>
-    2 new Issues
-    <ol>
-      <li><a href="#">Better support for byte ordered reads and writes?</a> - yoshwyut</li>
-      <li><a href="#">Make errors more verbose</a> - zkat</li>
-    </ol>
-  </section>
-
-  <section>
-    <h3>http-rs/tide</h3>
-    Last commit on <em>master</em> 6 days ago by stadder : 850b8ae9d06df - Merge pull request #13
-    <h4>Recent activity yesterday</h4>
-    0 new commits on master
-    1 new Pull Requests:
-    <ol>
-      <li><a href="#">Refactor API</a> - someone</li>
-    </ol>
-    0 new Issues
-  </section>
+  <div id="app"></div>
+  <script src="app.js" type="text/javascript"></script>
 </body>
 </html>
