@@ -115,30 +115,32 @@ const data = [
 var root = document.getElementById("app");
 
 var LastCommit = {
-  view: vnode => [
-    "Last commit on ",
-    m("code", vnode.attrs.branch),
-    " ",
-    vnode.attrs.on,
-    " by ",
-    vnode.attrs.by,
-    ":",
-    m("div.commit", vnode.attrs.comment)
-  ]
+  view: vnode =>
+    m("div", [
+      "Last commit on ",
+      m("code", vnode.attrs.branch),
+      " ",
+      vnode.attrs.on,
+      " by ",
+      vnode.attrs.by,
+      ":",
+      m("div.commit", vnode.attrs.comment)
+    ])
 };
 
 var Master = {
-  view: vnode => [vnode.attrs.commits, " new commits on ", m("code", "master")]
+  view: vnode =>
+    m("div", [vnode.attrs.commits, " new commits on ", m("code", "master")])
 };
 
 var GlowBox = {
-  view: (vnode) => {
-    return m('div.glow-box.is-size-7', [
+  view: vnode => {
+    return m("div.glow-box.is-size-7", [
       m("a", { href: vnode.attrs.link }, vnode.attrs.title),
-      m("div", `by ${vnode.attrs.by}`),
-    ])
+      m("div", `by ${vnode.attrs.by}`)
+    ]);
   }
-}
+};
 
 var PullRequests = {
   view: vnode => {
@@ -150,22 +152,28 @@ var PullRequests = {
   }
 };
 
-
 var Issues = {
   view: vnode => {
     return m("div", [
       vnode.attrs.issues.length,
       " new Issues:",
-        vnode.attrs.issues.map(issue => m(GlowBox, issue))
+      vnode.attrs.issues.map(issue => m(GlowBox, issue))
     ]);
   }
 };
 
-var RecentActivity = {
+var Recent = {
+  view: vnode => 
+    m("div", [
+      m("h2.recent-activity", "Recent activity"),
+      m(Master, vnode.attrs.master)
+    ]),
+}
+
+var Activity = {
   view: vnode => [
-    m("h2.subtitle.is-5", "Recent activity"),
-    m(Master, vnode.attrs.master),
-    m('div.stack', [
+    m(Recent, {master: vnode.attrs.master}),
+    m("div.stack", [
       m(PullRequests, { prs: vnode.attrs.prs }),
       m(Issues, { issues: vnode.attrs.issues })
     ])
@@ -178,11 +186,12 @@ var Repo = {
       m("header.card-header", m("p.card-header-title", vnode.attrs.title)),
       m(
         "div.card-content",
-        m("div.content", [
+        m("div.content.stack", [
           m(LastCommit, vnode.attrs.lastCommit),
-          m(RecentActivity, vnode.attrs.activity)
+          m(Activity, vnode.attrs.activity)
         ])
-      )
+      ),
+      m('footer.card-footer', m('p.is-size-7.card-footer-item', "Last update 2min ago"))
     ]);
   }
 };
