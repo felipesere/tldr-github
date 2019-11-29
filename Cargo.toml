@@ -1,0 +1,15 @@
+[package]
+name = "tldr-github" # the name of the package
+version = "0.0.1"    # the current version, obeying semver
+authors = ["Felipe Sere <felipe@sere.dev>"]
+edition = "2018"
+publish = false
+
+[dependencies]
+async-std = "1.2.0"
+futures = "0.3.1"
+log = "0.4"
+simplelog = "0.7.4"
+tide = "0.4.0"
+url = "2.1.0"
+percent-encoding = "2.1.0"
