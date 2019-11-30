@@ -8,13 +8,15 @@ publish = false
 [dependencies]
 anyhow = "1.0"
 async-std = "1.2.0"
-diesel = { version = "1.4.3", features = ["sqlite", "r2d2"] }
+chrono = { version = "0.4.10", features = ["serde"] }
+diesel = { version = "1.4.3", features = ["sqlite", "r2d2", "chrono"] }
 diesel_migrations = { version = "1.4.0", features = ["sqlite"] }
 futures = "0.3.1"
 log = "0.4"
 percent-encoding = "2.1.0"
 r2d2 = "0.8.7"
-rusqlite = { version = "0.20.0", features = [] }
+rusqlite = "0.20.0"
+serde = { version = "1.0.0", features = ["derive"] }
 simplelog = "0.7.4"
 tide = "0.4.0"
 url = "2.1.0"

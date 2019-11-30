@@ -1,43 +1,35 @@
-#[macro_use]
-extern crate diesel_migrations;
+#[macro_use] extern crate diesel_migrations;
+#[macro_use] extern crate diesel;
+
 
 use std::sync::Arc;
 
 use async_std::task;
-use anyhow::{Context, Result};
+use anyhow::{Context};
 use tide::{Request, Response};
 use simplelog::*;
-use diesel::sqlite::SqliteConnection;
-use diesel::connection::Connection;
-use diesel::r2d2::{self, ConnectionManager};
 
 mod static_files;
 mod logger;
+mod db;
 
 
 embed_migrations!("./migrations");
 
-type Pool = r2d2::Pool<ConnectionManager<SqliteConnection>>;
-
 struct State {
-    pool: Arc<Pool>,
+    pool: Arc<db::SqlitePool>,
 }
 
 impl State {
-    fn conn(&self) -> impl Connection {
+    fn conn(&self) -> db::Conn {
         self.pool.get().unwrap()
     }
-}
-
-pub fn establish_connection() -> Result<Pool> {
-    let database_url = "repos.db";
-    Pool::new(ConnectionManager::new(database_url)).with_context(|| format!("failed to access db: {}", database_url))
 }
 
 fn main() -> anyhow::Result<()> {
     CombinedLogger::init(vec![logger::terminal(), logger::file("tldr-github.log") ]).with_context(|| "failed to initialize the logging system")?;
 
-    let pool = establish_connection()?;
+    let pool = db::establish_connection()?;
     embedded_migrations::run_with_output(&pool.get().unwrap(), &mut std::io::stdout());
 
     let state = State {
@@ -52,8 +44,9 @@ fn main() -> anyhow::Result<()> {
     app.at("/files").nest(files.router());
     app.at("/api").nest(|r| {
         r.at("/felipe").get(|mut req: Request<State>| async move {
-            let _c = req.state().conn();
-            "I borrowed a connection!"
+            let c = req.state().conn();
+            let repos = db::all_repos(c).unwrap();
+            Response::new(200).body_json(&repos).unwrap()
         });
     });
 
