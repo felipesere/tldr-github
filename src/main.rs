@@ -1,13 +1,20 @@
-use std::result::Result;
+#[macro_use]
+extern crate diesel_migrations;
+
 use std::fs::File;
 
 use async_std::task;
+use anyhow::{Context, Result};
 use futures::future::BoxFuture;
 use tide::{Middleware, Next, Request, Response};
 use simplelog::*;
+use diesel::sqlite::SqliteConnection;
+use diesel::connection::Connection;
 
 mod static_files;
 
+
+embed_migrations!("./migrations");
 
 #[derive(Debug, Clone, Default)]
 pub struct RequestLogger;
@@ -46,7 +53,12 @@ impl<State: Send + Sync + 'static> Middleware<State> for RequestLogger {
     }
 }
 
-fn main() -> Result<(), std::io::Error> {
+pub fn establish_connection() -> SqliteConnection {
+    let database_url = "repos.db";
+    SqliteConnection::establish(database_url).expect(&format!("Error connecting to {}", database_url))
+}
+
+fn main() -> anyhow::Result<()> {
     CombinedLogger::init(
         vec![
         TermLogger::new(LevelFilter::Info, Config::default(), TerminalMode::Mixed).unwrap(),
@@ -54,6 +66,8 @@ fn main() -> Result<(), std::io::Error> {
         ]
     ).unwrap();
 
+    let conn = establish_connection();
+    embedded_migrations::run_with_output(&conn, &mut std::io::stdout());
 
     let files = crate::static_files::new::<()>();
 
@@ -64,5 +78,5 @@ fn main() -> Result<(), std::io::Error> {
 
     task::block_on(async move {
         app.listen("127.0.0.1:8080").await
-    })
+    }).with_context(|| "failed launch the server")
 }
