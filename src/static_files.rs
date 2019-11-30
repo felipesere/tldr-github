@@ -3,17 +3,17 @@ use tide::{ Request, Response};
 // TODO:turn this into a "static files" router that matches against local files
 //      exclude evil paths like "/.."
 //      https://github.com/SergioBenitez/Rocket/blob/da7e022f990e0b8e8201b0a359a43104686ff1a4/core/http/src/uri/segments.rs#L65
-pub struct StaticFiles<STATE> {
+pub struct StaticFiles<STATE: Send + Sync + 'static> {
     _marker: std::marker::PhantomData<STATE>,
 }
 
-pub fn new<STATE>() -> StaticFiles<STATE> {
+pub fn new<STATE: Send + Sync + 'static>() -> StaticFiles<STATE> {
     return StaticFiles {
         _marker: std::marker::PhantomData,
     }
 }
 
-impl <STATE: Send + Sync + Copy + 'static> StaticFiles<STATE> {
+impl <STATE: Send + Sync + 'static> StaticFiles<STATE> {
     pub fn router(self) -> impl FnOnce(&mut tide::Route<'_, STATE>) {
         return |base: &mut tide::Route<STATE>| {
             base.at("/*filename").get(|req: Request<STATE>| async move {
