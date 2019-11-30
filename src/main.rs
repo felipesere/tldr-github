@@ -43,10 +43,18 @@ fn main() -> anyhow::Result<()> {
     app.at("/").get(tide::redirect("/index.html"));
     app.at("/files").nest(files.router());
     app.at("/api").nest(|r| {
-        r.at("/felipe").get(|mut req: Request<State>| async move {
+        r.at("/repos").get(|req: Request<State>| async move {
             let c = req.state().conn();
             let repos = db::all_repos(c).unwrap();
             Response::new(200).body_json(&repos).unwrap()
+        });
+        r.at("/repos/:id").get(|req: Request<State>| async move {
+            let id: Result<i32, std::num::ParseIntError> = req.param("id");
+            let c = req.state().conn();
+            match db::find_repo(c, id.unwrap()) {
+                Some(repo) => Response::new(200).body_json(&repo).unwrap(),
+                None => Response::new(404),
+            }
         });
     });
 

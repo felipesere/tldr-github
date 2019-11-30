@@ -32,3 +32,7 @@ pub struct Repo {
 pub fn all_repos(conn: Conn) -> Result<Vec<Repo>> {
     repos.load(&*conn).with_context(|| "getting all repos")
 }
+
+pub fn find_repo(conn: Conn, n: i32) -> Option<Repo> {
+    repos.find(n).first(&*conn).ok()
+}
