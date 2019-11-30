@@ -2,14 +2,12 @@ use std::result::Result;
 use std::fs::File;
 
 use async_std::task;
-
 use futures::future::BoxFuture;
-
 use tide::{Middleware, Next, Request, Response};
+use simplelog::*;
 
 mod static_files;
 
-use simplelog::*;
 
 #[derive(Debug, Clone, Default)]
 pub struct RequestLogger;
@@ -65,7 +63,6 @@ fn main() -> Result<(), std::io::Error> {
     app.at("/files").nest(files.router());
 
     task::block_on(async move {
-        app.listen("127.0.0.1:8080").await;
-    });
-    Ok(())
+        app.listen("127.0.0.1:8080").await
+    })
 }

@@ -9,7 +9,8 @@ publish = false
 async-std = "1.2.0"
 futures = "0.3.1"
 log = "0.4"
+percent-encoding = "2.1.0"
+rusqlite = { version = "0.20.0", features = [] }
 simplelog = "0.7.4"
 tide = "0.4.0"
 url = "2.1.0"
-percent-encoding = "2.1.0"
