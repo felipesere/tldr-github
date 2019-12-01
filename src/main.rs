@@ -3,14 +3,18 @@
 
 
 use std::sync::Arc;
+use std::io::Read;
 
 use async_std::task;
 use anyhow::{Context};
 use tide::{Request, Response};
-use simplelog::*;
+use simplelog::CombinedLogger;
 use middleware::logger;
 use middleware::static_files;
 
+use config::Config;
+
+mod config;
 mod db;
 mod middleware;
 
@@ -28,10 +32,15 @@ impl State {
 }
 
 fn main() -> anyhow::Result<()> {
+    let mut file = std::fs::File::open("./config.json")?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+
+    let config: Config = serde_json::from_str(&contents).with_context(|| "Unable to read config")?;
+
     CombinedLogger::init(vec![logger::terminal(), logger::file("tldr-github.log") ]).with_context(|| "failed to initialize the logging system")?;
 
-    let pool = db::establish_connection()?;
-    embedded_migrations::run_with_output(&pool.get().unwrap(), &mut std::io::stdout())?;
+    let pool = config.database.setup().with_context(|| "failed to setup DB")?;
 
     let state = State {
         pool: Arc::new(pool),
@@ -60,6 +69,6 @@ fn main() -> anyhow::Result<()> {
     });
 
     task::block_on(async move {
-        app.listen("127.0.0.1:8080").await
+        app.listen(config.server.address()).await
     }).with_context(|| "failed launch the server")
 }

@@ -1,0 +1,9 @@
+{
+  "database": {
+    "file": "./repos.db",
+    "run_migrations": true
+  },
+  "server": {
+    "port": 8080
+  }
+}

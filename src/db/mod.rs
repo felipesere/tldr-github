@@ -14,8 +14,7 @@ pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
 
 pub type Conn = r2d2::PooledConnection<ConnectionManager<SqliteConnection>>;
 
-pub fn establish_connection() -> Result<SqlitePool> {
-    let database_url = "repos.db";
+pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
     let manager = ConnectionManager::<SqliteConnection>::new(database_url);
     Pool::new(manager).with_context(|| format!("failed to access db: {}", database_url))
 }
