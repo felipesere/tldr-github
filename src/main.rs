@@ -8,10 +8,11 @@ use async_std::task;
 use anyhow::{Context};
 use tide::{Request, Response};
 use simplelog::*;
+use middleware::logger;
+use middleware::static_files;
 
-mod static_files;
-mod logger;
 mod db;
+mod middleware;
 
 
 embed_migrations!("./migrations");
@@ -30,17 +31,17 @@ fn main() -> anyhow::Result<()> {
     CombinedLogger::init(vec![logger::terminal(), logger::file("tldr-github.log") ]).with_context(|| "failed to initialize the logging system")?;
 
     let pool = db::establish_connection()?;
-    embedded_migrations::run_with_output(&pool.get().unwrap(), &mut std::io::stdout());
+    embedded_migrations::run_with_output(&pool.get().unwrap(), &mut std::io::stdout())?;
 
     let state = State {
         pool: Arc::new(pool),
     };
 
-    let files = crate::static_files::new::<State>();
+    let files = static_files::new::<State>();
 
     let mut app = tide::with_state(state);
     app.middleware(logger::RequestLogger::new());
-    app.at("/").get(tide::redirect("/index.html"));
+    app.at("/").get(tide::redirect("/files/index.html"));
     app.at("/files").nest(files.router());
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| async move {
