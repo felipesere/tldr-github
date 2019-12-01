@@ -23,6 +23,7 @@ embed_migrations!("./migrations");
 
 struct State {
     pool: Arc<db::SqlitePool>,
+    file_system_root: String,
 }
 
 impl State {
@@ -44,6 +45,7 @@ fn main() -> anyhow::Result<()> {
 
     let state = State {
         pool: Arc::new(pool),
+        file_system_root: "./frontend".into(),
     };
 
     let files = static_files::new::<State>();
