@@ -23,7 +23,6 @@ embed_migrations!("./migrations");
 
 struct State {
     pool: Arc<db::SqlitePool>,
-    file_system_root: String,
 }
 
 impl State {
@@ -45,15 +44,16 @@ fn main() -> anyhow::Result<()> {
 
     let state = State {
         pool: Arc::new(pool),
-        file_system_root: "./frontend".into(),
     };
 
-    let files = static_files::new::<State>();
+    let files = static_files::StaticFilesV2 {
+        root: "./frontend".into()
+    };
 
     let mut app = tide::with_state(state);
     app.middleware(logger::RequestLogger::new());
     app.at("/").get(tide::redirect("/files/index.html"));
-    app.at("/files").nest(files.router());
+    app.at("/files/*filename").get(files);
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| async move {
             let c = req.state().conn();
