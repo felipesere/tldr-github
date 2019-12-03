@@ -64,6 +64,14 @@ fn main() -> anyhow::Result<()> {
                 None => Response::new(404),
             }
         });
+        r.at("/github/*repo").get(|req: Request<State>| async move {
+            let repo: String = req.param("repo").unwrap();
+            let uri = format!("https://api.github.com/repos/{}", repo);
+            log::info!("Reaching out to: {}", uri);
+            let r = surf::get(uri).recv_string().await.unwrap();
+
+            Response::new(200).body_string(r).set_header("Content-Type", "application/json")
+        });
     });
 
     task::block_on(async move {
