@@ -15,23 +15,22 @@ pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
 pub type Conn = r2d2::PooledConnection<ConnectionManager<SqliteConnection>>;
 
 pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
-    let manager = ConnectionManager::<SqliteConnection>::new(database_url);
-    Pool::new(manager).with_context(|| format!("failed to access db: {}", database_url))
+    Pool::new(ConnectionManager::new(database_url)).with_context(|| format!("failed to access db: {}", database_url))
 }
 
 #[derive(Serialize, Queryable)]
-pub struct Repo {
+pub struct StoredRepo {
     id: i32,
-    name: String,
+    pub name: String,
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
 }
 
 
-pub fn all_repos(conn: Conn) -> Result<Vec<Repo>> {
+pub fn all_repos(conn: Conn) -> Result<Vec<StoredRepo>> {
     repos.load(&*conn).with_context(|| "getting all repos")
 }
 
-pub fn find_repo(conn: Conn, n: i32) -> Option<Repo> {
+pub fn find_repo(conn: Conn, n: i32) -> Option<StoredRepo> {
     repos.find(n).first(&*conn).ok()
 }

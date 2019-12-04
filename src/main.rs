@@ -17,6 +17,8 @@ use config::Config;
 mod config;
 mod db;
 mod middleware;
+mod github;
+mod util;
 
 
 embed_migrations!("./migrations");
@@ -63,6 +65,34 @@ fn main() -> anyhow::Result<()> {
                 Some(repo) => Response::new(200).body_json(&repo).unwrap(),
                 None => Response::new(404),
             }
+        });
+        r.at("/repos/:id/issues").get(|req: Request<State>| async move {
+            let id: Result<i32, std::num::ParseIntError> = req.param("id");
+            let c = req.state().conn();
+            let repo = match db::find_repo(c, id.unwrap()) {
+                Some(r) => r,
+                None => return Response::new(404),
+            };
+
+
+            let uri = format!("https://api.github.com/repos/{}/issues", repo.name);
+            let issues: Vec<github::Issue> = surf::get(uri).recv_json().await.unwrap();
+
+            Response::new(200).body_json(&issues).unwrap()
+        });
+        r.at("/repos/:id/pulls").get(|req: Request<State>| async move {
+            let id: Result<i32, std::num::ParseIntError> = req.param("id");
+            let c = req.state().conn();
+            let repo = match db::find_repo(c, id.unwrap()) {
+                Some(r) => r,
+                None => return Response::new(404),
+            };
+
+
+            let uri = format!("https://api.github.com/repos/{}/pulls", repo.name);
+            let issues: Vec<github::PullRequest> = surf::get(uri).recv_json().await.unwrap();
+
+            Response::new(200).body_json(&issues).unwrap()
         });
         r.at("/github/*repo").get(|req: Request<State>| async move {
             let repo: String = req.param("repo").unwrap();
