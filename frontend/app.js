@@ -135,9 +135,9 @@ var Master = {
 
 var GlowBox = {
   view: vnode => {
-    return m("div.glow-box.is-size-7", [
+    return m("div.glow-box", [
       m("a", { href: vnode.attrs.link }, vnode.attrs.title),
-      m("div", `by ${vnode.attrs.by}`)
+      m("div.is-size-7", `by ${vnode.attrs.by}`)
     ]);
   }
 };
@@ -183,9 +183,9 @@ var Activity = {
 var Repo = {
   view: vnode => {
     return m("article.card", [
-      m("header.card-header", m("p.card-header-title", vnode.attrs.title)),
+      m("header.card-header", m("div.card-header-title", [m("p.grow", vnode.attrs.title), m("i.icon.ion-md-settings")])),
       m(
-        "div.card-content",
+        "div.card-content.grow",
         m("div.content.stack", [
           m(LastCommit, vnode.attrs.lastCommit),
           m(Activity, vnode.attrs.activity)
@@ -196,9 +196,27 @@ var Repo = {
   }
 };
 
+var InputNewRepo = {
+  view: () => {
+    return m("div.field.has-addons.has-icons-right", [
+        m("div.control.has-icons-right.grow", [
+          m('input.input[type="text"][placeholder="Add new repo"]'),
+          m('span.icon.is-small.is-right', m('i.icon.ion-md-checkmark')),
+        ]),
+      m("div.control", m("button.button.is-info", "Add")),
+    ])
+  }
+}
+
+var AddNewRepo = {
+  view: () => {
+    return m("article.card", m("div.card-content.content.grow", m(InputNewRepo)));
+  }
+}
+
 var AllRepos = {
   view: vnode => {
-    return m("div.grid", vnode.attrs.repos.map(repo => m(Repo, repo)));
+    return m("div.grid", [...vnode.attrs.repos.map(repo => m(Repo, repo)), m(AddNewRepo)]);
   }
 };
 

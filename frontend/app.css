@@ -52,6 +52,6 @@ article.card {
   flex-direction: column;
 }
 
-div.card-content {
+.grow {
   flex-grow: 1;
 }
