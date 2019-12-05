@@ -1,18 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#000000" />
-    <meta
-      name="description"
-      content="A sumary GiHub"
-    />
-    <title>TLDR GitHub</title>
-  </head>
-  <body>
-    <noscript>You need to enable JavaScript to run this app.</noscript>
-    <div id="root"></div>
-  </body>
+<head>
+	<meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>TLDR GitHub</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
+  <link rel="stylesheet" href="https://unpkg.com/ionicons@4.5.10-0/dist/css/ionicons.min.css">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <section class="section">
+    <div class="container">
+      <h1 class="title">
+        Welcome to TLDR Github
+      </h1>
+      <p class="subtitle">
+      These are the repos you are currently tracking
+      </p>
+    </div>
+  </section>
+  <section class="section">
+    <div class="container">
+      <div id="root"></div>
+    </div>
+  </section>
+</body>
 </html>
