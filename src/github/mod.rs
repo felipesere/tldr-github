@@ -15,7 +15,7 @@ pub struct Person {
 
 #[derive(Deserialize, Serialize)]
 pub struct Issue {
-    url: String,
+    html_url: String,
     title: String,
     labels: Vec<Label>,
     body: Option<String>,
@@ -23,7 +23,7 @@ pub struct Issue {
 
 #[derive(Deserialize, Serialize)]
 pub struct PullRequest {
-    url: String,
+    html_url: String,
     title: String,
     labels: Vec<Label>,
     body: Option<String>,
