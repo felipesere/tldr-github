@@ -4,7 +4,7 @@ use crate::db;
 
 embed_migrations!("./migrations");
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct DatabaseConfig {
     file: String,
     run_migrations: Option<bool>,
@@ -24,21 +24,21 @@ impl DatabaseConfig {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 enum AutoEnum{
     #[serde(rename="auto")]
     Auto,
 }
 
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 #[serde(untagged)]
 enum ServerPort {
     Auto(AutoEnum),
     Fixed(i32),
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct ServerConfig {
     port: ServerPort,
 }
@@ -54,8 +54,26 @@ impl ServerConfig {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
+pub struct UiConfig {
+    pub local_files: String,
+    pub hosted_on: String,
+    pub entry_point: String,
+}
+
+impl UiConfig {
+    pub fn entry(&self) -> String {
+        format!("{}/{}", self.local_files, self.entry_point)
+    }
+
+    pub fn hosted(&self) -> String {
+        format!("{}/*filename", self.local_files)
+    }
+}
+
+#[derive(Deserialize, Clone)]
 pub struct Config {
     pub database: DatabaseConfig,
     pub server: ServerConfig,
+    pub ui: UiConfig,
 }

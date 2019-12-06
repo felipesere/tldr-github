@@ -19,6 +19,7 @@ mod db;
 mod middleware;
 mod github;
 mod util;
+mod domain;
 
 
 embed_migrations!("./migrations");
@@ -42,28 +43,34 @@ fn main() -> anyhow::Result<()> {
 
     CombinedLogger::init(vec![logger::terminal(), logger::file("tldr-github.log") ]).with_context(|| "failed to initialize the logging system")?;
 
+
     let pool = config.database.setup().with_context(|| "failed to setup DB")?;
 
     let state = State {
         pool: Arc::new(pool),
     };
 
+    let ui = config.ui.clone();
     let mut app = tide::with_state(state);
     app.middleware(logger::RequestLogger::new());
-    app.at("/").get(tide::redirect("/files/index.html"));
-    app.at("/files/*filename").get(static_files::in_dir("./frontend"));
+    app.at("/").get(tide::redirect(ui.entry()));
+    app.at(&ui.hosted()).get(static_files::in_dir(ui.local_files));
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| async move {
             let c = req.state().conn();
-            let repos = db::all_repos(c).unwrap();
-            Response::new(200).body_json(&repos).unwrap()
+            let _repos = db::all_repos(c).unwrap();
+            Response::new(200).body_json(&domain::sample::data()).unwrap()
         });
         r.at("/repos/:id").get(|req: Request<State>| async move {
             let id: Result<i32, std::num::ParseIntError> = req.param("id");
             let c = req.state().conn();
-            match db::find_repo(c, id.unwrap()) {
-                Some(repo) => Response::new(200).body_json(&repo).unwrap(),
-                None => Response::new(404),
+
+            let repo = db::find_repo(c, id.unwrap());
+
+            if let Some(_) = repo {
+                Response::new(200).body_json(&domain::sample::data()).unwrap()
+            } else {
+                Response::new(404)
             }
         });
         r.at("/repos/:id/issues").get(|req: Request<State>| async move {
