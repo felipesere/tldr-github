@@ -1,0 +1,22 @@
+.grid {
+  display: grid;
+  grid-gap: 2rem;
+  grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+}
+
+code {
+  color: #605D53;
+}
+
+.stack > * + * {
+  margin-top: 1.5rem;
+}
+
+.horizontal-flex {
+  display: flex;
+  flex-direction: column;
+}
+
+.grow {
+  flex-grow: 1;
+}

@@ -22,7 +22,7 @@ const GlowBox = ({ content }) => {
 const Issues = ({ issues }) => {
   return (
     <div>
-      {issues.length} new Pull Requests:
+      {issues.length} new Issues:
       {issues.map(issue => <GlowBox content={issue} />)}
     </div>
   );
