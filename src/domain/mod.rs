@@ -31,7 +31,8 @@ pub struct Activity {
 #[derive(Serialize)]
 pub struct Repo {
     title: String,
-    lastCommit: Commit,
+    #[serde(rename = "lastCommit")]
+    last_commit: Commit,
     activity: Activity,
 }
 
@@ -42,7 +43,7 @@ pub mod sample {
         vec![
             Repo {
                 title: "felipesere/advisor".into(),
-                lastCommit: Commit {
+                last_commit: Commit {
                     branch: "master".into(),
                     on: "14min ago".into(),
                     by: "felipesere".into(),
@@ -73,7 +74,7 @@ pub mod sample {
             },
             Repo {
                 title: "async-rs/async-std".into(),
-                lastCommit: Commit {
+                last_commit: Commit {
                     branch: "master".into(),
                     on: "2 hours ago".into(),
                     by: "yoshwyut".into(),
