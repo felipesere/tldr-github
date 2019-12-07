@@ -1,16 +1,21 @@
 <script>
   import Repo from './Repo.svelte';
   import AddRepo from './AddRepo.svelte';
-  export let repos;
+  const fetchRepos = (async () => {
+      const response = await fetch('http://localhost:8080/api/repos');
 
-function sawAnewRepo({detail}) {
-    console.log(detail.name)
-  }
+      return await response.json();
+  })()
+
 </script>
 
 <div class="grid">
-  {#each repos as repo}
+  {#await fetchRepos }
+    <p>...loading...</p>
+  {:then repos}
+    {#each repos as repo}
     <Repo repo={repo} />
-  {/each}
-  <AddRepo on:new-repo={sawAnewRepo} />
+    {/each}
+  {/await}
+  <AddRepo />
 </div>

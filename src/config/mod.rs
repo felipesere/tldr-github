@@ -63,11 +63,11 @@ pub struct UiConfig {
 
 impl UiConfig {
     pub fn entry(&self) -> String {
-        format!("{}/{}", self.local_files, self.entry_point)
+        format!("{}/{}", self.hosted_on, self.entry_point)
     }
 
     pub fn hosted(&self) -> String {
-        format!("{}/*filename", self.local_files)
+        format!("{}/*filename", self.hosted_on)
     }
 }
 
