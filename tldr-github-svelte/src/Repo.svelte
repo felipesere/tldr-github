@@ -4,7 +4,6 @@
   export let repo
 </script>
 
-
 <article class="card horizontal-flex">
   <header class="card-header">
     <div class="card-header-title">

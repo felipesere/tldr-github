@@ -11,6 +11,7 @@
       setTimeout(() => {
         currentlyAddingRepo = undefined
         dispatch('new-repo-added')
+        newRepoName = ""
       }, 500)
     })()
   }
