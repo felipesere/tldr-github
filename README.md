@@ -15,9 +15,9 @@ This needs a more details. At the moment, you'd need to boot the app open it in 
 
 ## Roadmap
 
-- [ ] Bring in a decent frontend framework
+- [x]  Bring in a decent frontend framework
+- [/] Provide a UI to add new repos
 - [ ] Support the current static view via an API
-- [ ] Provide a Admin UI to add new repos
 - [ ] Provide a UI to filter Github issues and pull-requests
 - [ ] Bake everything into a single binary
 
