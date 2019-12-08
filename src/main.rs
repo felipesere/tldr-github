@@ -58,20 +58,8 @@ fn main() -> anyhow::Result<()> {
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| async move {
             let c = req.state().conn();
-            let _repos = db::all_repos(c).unwrap();
-            Response::new(200).body_json(&domain::sample::data()).unwrap()
-        });
-        r.at("/repos/:id").get(|req: Request<State>| async move {
-            let id: Result<i32, std::num::ParseIntError> = req.param("id");
-            let c = req.state().conn();
-
-            let repo = db::find_repo(&c, id.unwrap());
-
-            if let Some(_) = repo {
-                Response::new(200).body_json(&domain::sample::data()).unwrap()
-            } else {
-                Response::new(404)
-            }
+            let repos = db::all_repos(c).unwrap();
+            Response::new(200).body_json(&repos).unwrap()
         });
         r.at("/repos/:id/issues").get(|req: Request<State>| async move {
             let id: Result<i32, std::num::ParseIntError> = req.param("id");
@@ -100,14 +88,6 @@ fn main() -> anyhow::Result<()> {
             let issues: Vec<github::PullRequest> = surf::get(uri).recv_json().await.unwrap();
 
             Response::new(200).body_json(&issues).unwrap()
-        });
-        r.at("/github/*repo").get(|req: Request<State>| async move {
-            let repo: String = req.param("repo").unwrap();
-            let uri = format!("https://api.github.com/repos/{}", repo);
-            log::info!("Reaching out to: {}", uri);
-            let r = surf::get(uri).recv_string().await.unwrap();
-
-            Response::new(200).body_string(r).set_header("Content-Type", "application/json")
         });
     });
 
