@@ -99,18 +99,17 @@ mod test {
     }
 
     #[test]
-    fn it_does_something() {
-        let le_pool = test_pool();
-        in_test_transaction(&le_pool, || {
-            let repo: Result<StoredRepo, anyhow::Error> = insert_new(&le_pool, "felipesere/test");
-
-            let r = repo.unwrap();
+    fn can_find_repos_it_just_stored() {
+        let conn = test_pool();
+        in_test_transaction(&conn, || {
+            let repo = insert_new(&conn, "felipesere/test")?;
 
             assert!(
-                find_repo(&le_pool, r.id).is_some(),
+                find_repo(&conn, repo.id).is_some(),
                 "did not find stored repo"
             );
-            Result::<StoredRepo, anyhow::Error>::Ok(r)
-        });
+
+            Result::<StoredRepo, anyhow::Error>::Ok(repo)
+        }).unwrap();
     }
 }
