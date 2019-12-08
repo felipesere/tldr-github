@@ -14,8 +14,16 @@
   </header>
   <div class="card-content grow">
     <div class="content stack">
-      <LastCommit lastCommit={repo.lastCommit} />
-      <Activity activity={repo.activity} />
+      {#if repo.lastCommit }
+        <LastCommit lastCommit={repo.lastCommit} />
+      {:else}
+        <p>No commit so far</p>
+      {/if}
+      {#if repo.activity}
+        <Activity activity={repo.activity} />
+      {:else}
+        <p>No activity so far</p>
+      {/if}
     </div>
   </div>
   <footer class="card-footer">
