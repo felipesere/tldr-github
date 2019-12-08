@@ -1,5 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte';
+  const dispatch = createEventDispatcher();
 
   let newRepoName = "";
   let currentlyAddingRepo
@@ -9,6 +10,7 @@
       await post("/repos", {name: newRepoName})
       setTimeout(() => {
         currentlyAddingRepo = undefined
+        dispatch('new-repo-added')
       }, 500)
     })()
   }
