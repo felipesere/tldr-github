@@ -14,7 +14,7 @@
   }
 
   async function post(path, data) {
-    await fetch(`http://localhost:8080/api/${path}`, {
+    await fetch(`http://localhost:8080/api${path}`, {
       "body": JSON.stringify(data),
       "method": "POST",
       "headers": {

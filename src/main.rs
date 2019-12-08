@@ -61,6 +61,9 @@ fn main() -> anyhow::Result<()> {
             let repos = db::all_repos(c).unwrap();
             Response::new(200).body_json(&repos).unwrap()
         });
+        r.at("/repos").post(|req: Request<State>| async move {
+            Response::new(200)
+        });
         r.at("/repos/:id/issues").get(|req: Request<State>| async move {
             let id: Result<i32, std::num::ParseIntError> = req.param("id");
             let c = req.state().conn();
