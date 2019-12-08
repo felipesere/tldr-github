@@ -1,19 +1,27 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-	const dispatch = createEventDispatcher();
 
   let newRepoName = "";
+  let currentlyAddingRepo
 
-  // $: newRepoName, console.log(newRepoName);
   function handleClick() {
-    dispatch('new-repo', {name: newRepoName})
+    (currentlyAddingRepo = async () => {
+      await post("/repos", {name: newRepoName})
+      setTimeout(() => {
+        currentlyAddingRepo = undefined
+      }, 500)
+    })()
   }
 
-  function empty(name) {
-    return name === ""
-  }
-
-  
+  async function post(path, data) {
+    await fetch(`http://localhost:8080/api/${path}`, {
+      "body": JSON.stringify(data),
+      "method": "POST",
+      "headers": {
+        "Content-Type": "application/json",
+      },
+    })
+  };
 </script>
 
 <article class="card horizontal-flex">
@@ -26,7 +34,7 @@
         </span>
       </div>
       <div class="control">
-        <button on:click|preventDefault={handleClick} disabled={newRepoName === ""} class="button is-info">Add</button>
+        <button on:click|preventDefault={handleClick} disabled={newRepoName === "" || currentlyAddingRepo} class="button is-info">Add</button>
       </div>
     </div>
   </div>
