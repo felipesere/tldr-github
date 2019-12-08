@@ -23,7 +23,7 @@ pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
 #[derive(Debug, Serialize, Queryable)]
 pub struct StoredRepo {
     id: i32,
-    pub name: String,
+    pub title: String,
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
 }
@@ -31,7 +31,7 @@ pub struct StoredRepo {
 #[derive(Insertable)]
 #[table_name = "repos"]
 pub struct NewRepo<'a> {
-    pub name: &'a str,
+    pub title: &'a str,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -39,7 +39,7 @@ pub struct NewRepo<'a> {
 pub fn insert_new(conn: &Conn, repo_name: &str) -> Result<StoredRepo> {
     let now = Utc::now().naive_utc();
     let new_repo = NewRepo {
-        name: repo_name,
+        title: repo_name,
         created_at: now,
         updated_at: now,
     };

@@ -24,6 +24,11 @@ mod domain;
 
 embed_migrations!("./migrations");
 
+#[derive(serde::Deserialize, Debug)]
+pub struct AddNewRepo {
+    name: String,
+}
+
 struct State {
     pool: Arc<db::SqlitePool>,
 }
@@ -61,7 +66,11 @@ fn main() -> anyhow::Result<()> {
             let repos = db::all_repos(c).unwrap();
             Response::new(200).body_json(&repos).unwrap()
         });
-        r.at("/repos").post(|req: Request<State>| async move {
+        r.at("/repos").post(|mut req: Request<State>| async move {
+            let add_repo: AddNewRepo = req.body_json().await.unwrap();
+            let c = req.state().conn();
+
+            db::insert_new(&c, &add_repo.name).unwrap();
             Response::new(200)
         });
         r.at("/repos/:id/issues").get(|req: Request<State>| async move {
@@ -73,7 +82,7 @@ fn main() -> anyhow::Result<()> {
             };
 
 
-            let uri = format!("https://api.github.com/repos/{}/issues", repo.name);
+            let uri = format!("https://api.github.com/repos/{}/issues", repo.title);
             let issues: Vec<github::Issue> = surf::get(uri).recv_json().await.unwrap();
 
             Response::new(200).body_json(&issues).unwrap()
@@ -87,7 +96,7 @@ fn main() -> anyhow::Result<()> {
             };
 
 
-            let uri = format!("https://api.github.com/repos/{}/pulls", repo.name);
+            let uri = format!("https://api.github.com/repos/{}/pulls", repo.title);
             let issues: Vec<github::PullRequest> = surf::get(uri).recv_json().await.unwrap();
 
             Response::new(200).body_json(&issues).unwrap()

@@ -1,7 +1,7 @@
 table! {
     repos (id) {
         id -> Integer,
-        name -> Text,
+        title -> Text,
         created_at -> Timestamp,
         updated_at -> Timestamp,
     }
