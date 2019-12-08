@@ -65,7 +65,7 @@ fn main() -> anyhow::Result<()> {
             let id: Result<i32, std::num::ParseIntError> = req.param("id");
             let c = req.state().conn();
 
-            let repo = db::find_repo(c, id.unwrap());
+            let repo = db::find_repo(&c, id.unwrap());
 
             if let Some(_) = repo {
                 Response::new(200).body_json(&domain::sample::data()).unwrap()
@@ -76,7 +76,7 @@ fn main() -> anyhow::Result<()> {
         r.at("/repos/:id/issues").get(|req: Request<State>| async move {
             let id: Result<i32, std::num::ParseIntError> = req.param("id");
             let c = req.state().conn();
-            let repo = match db::find_repo(c, id.unwrap()) {
+            let repo = match db::find_repo(&c, id.unwrap()) {
                 Some(r) => r,
                 None => return Response::new(404),
             };
@@ -90,7 +90,7 @@ fn main() -> anyhow::Result<()> {
         r.at("/repos/:id/pulls").get(|req: Request<State>| async move {
             let id: Result<i32, std::num::ParseIntError> = req.param("id");
             let c = req.state().conn();
-            let repo = match db::find_repo(c, id.unwrap()) {
+            let repo = match db::find_repo(&c, id.unwrap()) {
                 Some(r) => r,
                 None => return Response::new(404),
             };

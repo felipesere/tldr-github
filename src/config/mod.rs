@@ -6,8 +6,8 @@ embed_migrations!("./migrations");
 
 #[derive(Deserialize, Clone)]
 pub struct DatabaseConfig {
-    file: String,
-    run_migrations: Option<bool>,
+    pub file: String,
+    pub run_migrations: Option<bool>,
 }
 
 impl DatabaseConfig {
