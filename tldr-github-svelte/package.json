@@ -4,6 +4,7 @@
   "scripts": {
     "build": "rollup -c",
     "dev": "rollup -c -w",
+    "serve": "RUN_SERVER=true rollup -c -w",
     "start": "sirv public"
   },
   "devDependencies": {
