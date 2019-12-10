@@ -2,6 +2,8 @@ use serde::{Deserialize, Serialize};
 use anyhow::Result;
 use futures::future::TryFutureExt;
 
+mod graphql;
+
 #[derive(Deserialize, Serialize)]
 pub struct Label {
     name: String,

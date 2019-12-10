@@ -1,0 +1,18 @@
+query PullRequestsView($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    pullRequests(states: OPEN, first: 30) {
+      totalCount,
+        nodes {
+          updatedAt,
+          title,
+          headRefOid,
+          author {
+            __typename,
+            login,
+            url
+          },
+          url
+        }
+    }
+  }
+}
