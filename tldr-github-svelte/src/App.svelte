@@ -6,7 +6,7 @@
   let repos = []
 
   const fetchRepos = async () => {
-      const response = await fetch('http://localhost:8080/api/repos');
+      const response = await fetch('/api/repos');
 
       repos = await response.json();
   }

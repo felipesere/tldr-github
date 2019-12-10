@@ -16,7 +16,7 @@
   };
 
   async function post(path, data) {
-    await fetch(`http://localhost:8080/api${path}`, {
+    await fetch(`/api${path}`, {
       "body": JSON.stringify(data),
       "method": "POST",
       "headers": {
@@ -28,7 +28,7 @@
 
 <article class="card horizontal-flex">
   <div class="card-content content grow">
-    <div class="field has-addons">
+    <form class="field has-addons">
       <div class="control has-icons-right grow">
         <input bind:value={newRepoName} class="input" type="text" placeholder="Add new repo" />
         <span class="icon is-small is-right">
@@ -44,6 +44,6 @@
           Add
         </button>
       </div>
-    </div>
+    </form>
   </div>
 </article>
