@@ -44,14 +44,16 @@ impl <STATE: Send + Sync + 'static> Endpoint<STATE> for StaticFiles {
             let (request, root) = &*protected_request.lock().await;
 
             let filename: String = request.param("filename").unwrap();
-            log::warn!("The filename was: {}", filename);
+            log::warn!("The request file was: {}", filename);
 
             let real_filename = &format!("{}/{}", root , filename);
+            log::warn!("The expanded file was: {}", real_filename);
+
             let path = std::path::Path::new(&real_filename);
 
             match std::fs::read_to_string(path) {
                 Ok(content) => Response::new(200).body_string(content).set_header("Content-Type", StaticFiles::content_type(path)),
-                Err(_) => Response::new(404),
+                Err(err) => Response::new(404).body_string(err.to_string()),
             }
         })
     }
