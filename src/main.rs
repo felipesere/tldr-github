@@ -10,9 +10,11 @@ use anyhow::{Context};
 use tide::{Request, Response};
 use simplelog::CombinedLogger;
 use middleware::logger;
-use middleware::static_files;
+use std::path::{Path, PathBuf};
 
 use config::Config;
+
+use tide_naive_static_files::{serve_static_files, StaticRootDir};
 
 mod config;
 mod db;
@@ -31,11 +33,18 @@ pub struct AddNewRepo {
 
 struct State {
     pool: Arc<db::SqlitePool>,
+    static_root_dir: PathBuf,
 }
 
 impl State {
     fn conn(&self) -> db::Conn {
         self.pool.get().unwrap()
+    }
+}
+
+impl StaticRootDir for State {
+    fn root_dir(&self) -> &Path {
+        &self.static_root_dir
     }
 }
 
@@ -51,15 +60,19 @@ fn main() -> anyhow::Result<()> {
 
     let pool = config.database.setup().with_context(|| "failed to setup DB")?;
 
+    let ui = config.ui.clone();
+
     let state = State {
         pool: Arc::new(pool),
+        static_root_dir: ui.local_files.clone().into(),
     };
 
-    let ui = config.ui.clone();
     let mut app = tide::with_state(state);
     app.middleware(logger::RequestLogger::new());
     app.at("/").get(tide::redirect(ui.entry()));
-    app.at(&ui.hosted()).get(static_files::in_dir(ui.local_files));
+    app.at(&ui.hosted()).get(|req: Request<State>| async {
+        serve_static_files(req).await.unwrap()
+    });
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| async move {
             let c = req.state().conn();

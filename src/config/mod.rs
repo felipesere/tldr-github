@@ -67,7 +67,7 @@ impl UiConfig {
     }
 
     pub fn hosted(&self) -> String {
-        format!("{}/*filename", self.hosted_on)
+        format!("{}/*path", self.hosted_on)
     }
 }
 
