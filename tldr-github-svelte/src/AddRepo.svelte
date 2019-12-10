@@ -1,7 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte';
   const dispatch = createEventDispatcher();
-
   let newRepoName = "";
   let currentlyAddingRepo
 
@@ -14,7 +13,7 @@
         newRepoName = ""
       }, 500)
     })()
-  }
+  };
 
   async function post(path, data) {
     await fetch(`http://localhost:8080/api${path}`, {
@@ -37,7 +36,13 @@
         </span>
       </div>
       <div class="control">
-        <button on:click|preventDefault={handleClick} disabled={newRepoName === "" || currentlyAddingRepo} class="button is-info">Add</button>
+        <button
+           on:click|preventDefault={handleClick}
+           disabled={newRepoName === "" || currentlyAddingRepo }
+           class:is-loading={currentlyAddingRepo}
+           class="button is-info">
+          Add
+        </button>
       </div>
     </div>
   </div>
