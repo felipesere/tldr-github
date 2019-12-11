@@ -1,6 +1,7 @@
 use serde::Serialize;
 use anyhow::{bail, Result};
 
+#[derive(Clone)]
 pub struct RepoName {
     pub owner: String,
     pub name: String,
@@ -12,7 +13,7 @@ impl RepoName {
         let parts = t.split("/").collect::<Vec<_>>();
 
         if parts.len() < 2 {
-            bail!("Could not derive owner and name from repo");
+            bail!("Could not derive owner and name from repo: {}", t);
         }
 
         let owner = String::from(parts[0]);
@@ -34,7 +35,7 @@ pub struct Commit {
 
 #[derive(Serialize)]
 pub struct CommitsOnMaster {
-    commits: u32,
+    pub commits: u32,
 }
 
 #[derive(Serialize, Debug)]
@@ -46,21 +47,32 @@ pub struct Item {
 
 #[derive(Serialize)]
 pub struct Activity {
-    master: CommitsOnMaster,
-    prs: Vec<Item>,
-    issues: Vec<Item>,
+    pub master: CommitsOnMaster,
+    pub prs: Vec<Item>,
+    pub issues: Vec<Item>,
 }
 
 #[derive(Serialize)]
 pub struct Repo {
-    title: String,
+    pub title: String,
     #[serde(rename = "lastCommit")]
-    last_commit: Commit,
-    activity: Activity,
+    pub last_commit: Commit,
+    pub activity: Activity,
 }
 
 pub mod sample {
     use super::*;
+
+    pub fn last_commit() -> Commit {
+        Commit {
+            branch: "master".into(),
+            on: "14min ago".into(),
+            by: "felipesere".into(),
+            sha1: "a11dfa26e15f4".into(),
+            comment: "Add new questions".into(),
+        }
+    }
+
 
     pub fn data() -> Vec<super::Repo> {
         vec![

@@ -77,7 +77,29 @@ fn main() -> anyhow::Result<()> {
         r.at("/repos").get(|req: Request<State>| async move {
             let c = req.state().conn();
             let repos = db::all_repos(c).unwrap();
-            Response::new(200).body_json(&repos).unwrap()
+
+            let client = github::graphql::GithubClient::new("<< token >>");
+
+            let mut result = Vec::new();
+            for repo in repos {
+                let name = domain::RepoName::from(repo.title.clone()).unwrap();
+                let pulls = client.pull_requests(name.clone()).unwrap_or(Vec::new());
+                let issues = client.issues(name.clone()).unwrap_or(Vec::new());
+
+                let r = domain::Repo {
+                    title: repo.title,
+                    last_commit: domain::sample::last_commit(),
+                    activity: domain::Activity {
+                        master: domain::CommitsOnMaster { commits: 0 },
+                        prs: pulls,
+                        issues: issues,
+                    },
+                };
+
+                result.push(r)
+            }
+
+            Response::new(200).body_json(&result).unwrap()
         });
         r.at("/repos").post(|mut req: Request<State>| async move {
             let add_repo: AddNewRepo = req.body_json().await.unwrap();

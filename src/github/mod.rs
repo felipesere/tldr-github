@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use anyhow::Result;
 use futures::future::TryFutureExt;
 
-mod graphql;
+pub mod graphql;
 
 #[derive(Deserialize, Serialize)]
 pub struct Label {

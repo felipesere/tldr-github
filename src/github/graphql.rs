@@ -2,6 +2,7 @@ use crate::domain;
 use anyhow::{bail, Result};
 use async_std::task;
 use graphql_client::GraphQLQuery;
+use simplelog::*;
 
 type DateTime = chrono::DateTime<chrono::Utc>;
 type URI = String;
@@ -59,6 +60,8 @@ impl GithubClient {
 
             items.push(item)
         }
+
+        log::info!("found issues {} on Github", items.len());
 
         Result::Ok(items)
     }
