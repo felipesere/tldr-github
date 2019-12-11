@@ -11,6 +11,7 @@ use tide::{Request, Response};
 use simplelog::CombinedLogger;
 use middleware::logger;
 use std::path::{Path, PathBuf};
+use  github::graphql::GithubClient;
 
 use config::Config;
 
@@ -34,11 +35,16 @@ pub struct AddNewRepo {
 struct State {
     pool: Arc<db::SqlitePool>,
     static_root_dir: PathBuf,
+    github: Arc<github::graphql::GithubClient>,
 }
 
 impl State {
     fn conn(&self) -> db::Conn {
         self.pool.get().unwrap()
+    }
+
+    fn client(&self) -> Arc<GithubClient> {
+        self.github.clone()
     }
 }
 
@@ -65,6 +71,7 @@ fn main() -> anyhow::Result<()> {
     let state = State {
         pool: Arc::new(pool),
         static_root_dir: ui.local_files.clone().into(),
+        github: Arc::new(GithubClient::new(config.github.token.clone())),
     };
 
     let mut app = tide::with_state(state);
@@ -76,9 +83,8 @@ fn main() -> anyhow::Result<()> {
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| async move {
             let c = req.state().conn();
+            let client = req.state().client();
             let repos = db::all_repos(c).unwrap();
-
-            let client = github::graphql::GithubClient::new("<< token >>");
 
             let mut result = Vec::new();
             for repo in repos {

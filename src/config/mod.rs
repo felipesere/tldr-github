@@ -72,8 +72,14 @@ impl UiConfig {
 }
 
 #[derive(Deserialize, Clone)]
+pub struct GithubConfig {
+    pub token: String,
+}
+
+#[derive(Deserialize, Clone)]
 pub struct Config {
     pub database: DatabaseConfig,
     pub server: ServerConfig,
     pub ui: UiConfig,
+    pub github: GithubConfig,
 }
