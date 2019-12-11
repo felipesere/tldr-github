@@ -1,4 +1,27 @@
 use serde::Serialize;
+use anyhow::{bail, Result};
+
+pub struct RepoName {
+    pub owner: String,
+    pub name: String,
+}
+
+impl RepoName {
+    pub fn from<S: Into<String>>(input: S) -> Result<Self> {
+        let t = input.into();
+        let parts = t.split("/").collect::<Vec<_>>();
+
+        if parts.len() < 2 {
+            bail!("Could not derive owner and name from repo");
+        }
+
+        let owner = String::from(parts[0]);
+        let name = String::from(parts[1]);
+
+        Result::Ok(RepoName { owner, name })
+    }
+}
+
 
 #[derive(Serialize)]
 pub struct Commit {

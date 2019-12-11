@@ -1,0 +1,17 @@
+query IssuesView($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    issues(states: OPEN, first: 30) {
+      totalCount,
+        nodes {
+          updatedAt,
+          title,
+          author {
+            __typename,
+            login,
+            url
+          },
+          url
+        }
+    }
+  }
+}
