@@ -108,34 +108,6 @@ fn main() -> anyhow::Result<()> {
             db::insert_new(&c, &add_repo.name).unwrap();
             Response::new(200)
         });
-        r.at("/repos/:id/issues").get(|req: Request<State>| async move {
-            let id: Result<i32, std::num::ParseIntError> = req.param("id");
-            let c = req.state().conn();
-            let repo = match db::find_repo(&c, id.unwrap()) {
-                Some(r) => r,
-                None => return Response::new(404),
-            };
-
-
-            let uri = format!("https://api.github.com/repos/{}/issues", repo.title);
-            let issues: Vec<github::Issue> = surf::get(uri).recv_json().await.unwrap();
-
-            Response::new(200).body_json(&issues).unwrap()
-        });
-        r.at("/repos/:id/pulls").get(|req: Request<State>| async move {
-            let id: Result<i32, std::num::ParseIntError> = req.param("id");
-            let c = req.state().conn();
-            let repo = match db::find_repo(&c, id.unwrap()) {
-                Some(r) => r,
-                None => return Response::new(404),
-            };
-
-
-            let uri = format!("https://api.github.com/repos/{}/pulls", repo.title);
-            let issues: Vec<github::PullRequest> = surf::get(uri).recv_json().await.unwrap();
-
-            Response::new(200).body_json(&issues).unwrap()
-        });
     });
 
     task::block_on(async move {
