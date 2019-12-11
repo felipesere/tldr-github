@@ -14,11 +14,11 @@ pub struct CommitsOnMaster {
     commits: u32,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct Item {
-    title: String,
-    link: String,
-    by: String,
+    pub title: String,
+    pub link: String,
+    pub by: String,
 }
 
 #[derive(Serialize)]
