@@ -1,6 +1,6 @@
 use futures::future::BoxFuture;
-use tide::{Middleware, Next, Request, Response};
 use std::fs::File;
+use tide::{Middleware, Next, Request, Response};
 
 use simplelog::*;
 
@@ -12,7 +12,11 @@ pub fn terminal() -> Box<dyn SharedLogger> {
 }
 
 pub fn file(name: &'static str) -> Box<dyn SharedLogger> {
-    WriteLogger::new(LevelFilter::Info, Config::default(), File::create(name).unwrap())
+    WriteLogger::new(
+        LevelFilter::Info,
+        Config::default(),
+        File::create(name).unwrap(),
+    )
 }
 
 impl RequestLogger {

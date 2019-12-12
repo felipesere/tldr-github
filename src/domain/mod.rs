@@ -1,5 +1,5 @@
-use serde::Serialize;
 use anyhow::{bail, Result};
+use serde::Serialize;
 
 #[derive(Clone)]
 pub struct RepoName {
@@ -22,7 +22,6 @@ impl RepoName {
         Result::Ok(RepoName { owner, name })
     }
 }
-
 
 #[derive(Serialize, Debug)]
 pub struct Commit {
@@ -72,7 +71,6 @@ pub mod sample {
             comment: "Add new questions".into(),
         }
     }
-
 
     pub fn data() -> Vec<super::Repo> {
         vec![

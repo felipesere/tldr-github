@@ -110,6 +110,7 @@ mod test {
             );
 
             Result::<StoredRepo, anyhow::Error>::Ok(repo)
-        }).unwrap();
+        })
+        .unwrap();
     }
 }

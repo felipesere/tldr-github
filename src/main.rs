@@ -1,17 +1,18 @@
-#[macro_use] extern crate diesel_migrations;
-#[macro_use] extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
+#[macro_use]
+extern crate diesel;
 
-
-use std::sync::Arc;
 use std::io::Read;
+use std::sync::Arc;
 
+use anyhow::Context;
 use async_std::task;
-use anyhow::{Context};
-use tide::{Request, Response};
-use simplelog::CombinedLogger;
+use github::graphql::GithubClient;
 use middleware::logger;
+use simplelog::CombinedLogger;
 use std::path::{Path, PathBuf};
-use  github::graphql::GithubClient;
+use tide::{Request, Response};
 
 use config::Config;
 
@@ -19,11 +20,10 @@ use tide_naive_static_files::{serve_static_files, StaticRootDir};
 
 mod config;
 mod db;
-mod middleware;
-mod github;
-mod util;
 mod domain;
-
+mod github;
+mod middleware;
+mod util;
 
 embed_migrations!("./migrations");
 
@@ -59,12 +59,16 @@ fn main() -> anyhow::Result<()> {
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
 
-    let config: Config = serde_json::from_str(&contents).with_context(|| "Unable to read config")?;
+    let config: Config =
+        serde_json::from_str(&contents).with_context(|| "Unable to read config")?;
 
-    CombinedLogger::init(vec![logger::terminal(), logger::file("tldr-github.log") ]).with_context(|| "failed to initialize the logging system")?;
+    CombinedLogger::init(vec![logger::terminal(), logger::file("tldr-github.log")])
+        .with_context(|| "failed to initialize the logging system")?;
 
-
-    let pool = config.database.setup().with_context(|| "failed to setup DB")?;
+    let pool = config
+        .database
+        .setup()
+        .with_context(|| "failed to setup DB")?;
 
     let ui = config.ui.clone();
 
@@ -77,53 +81,57 @@ fn main() -> anyhow::Result<()> {
     let mut app = tide::with_state(state);
     app.middleware(logger::RequestLogger::new());
     app.at("/").get(tide::redirect(ui.entry()));
-    app.at(&ui.hosted()).get(|req: Request<State>| async {
-        serve_static_files(req).await.unwrap()
-    });
+    app.at(&ui.hosted())
+        .get(|req: Request<State>| async { serve_static_files(req).await.unwrap() });
     app.at("/api").nest(|r| {
-        r.at("/repos").get(|req: Request<State>| async move {
-            let c = req.state().conn();
-            let client = req.state().client();
-            let repos = db::all_repos(c).unwrap();
+        r.at("/repos").get(|req: Request<State>| {
+            async move {
+                let c = req.state().conn();
+                let client = req.state().client();
+                let repos = db::all_repos(c).unwrap();
 
-            let mut result = Vec::new();
-            for repo in repos {
-                let name = match domain::RepoName::from(repo.title.clone()) {
-                    Ok(n) => n,
-                    Err(err) => {
-                        log::error!("failure: {}", err);
-                        continue
-                    }
-                };
-                let pulls = client.pull_requests(name.clone()).unwrap_or(Vec::new());
-                let issues = client.issues(name.clone()).unwrap_or(Vec::new());
-                let last_commit = client.last_commit(name.clone()).expect("there was no last commit");
+                let mut result = Vec::new();
+                for repo in repos {
+                    let name = match domain::RepoName::from(repo.title.clone()) {
+                        Ok(n) => n,
+                        Err(err) => {
+                            log::error!("failure: {}", err);
+                            continue;
+                        }
+                    };
+                    let pulls = client.pull_requests(name.clone()).unwrap_or(Vec::new());
+                    let issues = client.issues(name.clone()).unwrap_or(Vec::new());
+                    let last_commit = client
+                        .last_commit(name.clone())
+                        .expect("there was no last commit");
 
-                let r = domain::Repo {
-                    title: repo.title,
-                    last_commit,
-                    activity: domain::Activity {
-                        master: domain::CommitsOnMaster { commits: 0 },
-                        prs: pulls,
-                        issues: issues,
-                    },
-                };
+                    let r = domain::Repo {
+                        title: repo.title,
+                        last_commit,
+                        activity: domain::Activity {
+                            master: domain::CommitsOnMaster { commits: 0 },
+                            prs: pulls,
+                            issues: issues,
+                        },
+                    };
 
-                result.push(r)
+                    result.push(r)
+                }
+
+                Response::new(200).body_json(&result).unwrap()
             }
-
-            Response::new(200).body_json(&result).unwrap()
         });
-        r.at("/repos").post(|mut req: Request<State>| async move {
-            let add_repo: AddNewRepo = req.body_json().await.unwrap();
-            let c = req.state().conn();
+        r.at("/repos").post(|mut req: Request<State>| {
+            async move {
+                let add_repo: AddNewRepo = req.body_json().await.unwrap();
+                let c = req.state().conn();
 
-            db::insert_new(&c, &add_repo.name).unwrap();
-            Response::new(200)
+                db::insert_new(&c, &add_repo.name).unwrap();
+                Response::new(200)
+            }
         });
     });
 
-    task::block_on(async move {
-        app.listen(config.server.address()).await
-    }).with_context(|| "failed launch the server")
+    task::block_on(async move { app.listen(config.server.address()).await })
+        .with_context(|| "failed launch the server")
 }

@@ -1,6 +1,6 @@
+use crate::db;
 use anyhow::Result;
 use serde::Deserialize;
-use crate::db;
 
 embed_migrations!("./migrations");
 
@@ -16,8 +16,8 @@ impl DatabaseConfig {
         match self.run_migrations {
             Some(true) | None => {
                 embedded_migrations::run_with_output(&pool.get().unwrap(), &mut std::io::stdout())?;
-            },
-            _ => {},
+            }
+            _ => {}
         }
 
         Ok(pool)
@@ -25,11 +25,10 @@ impl DatabaseConfig {
 }
 
 #[derive(Deserialize, Clone)]
-enum AutoEnum{
-    #[serde(rename="auto")]
+enum AutoEnum {
+    #[serde(rename = "auto")]
     Auto,
 }
-
 
 #[derive(Deserialize, Clone)]
 #[serde(untagged)]

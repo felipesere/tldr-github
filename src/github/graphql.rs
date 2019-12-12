@@ -1,8 +1,8 @@
 use crate::domain;
 use anyhow::{bail, Result};
 use async_std::task;
-use graphql_client::GraphQLQuery;
 use chrono_humanize::{Accuracy, HumanTime, Tense};
+use graphql_client::GraphQLQuery;
 
 type DateTime = chrono::DateTime<chrono::Utc>;
 type URI = String;
@@ -32,8 +32,6 @@ pub struct IssuesView;
     response_derives = "Debug,Clone"
 )]
 pub struct LastCommitView;
-
-
 
 pub struct GithubClient {
     token: String,
@@ -118,10 +116,20 @@ impl GithubClient {
             crate::github::graphql::last_commit_view::LastCommitViewRepositoryRefTargetOn::Commit(c) => c,
             _ => bail!("unexpected variant"),
         };
-        let real_commit = commit.history.edges.expect("no edges").remove(0).expect("no edge").node.expect("there was no node");
+        let real_commit = commit
+            .history
+            .edges
+            .expect("no edges")
+            .remove(0)
+            .expect("no edge")
+            .node
+            .expect("there was no node");
 
         let author = real_commit.clone().author.expect("no author");
-        let time_since_commit =  author.date.unwrap().signed_duration_since(chrono::Utc::now());
+        let time_since_commit = author
+            .date
+            .unwrap()
+            .signed_duration_since(chrono::Utc::now());
         let human = HumanTime::from(time_since_commit);
 
         let result = domain::Commit {
