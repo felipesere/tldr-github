@@ -88,7 +88,13 @@ fn main() -> anyhow::Result<()> {
 
             let mut result = Vec::new();
             for repo in repos {
-                let name = domain::RepoName::from(repo.title.clone()).unwrap();
+                let name = match domain::RepoName::from(repo.title.clone()) {
+                    Ok(n) => n,
+                    Err(err) => {
+                        log::error!("failure: {}", err);
+                        continue
+                    }
+                };
                 let pulls = client.pull_requests(name.clone()).unwrap_or(Vec::new());
                 let issues = client.issues(name.clone()).unwrap_or(Vec::new());
                 let last_commit = client.last_commit(name.clone()).expect("there was no last commit");
