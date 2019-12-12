@@ -24,13 +24,13 @@ impl RepoName {
 }
 
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct Commit {
-    branch: String,
-    on: String,
-    by: String,
-    sha1: String,
-    comment: String,
+    pub branch: String,
+    pub on: String,
+    pub by: String,
+    pub sha1: String,
+    pub comment: String,
 }
 
 #[derive(Serialize)]

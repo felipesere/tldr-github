@@ -1,0 +1,25 @@
+query LastCommitView($owner: String!, $name: String!) {
+  repository(owner:$owner, name: $name) {
+    ref(qualifiedName: "master") {
+      target {
+        __typename
+        ... on Commit {
+          history(first: 1) {
+            edges {
+              node {
+                messageHeadline
+                oid
+                message
+                author {
+                  name
+                  email
+                  date
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

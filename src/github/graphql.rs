@@ -2,11 +2,12 @@ use crate::domain;
 use anyhow::{bail, Result};
 use async_std::task;
 use graphql_client::GraphQLQuery;
-use simplelog::*;
+use chrono_humanize::{Accuracy, HumanTime, Tense};
 
 type DateTime = chrono::DateTime<chrono::Utc>;
 type URI = String;
 type GitObjectID = String;
+type GitTimestamp = chrono::DateTime<chrono::Utc>;
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -23,6 +24,16 @@ pub struct PullRequestsView;
     response_derives = "Debug"
 )]
 pub struct IssuesView;
+
+#[derive(GraphQLQuery)]
+#[graphql(
+    schema_path = "graphql/schema.graphql",
+    query_path = "graphql/last-commit.graphql",
+    response_derives = "Debug,Clone"
+)]
+pub struct LastCommitView;
+
+
 
 pub struct GithubClient {
     token: String,
@@ -93,6 +104,35 @@ impl GithubClient {
         }
 
         Result::Ok(items)
+    }
+
+    pub fn last_commit(&self, repo: domain::RepoName) -> Result<domain::Commit> {
+        let query = LastCommitView::build_query(last_commit_view::Variables {
+            owner: repo.owner,
+            name: repo.name,
+        });
+
+        let data: last_commit_view::ResponseData = self.make_request(query)?;
+
+        let commit  = match data.repository.expect("no repository").ref_.expect("no ref").target.on {
+            crate::github::graphql::last_commit_view::LastCommitViewRepositoryRefTargetOn::Commit(c) => c,
+            _ => bail!("unexpected variant"),
+        };
+        let real_commit = commit.history.edges.expect("no edges").remove(0).expect("no edge").node.expect("there was no node");
+
+        let author = real_commit.clone().author.expect("no author");
+        let time_since_commit =  author.date.unwrap().signed_duration_since(chrono::Utc::now());
+        let human = HumanTime::from(time_since_commit);
+
+        let result = domain::Commit {
+            by: author.name.expect("no name"),
+            comment: real_commit.clone().message_headline,
+            on: human.to_text_en(Accuracy::Rough, Tense::Present),
+            branch: "master".into(),
+            sha1: real_commit.clone().oid,
+        };
+
+        Result::Ok(result)
     }
 
     fn make_request<Q: serde::Serialize, R: serde::de::DeserializeOwned>(
@@ -166,5 +206,15 @@ mod tests {
         ];
 
         assert_eq!(titles, expected)
+    }
+
+    #[test]
+    fn last_commit_on_master() {
+        let client = GithubClient::new("<< token >>");
+        let repo = domain::RepoName::from("felipesere/advisorex").unwrap();
+
+        let commit = client.last_commit(repo).expect("should be able to get PRs");
+
+        assert_eq!("a7f20cbde5fbf313a39e522859be5ffd04d0de80", &commit.sha1)
     }
 }

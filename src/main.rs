@@ -91,10 +91,11 @@ fn main() -> anyhow::Result<()> {
                 let name = domain::RepoName::from(repo.title.clone()).unwrap();
                 let pulls = client.pull_requests(name.clone()).unwrap_or(Vec::new());
                 let issues = client.issues(name.clone()).unwrap_or(Vec::new());
+                let last_commit = client.last_commit(name.clone()).expect("there was no last commit");
 
                 let r = domain::Repo {
                     title: repo.title,
-                    last_commit: domain::sample::last_commit(),
+                    last_commit,
                     activity: domain::Activity {
                         master: domain::CommitsOnMaster { commits: 0 },
                         prs: pulls,

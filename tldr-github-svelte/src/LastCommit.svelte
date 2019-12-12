@@ -3,7 +3,7 @@
 </script>
 
 <div>
-  Last commit on <code>{lastCommit.branch}</code> {lastCommit.on} by {lastCommit.by}:
+  Last commit on <code>{lastCommit.branch}</code> {lastCommit.on} ago by {lastCommit.by}:
   <div class="commit">{lastCommit.comment}</div>
 </div>
 
