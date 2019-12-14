@@ -14,10 +14,9 @@ use simplelog::CombinedLogger;
 use std::path::{Path, PathBuf};
 use tide::{Request, Response};
 use domain::{RepoName};
-
 use config::Config;
-
 use tide_naive_static_files::{serve_static_files, StaticRootDir};
+use serde::Serialize;
 
 mod config;
 mod db;
@@ -134,12 +133,12 @@ fn main() -> anyhow::Result<()> {
                     },
                     Err(err) => {
                         log::error!("failure to add repo: {}", err);
-                        Response::new(404).body_string(format!("failed to add repo: {}", err))
+                        error_response(404, err)
                     },
                 }
             }
         });
-        r.at("/repos/:id").delete(|mut req: Request<State>| {
+        r.at("/repos/:id").delete(|req: Request<State>| {
             async move {
                 let conn = req.state().conn();
                 let id = req.param::<i32>("id").unwrap();
@@ -148,7 +147,7 @@ fn main() -> anyhow::Result<()> {
                     Ok(_) => Response::new(200),
                     Err(err) => {
                         log::error!("failure to delete repo: {}", err);
-                        Response::new(404)
+                        error_response(400, err)
                     }
                 }
             }
@@ -157,4 +156,13 @@ fn main() -> anyhow::Result<()> {
 
     task::block_on(async move { app.listen(config.server.address()).await })
         .with_context(|| "failed launch the server")
+}
+
+#[derive(Serialize)]
+struct ErrorJson {
+    error: String,
+}
+
+fn error_response(status: u16, error: anyhow::Error) -> Response {
+    Response::new(status).body_json(&ErrorJson { error: format!("{:#}", error) }).unwrap()
 }
