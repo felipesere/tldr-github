@@ -6,13 +6,11 @@
   let repos = []
 
   const fetchRepos = async () => {
-      const response = await fetch('/api/repos');
-
-      repos = await response.json();
+    const response = await fetch('/api/repos');
+    repos = await response.json();
   }
 
   onMount(fetchRepos)
-
 </script>
 
 {#if repos.length === 0}
@@ -20,7 +18,7 @@
 {/if}
 <div class="grid">
   {#each repos as repo, index}
-    <Repo repo={repo} />
+    <Repo repo={repo}  on:repo-deleted={fetchRepos} />
   {/each}
-  <AddRepo on:new-repo-added={fetchRepos} />
+  <AddRepo on:new-repo-added={fetchRepos}/>
 </div>

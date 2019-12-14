@@ -1,6 +1,6 @@
 mod schema;
 
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::sqlite::SqliteConnection;
@@ -22,7 +22,7 @@ pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
 
 #[derive(Debug, Serialize, Queryable)]
 pub struct StoredRepo {
-    id: i32,
+    pub id: i32,
     pub title: String,
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
@@ -34,6 +34,14 @@ pub struct NewRepo<'a> {
     pub title: &'a str,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
+}
+
+pub fn delete(conn: &Conn, repo_id: i32) -> Result<()> {
+    match diesel::delete(repos.filter(id.eq(repo_id))).execute(conn) {
+        Ok(size) if size == 1 => Ok(()),
+        Ok(_) => bail!("{} not found", repo_id),
+        Err(m) => bail!("could not delete repo: {}", m),
+    }
 }
 
 pub fn insert_new(conn: &Conn, repo_name: &str) -> Result<StoredRepo> {

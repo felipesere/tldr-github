@@ -13,6 +13,7 @@ use middleware::logger;
 use simplelog::CombinedLogger;
 use std::path::{Path, PathBuf};
 use tide::{Request, Response};
+use domain::{RepoName};
 
 use config::Config;
 
@@ -23,7 +24,6 @@ mod db;
 mod domain;
 mod github;
 mod middleware;
-mod util;
 
 embed_migrations!("./migrations");
 
@@ -106,6 +106,7 @@ fn main() -> anyhow::Result<()> {
                         .expect("there was no last commit");
 
                     let r = domain::Repo {
+                        id: repo.id,
                         title: repo.title,
                         last_commit,
                         activity: domain::Activity {
@@ -126,8 +127,30 @@ fn main() -> anyhow::Result<()> {
                 let add_repo: AddNewRepo = req.body_json().await.unwrap();
                 let c = req.state().conn();
 
-                db::insert_new(&c, &add_repo.name).unwrap();
-                Response::new(200)
+                match RepoName::from(add_repo.name) {
+                    Ok(name) =>{
+                        db::insert_new(&c, &name.to_string()).unwrap();
+                        Response::new(200)
+                    },
+                    Err(err) => {
+                        log::error!("failure to add repo: {}", err);
+                        Response::new(404).body_string(format!("failed to add repo: {}", err))
+                    },
+                }
+            }
+        });
+        r.at("/repos/:id").delete(|mut req: Request<State>| {
+            async move {
+                let conn = req.state().conn();
+                let id = req.param::<i32>("id").unwrap();
+
+                match db::delete(&conn, id) {
+                    Ok(_) => Response::new(200),
+                    Err(err) => {
+                        log::error!("failure to delete repo: {}", err);
+                        Response::new(404)
+                    }
+                }
             }
         });
     });
