@@ -1,5 +1,6 @@
 use anyhow::{bail, Result};
 use serde::Serialize;
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone)]
 pub struct RepoName {
@@ -23,8 +24,8 @@ impl RepoName {
     }
 }
 
-impl std::fmt::Display for RepoName {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for RepoName {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}/{}", self.owner, self.name)
     }
 }
