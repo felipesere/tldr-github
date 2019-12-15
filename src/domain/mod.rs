@@ -58,6 +58,18 @@ pub struct PullRequest {
     pub by: String,
 }
 
+pub struct NewPullRequest<'a> {
+    pub title: &'a str,
+    pub link: &'a str,
+    pub by: &'a str,
+}
+
+pub struct NewIssue<'a> {
+    pub title: &'a str,
+    pub link: &'a str,
+    pub by: &'a str,
+}
+
 #[derive(Serialize)]
 pub struct Activity {
     pub master: CommitsOnMaster,

@@ -6,6 +6,8 @@ use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::sqlite::SqliteConnection;
 
+use crate::domain::*;
+
 use schema::issues;
 use schema::pull_requests;
 use schema::repos;
@@ -35,11 +37,11 @@ pub struct NewRepo<'a> {
 
 #[derive(Insertable)]
 #[table_name = "pull_requests"]
-pub struct NewPullRequest<'a> {
-    pub repo_id: i32,
-    pub title: &'a str,
-    pub link: &'a str,
-    pub by: &'a str,
+struct InsertPullRequest<'a> {
+    repo_id: i32,
+    title: &'a str,
+    link: &'a str,
+    by: &'a str,
 }
 
 #[derive(Debug, Queryable)]
@@ -55,7 +57,7 @@ pub struct StoredPullRequest {
 
 #[derive(Insertable)]
 #[table_name = "issues"]
-pub struct NewIssue<'a> {
+pub struct InsertableIssue<'a> {
     pub repo_id: i32,
     pub title: &'a str,
     pub link: &'a str,
@@ -96,12 +98,19 @@ pub fn delete(conn: &Conn, r: i32) -> Result<()> {
     Ok(())
 }
 
-pub fn insert_new_pr(conn: &Conn, pr: &NewPullRequest) -> Result<StoredPullRequest> {
+pub fn insert_new_pr(conn: &Conn, repo: &StoredRepo, pr: &NewPullRequest) -> Result<StoredPullRequest> {
     use schema::pull_requests::dsl::*;
+
+    let insertable_pull_request = InsertPullRequest {
+        repo_id: repo.id,
+        title: pr.title,
+        link: pr.link,
+        by: pr.by,
+    };
 
     conn.transaction::<_, anyhow::Error, _>(|| {
         diesel::insert_into(pull_requests)
-            .values(pr)
+            .values(&insertable_pull_request)
             .execute(conn)
             .with_context(|| format!("failed to insert {}", pr.title))?;
 
@@ -113,16 +122,23 @@ pub fn insert_new_pr(conn: &Conn, pr: &NewPullRequest) -> Result<StoredPullReque
     })
 }
 
-pub fn insert_prs(conn: &Conn, prs: Vec<NewPullRequest>) -> Result<Vec<StoredPullRequest>> {
-    prs.iter().map(|pr| insert_new_pr(conn, pr)).collect()
+pub fn insert_prs(conn: &Conn, repo: &StoredRepo, prs: Vec<NewPullRequest>) -> Result<Vec<StoredPullRequest>> {
+    prs.iter().map(|pr| insert_new_pr(conn, repo, pr)).collect()
 }
 
-pub fn insert_new_issue(conn: &Conn, issue: &NewIssue) -> Result<StoredIssue> {
+pub fn insert_new_issue(conn: &Conn, repo: &StoredRepo, issue: &NewIssue) -> Result<StoredIssue> {
     use schema::issues::dsl::*;
+
+    let insertable_issue = InsertableIssue {
+        repo_id: repo.id,
+        title: issue.title,
+        link: issue.link,
+        by: issue.by,
+    };
 
     conn.transaction::<_, anyhow::Error, _>(|| {
         diesel::insert_into(issues)
-            .values(issue)
+            .values(insertable_issue)
             .execute(conn)
             .with_context(|| format!("failed to insert {}", issue.title))?;
 
@@ -241,13 +257,12 @@ mod test {
             let repo = insert_new_repo(&conn, "felipesere/test")?;
 
             let x = NewPullRequest {
-                repo_id: repo.id,
                 title: "Make the feature".into(),
                 link: "http://example.com".into(),
                 by: "Me".into(),
             };
 
-            let pr = insert_new_pr(&conn, &x)?;
+            let pr = insert_new_pr(&conn, &repo, &x)?;
 
             assert!(find_pr(&conn, pr.id).is_some(), "did not find stored PR");
 
@@ -264,7 +279,6 @@ mod test {
 
             let title_x = "Make the feature".into();
             let x = NewPullRequest {
-                repo_id: repo.id,
                 title: title_x,
                 link: "http://example.com".into(),
                 by: "Me".into(),
@@ -272,13 +286,12 @@ mod test {
 
             let title_y = "Make another feature".into();
             let y = NewPullRequest {
-                repo_id: repo.id,
                 title: title_y,
                 link: "http://example.com".into(),
                 by: "Me".into(),
             };
 
-            insert_prs(&conn, vec![x, y])?;
+            insert_prs(&conn, &repo, vec![x, y])?;
 
             let prs = find_prs_for_repo(&conn, repo.id).unwrap();
 
@@ -298,13 +311,12 @@ mod test {
             let repo = insert_new_repo(&conn, "felipesere/test")?;
 
             let x = NewIssue {
-                repo_id: repo.id,
                 title: "Make the feature".into(),
                 link: "http://example.com".into(),
                 by: "Me".into(),
             };
 
-            let issue = insert_new_issue(&conn, &x)?;
+            let issue = insert_new_issue(&conn, &repo, &x)?;
 
             assert!(
                 find_issue(&conn, issue.id).is_some(),
@@ -324,7 +336,6 @@ mod test {
 
             let title_x = "Make the feature".into();
             let x = NewIssue {
-                repo_id: repo.id,
                 title: title_x,
                 link: "http://example.com".into(),
                 by: "Me".into(),
@@ -332,14 +343,13 @@ mod test {
 
             let title_y = "Make another feature".into();
             let y = NewIssue {
-                repo_id: repo.id,
                 title: title_y,
                 link: "http://example.com".into(),
                 by: "Me".into(),
             };
 
-            insert_new_issue(&conn, &x)?;
-            insert_new_issue(&conn, &y)?;
+            insert_new_issue(&conn, &repo, &x)?;
+            insert_new_issue(&conn, &repo, &y)?;
 
             let issues = find_issues_for_repo(&conn, repo.id).unwrap();
 
