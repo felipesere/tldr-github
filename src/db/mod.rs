@@ -193,7 +193,6 @@ mod test {
     use super::*;
     use crate::config::DatabaseConfig;
     use crate::domain::*;
-    use once_cell::sync::Lazy;
 
     fn test_pool(
     ) -> r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::SqliteConnection>> {
