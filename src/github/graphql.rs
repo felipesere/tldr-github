@@ -44,7 +44,7 @@ impl GithubClient {
         }
     }
 
-    pub fn issues(&self, repo: &domain::RepoName) -> Result<Vec<domain::Item>> {
+    pub fn issues(&self, repo: &domain::RepoName) -> Result<Vec<domain::NewIssue>> {
         let query = IssuesView::build_query(issues_view::Variables {
             owner: repo.owner.clone(),
             name: repo.name.clone(),
@@ -61,7 +61,7 @@ impl GithubClient {
             .expect("nodes not present")
         {
             let issue = maybe_issue.unwrap();
-            let item = domain::Item {
+            let item = domain::NewIssue {
                 by: issue.author.unwrap().login,
                 link: issue.url,
                 title: issue.title,
@@ -75,7 +75,7 @@ impl GithubClient {
         Result::Ok(items)
     }
 
-    pub fn pull_requests(&self, repo: &domain::RepoName) -> Result<Vec<domain::Item>> {
+    pub fn pull_requests(&self, repo: &domain::RepoName) -> Result<Vec<domain::NewPullRequest>> {
         let query = PullRequestsView::build_query(pull_requests_view::Variables {
             owner: repo.owner.clone(),
             name: repo.name.clone(),
@@ -92,7 +92,7 @@ impl GithubClient {
             .expect("nodes not present")
         {
             let pr = maybe_pr.unwrap();
-            let item = domain::Item {
+            let item = domain::NewPullRequest {
                 by: pr.author.unwrap().login,
                 link: pr.url,
                 title: pr.title,

@@ -152,21 +152,11 @@ fn main() -> anyhow::Result<()> {
 
                         let repo = db::insert_new_repo(&c, &name.to_string()).unwrap();
                         for pr in pulls {
-                            let new_pr = domain::NewPullRequest {
-                                title: &pr.title,
-                                link: &pr.link,
-                                by: &pr.by,
-                            };
-                            db::insert_new_pr(&c, &repo, &new_pr).unwrap();
+                            db::insert_new_pr(&c, &repo, &pr).unwrap();
                         }
 
                         for issue in issues {
-                            let new_issue = domain::NewIssue {
-                                title: &issue.title,
-                                link: &issue.link,
-                                by: &issue.by,
-                            };
-                            db::insert_new_issue(&c, &repo, &new_issue).unwrap();
+                            db::insert_new_issue(&c, &repo, &issue).unwrap();
                         }
 
 

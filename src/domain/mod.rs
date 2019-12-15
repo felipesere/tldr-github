@@ -58,16 +58,16 @@ pub struct PullRequest {
     pub by: String,
 }
 
-pub struct NewPullRequest<'a> {
-    pub title: &'a str,
-    pub link: &'a str,
-    pub by: &'a str,
+pub struct NewPullRequest {
+    pub title: String,
+    pub link: String,
+    pub by: String,
 }
 
-pub struct NewIssue<'a> {
-    pub title: &'a str,
-    pub link: &'a str,
-    pub by: &'a str,
+pub struct NewIssue {
+    pub title: String,
+    pub link: String,
+    pub by: String,
 }
 
 #[derive(Serialize)]

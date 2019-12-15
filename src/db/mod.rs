@@ -103,9 +103,9 @@ pub fn insert_new_pr(conn: &Conn, repo: &StoredRepo, pr: &NewPullRequest) -> Res
 
     let insertable_pull_request = InsertPullRequest {
         repo_id: repo.id,
-        title: pr.title,
-        link: pr.link,
-        by: pr.by,
+        title: &pr.title,
+        link: &pr.link,
+        by: &pr.by,
     };
 
     conn.transaction::<_, anyhow::Error, _>(|| {
@@ -131,9 +131,9 @@ pub fn insert_new_issue(conn: &Conn, repo: &StoredRepo, issue: &NewIssue) -> Res
 
     let insertable_issue = InsertableIssue {
         repo_id: repo.id,
-        title: issue.title,
-        link: issue.link,
-        by: issue.by,
+        title: &issue.title,
+        link: &issue.link,
+        by: &issue.by,
     };
 
     conn.transaction::<_, anyhow::Error, _>(|| {
@@ -277,16 +277,16 @@ mod test {
         in_test_transaction(&conn, || {
             let repo = insert_new_repo(&conn, "felipesere/test")?;
 
-            let title_x = "Make the feature".into();
+            let title_x: String = "Make the feature".into();
             let x = NewPullRequest {
-                title: title_x,
+                title: title_x.clone(),
                 link: "http://example.com".into(),
                 by: "Me".into(),
             };
 
-            let title_y = "Make another feature".into();
+            let title_y: String = "Make another feature".into();
             let y = NewPullRequest {
-                title: title_y,
+                title: title_y.clone(),
                 link: "http://example.com".into(),
                 by: "Me".into(),
             };
@@ -334,16 +334,16 @@ mod test {
         in_test_transaction(&conn, || {
             let repo = insert_new_repo(&conn, "felipesere/test")?;
 
-            let title_x = "Make the feature".into();
+            let title_x: String = "Make the feature".into();
             let x = NewIssue {
-                title: title_x,
+                title: title_x.clone(),
                 link: "http://example.com".into(),
                 by: "Me".into(),
             };
 
-            let title_y = "Make another feature".into();
+            let title_y: String = "Make another feature".into();
             let y = NewIssue {
-                title: title_y,
+                title: title_y.clone(),
                 link: "http://example.com".into(),
                 by: "Me".into(),
             };
