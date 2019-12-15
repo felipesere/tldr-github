@@ -113,6 +113,10 @@ pub fn insert_new_pr(conn: &Conn, pr: &NewPullRequest) -> Result<StoredPullReque
     })
 }
 
+pub fn insert_prs(conn: &Conn, prs: Vec<NewPullRequest>) -> Result<Vec<StoredPullRequest>> {
+    prs.iter().map(|pr| insert_new_pr(conn, pr)).collect()
+}
+
 pub fn insert_new_issue(conn: &Conn, issue: &NewIssue) -> Result<StoredIssue> {
     use schema::issues::dsl::*;
 
@@ -275,8 +279,7 @@ mod test {
                 by: "Me".into(),
             };
 
-            insert_new_pr(&conn, &x)?;
-            insert_new_pr(&conn, &y)?;
+            insert_prs(&conn, vec![x, y])?;
 
             let prs = find_prs_for_repo(&conn, repo.id).unwrap();
 
