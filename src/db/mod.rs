@@ -1,15 +1,13 @@
 mod schema;
 
-use anyhow::{Context, Result, bail};
+use anyhow::{bail, Context, Result};
+use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::sqlite::SqliteConnection;
 
+use schema::pull_requests;
 use schema::repos;
-use schema::repos::dsl::*;
-use serde::Serialize;
-
-use chrono::{NaiveDateTime, Utc};
 
 pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -20,7 +18,7 @@ pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
         .with_context(|| format!("failed to access db: {}", database_url))
 }
 
-#[derive(Debug, Serialize, Queryable)]
+#[derive(Debug, Queryable)]
 pub struct StoredRepo {
     pub id: i32,
     pub title: String,
@@ -32,11 +30,30 @@ pub struct StoredRepo {
 #[table_name = "repos"]
 pub struct NewRepo<'a> {
     pub title: &'a str,
-    pub created_at: NaiveDateTime,
-    pub updated_at: NaiveDateTime,
+}
+
+#[derive(Insertable)]
+#[table_name = "pull_requests"]
+pub struct NewPullRequest<'a> {
+    repo_id: i32,
+    title: &'a str,
+    link: &'a str,
+    by: &'a str,
+}
+
+#[derive(Debug, Queryable)]
+pub struct StoredPullRequest {
+    id: i32,
+    repo_id: i32,
+    title: String,
+    by: String,
+    link: String,
+    created_at: NaiveDateTime,
+    updated_at: NaiveDateTime,
 }
 
 pub fn delete(conn: &Conn, repo_id: i32) -> Result<()> {
+    use schema::repos::dsl::*;
     match diesel::delete(repos.filter(id.eq(repo_id))).execute(conn) {
         Ok(size) if size == 1 => Ok(()),
         Ok(_) => bail!("{} not found", repo_id),
@@ -44,19 +61,32 @@ pub fn delete(conn: &Conn, repo_id: i32) -> Result<()> {
     }
 }
 
-pub fn insert_new(conn: &Conn, repo_name: &str) -> Result<StoredRepo> {
-    let now = Utc::now().naive_utc();
-    let new_repo = NewRepo {
-        title: repo_name,
-        created_at: now,
-        updated_at: now,
-    };
+pub fn insert_new_pr(conn: &Conn, pr: &NewPullRequest) -> Result<StoredPullRequest> {
+    use schema::pull_requests::dsl::*;
 
     conn.transaction::<_, anyhow::Error, _>(|| {
-        diesel::insert_into(repos::table)
+        diesel::insert_into(pull_requests)
+            .values(pr)
+            .execute(conn)
+            .with_context(|| format!("failed to insert {}", pr.title))?;
+
+        // this is kinda meh, but there is no 'RETURNING'
+        pull_requests
+            .order(id.desc())
+            .first(conn)
+            .with_context(|| "retrieving stored pull request")
+    })
+}
+
+pub fn insert_new_repo(conn: &Conn, repo_name: &str) -> Result<StoredRepo> {
+    use schema::repos::dsl::*;
+    let new_repo = NewRepo { title: repo_name };
+
+    conn.transaction::<_, anyhow::Error, _>(|| {
+        diesel::insert_into(repos)
             .values(&new_repo)
             .execute(conn)
-            .with_context(|| format!("failed to insert {}", repo_name))?;
+            .with_context(|| format!("failed to insert '{}'", repo_name))?;
 
         // this is kinda meh, but there is no 'RETURNING'
         repos
@@ -67,30 +97,36 @@ pub fn insert_new(conn: &Conn, repo_name: &str) -> Result<StoredRepo> {
 }
 
 pub fn all_repos(conn: Conn) -> Result<Vec<StoredRepo>> {
+    use schema::repos::dsl::*;
     repos.load(&*conn).with_context(|| "getting all repos")
 }
 
 pub fn find_repo(conn: &Conn, n: i32) -> Option<StoredRepo> {
+    use schema::repos::dsl::*;
     repos.find(n).first(conn).ok()
+}
+
+pub fn find_pr(conn: &Conn, n: i32) -> Option<StoredPullRequest> {
+    use schema::pull_requests::dsl::*;
+    pull_requests.find(n).first(conn).ok()
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
     use crate::config::DatabaseConfig;
+    use crate::domain::*;
     use once_cell::sync::Lazy;
 
-    static TEST_POOL: Lazy<SqlitePool> = Lazy::new(|| {
+    fn test_pool(
+    ) -> r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::SqliteConnection>> {
         let config = DatabaseConfig {
             file: ":memory:".into(),
             run_migrations: Some(true),
         };
-        config.setup().expect("was not able to create test pool")
-    });
+        let pool = config.setup().expect("was not able to create test pool");
 
-    fn test_pool(
-    ) -> r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::SqliteConnection>> {
-        TEST_POOL.get().unwrap()
+        pool.get().unwrap()
     }
 
     fn in_test_transaction<T, F>(conn: &Conn, f: F) -> T
@@ -110,7 +146,7 @@ mod test {
     fn can_find_repos_it_just_stored() {
         let conn = test_pool();
         in_test_transaction(&conn, || {
-            let repo = insert_new(&conn, "felipesere/test")?;
+            let repo = insert_new_repo(&conn, "felipesere/test")?;
 
             assert!(
                 find_repo(&conn, repo.id).is_some(),
@@ -118,6 +154,28 @@ mod test {
             );
 
             Result::<StoredRepo, anyhow::Error>::Ok(repo)
+        })
+        .unwrap();
+    }
+
+    #[test]
+    fn can_find_pull_requests_it_just_stored() {
+        let conn = test_pool();
+        in_test_transaction(&conn, || {
+            let repo = insert_new_repo(&conn, "felipesere/test")?;
+
+            let x = NewPullRequest {
+                repo_id: repo.id,
+                title: "Make the feature".into(),
+                link: "http://example.com".into(),
+                by: "Me".into(),
+            };
+
+            let pr = insert_new_pr(&conn, &x)?;
+
+            assert!(find_pr(&conn, pr.id).is_some(), "did not find stored PR");
+
+            Result::<StoredPullRequest, anyhow::Error>::Ok(pr)
         })
         .unwrap();
     }

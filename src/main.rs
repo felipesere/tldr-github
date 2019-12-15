@@ -128,7 +128,7 @@ fn main() -> anyhow::Result<()> {
 
                 match RepoName::from(add_repo.name) {
                     Ok(name) =>{
-                        db::insert_new(&c, &name.to_string()).unwrap();
+                        db::insert_new_repo(&c, &name.to_string()).unwrap();
                         Response::new(200)
                     },
                     Err(err) => {

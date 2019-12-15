@@ -51,6 +51,13 @@ pub struct Item {
     pub by: String,
 }
 
+#[derive(Serialize, Debug)]
+pub struct PullRequest {
+    pub title: String,
+    pub link: String,
+    pub by: String,
+}
+
 #[derive(Serialize)]
 pub struct Activity {
     pub master: CommitsOnMaster,
