@@ -119,7 +119,7 @@ fn main() -> anyhow::Result<()> {
                         .collect();
 
                     let last_commit = client
-                        .last_commit(name.clone())
+                        .last_commit(&name)
                         .expect("there was no last commit");
 
                     let r = domain::Repo {
@@ -147,8 +147,8 @@ fn main() -> anyhow::Result<()> {
 
                 match RepoName::from(add_repo.name) {
                     Ok(name) => {
-                        let pulls = client.pull_requests(name.clone()).unwrap_or(Vec::new());
-                        let issues = client.issues(name.clone()).unwrap_or(Vec::new());
+                        let pulls = client.pull_requests(&name).unwrap_or(Vec::new());
+                        let issues = client.issues(&name).unwrap_or(Vec::new());
 
                         let repo = db::insert_new_repo(&c, &name.to_string()).unwrap();
                         for pr in pulls {

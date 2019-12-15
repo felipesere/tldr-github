@@ -44,10 +44,10 @@ impl GithubClient {
         }
     }
 
-    pub fn issues(&self, repo: domain::RepoName) -> Result<Vec<domain::Item>> {
+    pub fn issues(&self, repo: &domain::RepoName) -> Result<Vec<domain::Item>> {
         let query = IssuesView::build_query(issues_view::Variables {
-            owner: repo.owner,
-            name: repo.name,
+            owner: repo.owner.clone(),
+            name: repo.name.clone(),
         });
 
         let data: issues_view::ResponseData = self.make_request(query)?;
@@ -75,10 +75,10 @@ impl GithubClient {
         Result::Ok(items)
     }
 
-    pub fn pull_requests(&self, repo: domain::RepoName) -> Result<Vec<domain::Item>> {
+    pub fn pull_requests(&self, repo: &domain::RepoName) -> Result<Vec<domain::Item>> {
         let query = PullRequestsView::build_query(pull_requests_view::Variables {
-            owner: repo.owner,
-            name: repo.name,
+            owner: repo.owner.clone(),
+            name: repo.name.clone(),
         });
 
         let data: pull_requests_view::ResponseData = self.make_request(query)?;
@@ -104,10 +104,10 @@ impl GithubClient {
         Result::Ok(items)
     }
 
-    pub fn last_commit(&self, repo: domain::RepoName) -> Result<domain::Commit> {
+    pub fn last_commit(&self, repo: &domain::RepoName) -> Result<domain::Commit> {
         let query = LastCommitView::build_query(last_commit_view::Variables {
-            owner: repo.owner,
-            name: repo.name,
+            owner: repo.owner.clone(),
+            name: repo.name.clone(),
         });
 
         let data: last_commit_view::ResponseData = self.make_request(query)?;
@@ -189,7 +189,7 @@ mod tests {
         let repo = domain::RepoName::from("felipesere/advisorex").unwrap();
 
         let data = client
-            .pull_requests(repo)
+            .pull_requests(&repo)
             .expect("should be able to get PRs");
         let titles: Vec<String> = data.iter().map(|pr| pr.title.clone()).collect();
         let expected: Vec<String> = vec![
@@ -205,7 +205,7 @@ mod tests {
         let client = GithubClient::new("<< token >>");
         let repo = domain::RepoName::from("felipesere/advisorex").unwrap();
 
-        let data = client.issues(repo).expect("should be able to get PRs");
+        let data = client.issues(&repo).expect("should be able to get PRs");
         let titles: Vec<String> = data.iter().map(|pr| pr.title.clone()).take(3).collect();
         let expected: Vec<String> = vec![
             "Allow external feedback ".into(),
@@ -221,7 +221,7 @@ mod tests {
         let client = GithubClient::new("<< token >>");
         let repo = domain::RepoName::from("felipesere/advisorex").unwrap();
 
-        let commit = client.last_commit(repo).expect("should be able to get PRs");
+        let commit = client.last_commit(&repo).expect("should be able to get PRs");
 
         assert_eq!("a7f20cbde5fbf313a39e522859be5ffd04d0de80", &commit.sha1)
     }
