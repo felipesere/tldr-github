@@ -151,14 +151,8 @@ fn main() -> anyhow::Result<()> {
                         let issues = client.issues(&name).unwrap_or(Vec::new());
 
                         let repo = db::insert_new_repo(&c, &name.to_string()).unwrap();
-                        for pr in pulls {
-                            db::insert_new_pr(&c, &repo, &pr).unwrap();
-                        }
-
-                        for issue in issues {
-                            db::insert_new_issue(&c, &repo, &issue).unwrap();
-                        }
-
+                        db::insert_prs(&c, &repo, pulls).unwrap();
+                        db::insert_issues(&c, &repo, issues).unwrap();
 
                         Response::new(200)
                     }

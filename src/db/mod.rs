@@ -150,6 +150,10 @@ pub fn insert_new_issue(conn: &Conn, repo: &StoredRepo, issue: &NewIssue) -> Res
     })
 }
 
+pub fn insert_issues(conn: &Conn, repo: &StoredRepo, issues: Vec<NewIssue>) -> Result<Vec<StoredIssue>> {
+    issues.iter().map(|issue| insert_new_issue(conn, repo, issue)).collect()
+}
+
 pub fn insert_new_repo(conn: &Conn, repo_name: &str) -> Result<StoredRepo> {
     use schema::repos::dsl::*;
     let new_repo = NewRepo { title: repo_name };
