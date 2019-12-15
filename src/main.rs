@@ -85,80 +85,29 @@ fn main() -> anyhow::Result<()> {
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| {
             async move {
-                let c = req.state().conn();
+                let conn = req.state().conn();
                 let client = req.state().client();
-                let repos = db::all_repos(&c).unwrap();
 
-                let mut result = Vec::new();
-                for repo in repos {
-                    let name = match domain::RepoName::from(repo.title.clone()) {
-                        Ok(n) => n,
-                        Err(err) => {
-                            log::error!("failure: {}", err);
-                            continue;
-                        }
-                    };
-                    let pulls: Vec<domain::Item> = db::find_prs_for_repo(&c, repo.id)
-                        .unwrap()
-                        .into_iter()
-                        .map(|pr| domain::Item {
-                            by: pr.by,
-                            title: pr.title,
-                            link: pr.link,
-                        })
-                        .collect();
-
-                    let issues: Vec<domain::Item> = db::find_issues_for_repo(&c, repo.id)
-                        .unwrap()
-                        .into_iter()
-                        .map(|pr| domain::Item {
-                            by: pr.by,
-                            title: pr.title,
-                            link: pr.link,
-                        })
-                        .collect();
-
-                    let last_commit = client
-                        .last_commit(&name)
-                        .expect("there was no last commit");
-
-                    let r = domain::Repo {
-                        id: repo.id,
-                        title: repo.title,
-                        last_commit,
-                        activity: domain::Activity {
-                            master: domain::CommitsOnMaster { commits: 0 },
-                            prs: pulls,
-                            issues: issues,
-                        },
-                    };
-
-                    result.push(r)
+                match get_all_repos(&conn, &client) {
+                    Ok(repos) => Response::new(200).body_json(&repos).unwrap(),
+                    Err(err) => {
+                        log::error!("failure get all repos: {}", err);
+                        error_response(500, err)
+                    }
                 }
-
-                Response::new(200).body_json(&result).unwrap()
             }
         });
         r.at("/repos").post(|mut req: Request<State>| {
             async move {
                 let client = req.state().client();
-                let c = req.state().conn();
+                let conn = req.state().conn();
                 let add_repo: AddNewRepo = req.body_json().await.unwrap();
 
-                match RepoName::from(add_repo.name) {
-                    Ok(name) => {
-                        let pulls = client.pull_requests(&name).unwrap_or(Vec::new());
-                        let issues = client.issues(&name).unwrap_or(Vec::new());
-
-                        let repo = db::insert_new_repo(&c, &name.to_string()).unwrap();
-                        db::insert_prs(&c, &repo, pulls).unwrap();
-                        db::insert_issues(&c, &repo, issues).unwrap();
-
-                        Response::new(200)
-                    }
+                match add_new_repo(&conn, &client, add_repo) {
+                    Ok(()) => Response::new(200),
                     Err(err) => {
                         log::error!("failure to add repo: {}", err);
-                        error_response(404, err)
+                        error_response(500, err)
                     }
                 }
             }
@@ -172,7 +121,7 @@ fn main() -> anyhow::Result<()> {
                     Ok(_) => Response::new(200),
                     Err(err) => {
                         log::error!("failure to delete repo: {}", err);
-                        error_response(400, err)
+                        error_response(500, err)
                     }
                 }
             }
@@ -181,6 +130,71 @@ fn main() -> anyhow::Result<()> {
 
     task::block_on(async move { app.listen(config.server.address()).await })
         .with_context(|| "failed launch the server")
+}
+
+fn add_new_repo(
+    conn: &db::Conn,
+    client: &GithubClient,
+    repo_to_add: AddNewRepo,
+) -> anyhow::Result<()> {
+    let name = RepoName::from(repo_to_add.name)?;
+    let pulls = client.pull_requests(&name).unwrap_or(Vec::new());
+    let issues = client.issues(&name).unwrap_or(Vec::new());
+
+    let repo = db::insert_new_repo(&conn, &name.to_string())?;
+    db::insert_prs(&conn, &repo, pulls)?;
+    db::insert_issues(&conn, &repo, issues)?;
+
+    Ok(())
+}
+
+fn get_all_repos(conn: &db::Conn, client: &GithubClient) -> anyhow::Result<Vec<domain::Repo>> {
+    let repos = db::all_repos(&conn).unwrap();
+    let mut result = Vec::new();
+    for repo in repos {
+        let name = match domain::RepoName::from(repo.title.clone()) {
+            Ok(n) => n,
+            Err(err) => {
+                log::error!("failure: {}", err);
+                continue;
+            }
+        };
+        let pulls: Vec<domain::Item> = db::find_prs_for_repo(&conn, repo.id)
+            .unwrap()
+            .into_iter()
+            .map(|pr| domain::Item {
+                by: pr.by,
+                title: pr.title,
+                link: pr.link,
+            })
+            .collect();
+
+        let issues: Vec<domain::Item> = db::find_issues_for_repo(&conn, repo.id)
+            .unwrap()
+            .into_iter()
+            .map(|pr| domain::Item {
+                by: pr.by,
+                title: pr.title,
+                link: pr.link,
+            })
+            .collect();
+
+        let last_commit = client.last_commit(&name).expect("there was no last commit");
+
+        let r = domain::Repo {
+            id: repo.id,
+            title: repo.title,
+            last_commit,
+            activity: domain::Activity {
+                master: domain::CommitsOnMaster { commits: 0 },
+                prs: pulls,
+                issues: issues,
+            },
+        };
+
+        result.push(r)
+    }
+    anyhow::Result::Ok(result)
 }
 
 #[derive(Serialize)]

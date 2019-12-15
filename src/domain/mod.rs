@@ -39,7 +39,7 @@ pub struct Commit {
     pub comment: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct CommitsOnMaster {
     pub commits: u32,
 }
@@ -58,30 +58,34 @@ pub struct PullRequest {
     pub by: String,
 }
 
-pub struct NewPullRequest {
-    pub title: String,
-    pub link: String,
-    pub by: String,
-}
-
-pub struct NewIssue {
-    pub title: String,
-    pub link: String,
-    pub by: String,
-}
-
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct Activity {
     pub master: CommitsOnMaster,
     pub prs: Vec<Item>,
     pub issues: Vec<Item>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct Repo {
     pub id: i32,
     pub title: String,
     #[serde(rename = "lastCommit")]
     pub last_commit: Commit,
     pub activity: Activity,
+}
+
+/// used for inserting
+#[derive(Debug)]
+pub struct NewPullRequest {
+    pub title: String,
+    pub link: String,
+    pub by: String,
+}
+
+/// used for inserting
+#[derive(Debug)]
+pub struct NewIssue {
+    pub title: String,
+    pub link: String,
+    pub by: String,
 }

@@ -76,29 +76,33 @@ pub struct StoredIssue {
 }
 
 pub fn delete(conn: &Conn, r: i32) -> Result<()> {
-    use schema::repos::dsl::{repos, id};
+    use schema::repos::dsl::{id, repos};
     match diesel::delete(repos.filter(id.eq(r))).execute(conn) {
-        Ok(size) if size == 1 => {},
+        Ok(size) if size == 1 => {}
         Ok(_) => bail!("{} not found", r),
         Err(m) => bail!("could not delete repo: {}", m),
     };
 
     use schema::pull_requests::dsl::{pull_requests, repo_id};
     match diesel::delete(pull_requests.filter(repo_id.eq(r))).execute(conn) {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(m) => bail!("could not delete prs for repo repo: {}", m),
     };
 
     use schema::issues::dsl::{issues, repo_id as issue_repo_id};
     match diesel::delete(issues.filter(issue_repo_id.eq(r))).execute(conn) {
-        Ok(_) => {},
+        Ok(_) => {}
         Err(m) => bail!("could not delete issues for repo repo: {}", m),
     };
 
     Ok(())
 }
 
-pub fn insert_new_pr(conn: &Conn, repo: &StoredRepo, pr: &NewPullRequest) -> Result<StoredPullRequest> {
+pub fn insert_new_pr(
+    conn: &Conn,
+    repo: &StoredRepo,
+    pr: &NewPullRequest,
+) -> Result<StoredPullRequest> {
     use schema::pull_requests::dsl::*;
 
     let insertable_pull_request = InsertPullRequest {
@@ -122,7 +126,11 @@ pub fn insert_new_pr(conn: &Conn, repo: &StoredRepo, pr: &NewPullRequest) -> Res
     })
 }
 
-pub fn insert_prs(conn: &Conn, repo: &StoredRepo, prs: Vec<NewPullRequest>) -> Result<Vec<StoredPullRequest>> {
+pub fn insert_prs(
+    conn: &Conn,
+    repo: &StoredRepo,
+    prs: Vec<NewPullRequest>,
+) -> Result<Vec<StoredPullRequest>> {
     prs.iter().map(|pr| insert_new_pr(conn, repo, pr)).collect()
 }
 
@@ -150,8 +158,15 @@ pub fn insert_new_issue(conn: &Conn, repo: &StoredRepo, issue: &NewIssue) -> Res
     })
 }
 
-pub fn insert_issues(conn: &Conn, repo: &StoredRepo, issues: Vec<NewIssue>) -> Result<Vec<StoredIssue>> {
-    issues.iter().map(|issue| insert_new_issue(conn, repo, issue)).collect()
+pub fn insert_issues(
+    conn: &Conn,
+    repo: &StoredRepo,
+    issues: Vec<NewIssue>,
+) -> Result<Vec<StoredIssue>> {
+    issues
+        .iter()
+        .map(|issue| insert_new_issue(conn, repo, issue))
+        .collect()
 }
 
 pub fn insert_new_repo(conn: &Conn, repo_name: &str) -> Result<StoredRepo> {

@@ -221,7 +221,9 @@ mod tests {
         let client = GithubClient::new("<< token >>");
         let repo = domain::RepoName::from("felipesere/advisorex").unwrap();
 
-        let commit = client.last_commit(&repo).expect("should be able to get PRs");
+        let commit = client
+            .last_commit(&repo)
+            .expect("should be able to get PRs");
 
         assert_eq!("a7f20cbde5fbf313a39e522859be5ffd04d0de80", &commit.sha1)
     }
