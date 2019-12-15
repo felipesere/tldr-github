@@ -8,15 +8,15 @@ use std::sync::Arc;
 
 use anyhow::Context;
 use async_std::task;
+use config::Config;
+use domain::RepoName;
 use github::graphql::GithubClient;
 use middleware::logger;
+use serde::Serialize;
 use simplelog::CombinedLogger;
 use std::path::{Path, PathBuf};
 use tide::{Request, Response};
-use domain::{RepoName};
-use config::Config;
 use tide_naive_static_files::{serve_static_files, StaticRootDir};
-use serde::Serialize;
 
 mod config;
 mod db;
@@ -87,7 +87,7 @@ fn main() -> anyhow::Result<()> {
             async move {
                 let c = req.state().conn();
                 let client = req.state().client();
-                let repos = db::all_repos(c).unwrap();
+                let repos = db::all_repos(&c).unwrap();
 
                 let mut result = Vec::new();
                 for repo in repos {
@@ -98,7 +98,15 @@ fn main() -> anyhow::Result<()> {
                             continue;
                         }
                     };
-                    let pulls = client.pull_requests(name.clone()).unwrap_or(Vec::new());
+                    let pulls: Vec<domain::Item> = db::find_prs_for_repo(&c, repo.id)
+                        .unwrap()
+                        .into_iter()
+                        .map(|pr| domain::Item {
+                            by: pr.by,
+                            title: pr.title,
+                            link: pr.link,
+                        })
+                        .collect();
                     let issues = client.issues(name.clone()).unwrap_or(Vec::new());
                     let last_commit = client
                         .last_commit(name.clone())
@@ -123,18 +131,29 @@ fn main() -> anyhow::Result<()> {
         });
         r.at("/repos").post(|mut req: Request<State>| {
             async move {
-                let add_repo: AddNewRepo = req.body_json().await.unwrap();
+                let client = req.state().client();
                 let c = req.state().conn();
+                let add_repo: AddNewRepo = req.body_json().await.unwrap();
 
                 match RepoName::from(add_repo.name) {
-                    Ok(name) =>{
-                        db::insert_new_repo(&c, &name.to_string()).unwrap();
+                    Ok(name) => {
+                        let pulls = client.pull_requests(name.clone()).unwrap_or(Vec::new());
+                        let repo = db::insert_new_repo(&c, &name.to_string()).unwrap();
+                        for pr in pulls {
+                            let new_pr = db::NewPullRequest {
+                                repo_id: repo.id,
+                                title: &pr.title,
+                                link: &pr.link,
+                                by: &pr.by,
+                            };
+                            db::insert_new_pr(&c, &new_pr).unwrap();
+                        }
                         Response::new(200)
-                    },
+                    }
                     Err(err) => {
                         log::error!("failure to add repo: {}", err);
                         error_response(404, err)
-                    },
+                    }
                 }
             }
         });
@@ -164,5 +183,9 @@ struct ErrorJson {
 }
 
 fn error_response(status: u16, error: anyhow::Error) -> Response {
-    Response::new(status).body_json(&ErrorJson { error: format!("{:#}", error) }).unwrap()
+    Response::new(status)
+        .body_json(&ErrorJson {
+            error: format!("{:#}", error),
+        })
+        .unwrap()
 }

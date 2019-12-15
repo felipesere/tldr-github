@@ -35,19 +35,19 @@ pub struct NewRepo<'a> {
 #[derive(Insertable)]
 #[table_name = "pull_requests"]
 pub struct NewPullRequest<'a> {
-    repo_id: i32,
-    title: &'a str,
-    link: &'a str,
-    by: &'a str,
+    pub repo_id: i32,
+    pub title: &'a str,
+    pub link: &'a str,
+    pub by: &'a str,
 }
 
 #[derive(Debug, Queryable)]
 pub struct StoredPullRequest {
     id: i32,
     repo_id: i32,
-    title: String,
-    by: String,
-    link: String,
+    pub title: String,
+    pub by: String,
+    pub link: String,
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
 }
@@ -96,9 +96,9 @@ pub fn insert_new_repo(conn: &Conn, repo_name: &str) -> Result<StoredRepo> {
     })
 }
 
-pub fn all_repos(conn: Conn) -> Result<Vec<StoredRepo>> {
+pub fn all_repos(conn: &Conn) -> Result<Vec<StoredRepo>> {
     use schema::repos::dsl::*;
-    repos.load(&*conn).with_context(|| "getting all repos")
+    repos.load(conn).with_context(|| "getting all repos")
 }
 
 pub fn find_repo(conn: &Conn, n: i32) -> Option<StoredRepo> {
@@ -109,6 +109,14 @@ pub fn find_repo(conn: &Conn, n: i32) -> Option<StoredRepo> {
 pub fn find_pr(conn: &Conn, n: i32) -> Option<StoredPullRequest> {
     use schema::pull_requests::dsl::*;
     pull_requests.find(n).first(conn).ok()
+}
+
+pub fn find_prs_for_repo(conn: &Conn, r: i32) -> Result<Vec<StoredPullRequest>> {
+    use schema::pull_requests::dsl::*;
+    pull_requests
+        .filter(repo_id.eq(r))
+        .load(conn)
+        .with_context(|| "getting PRs for repo")
 }
 
 #[cfg(test)]
@@ -176,6 +184,42 @@ mod test {
             assert!(find_pr(&conn, pr.id).is_some(), "did not find stored PR");
 
             Result::<StoredPullRequest, anyhow::Error>::Ok(pr)
+        })
+        .unwrap();
+    }
+
+    #[test]
+    fn can_find_all_prs_for_a_given_repo() {
+        let conn = test_pool();
+        in_test_transaction(&conn, || {
+            let repo = insert_new_repo(&conn, "felipesere/test")?;
+
+            let title_x = "Make the feature".into();
+            let x = NewPullRequest {
+                repo_id: repo.id,
+                title: title_x,
+                link: "http://example.com".into(),
+                by: "Me".into(),
+            };
+
+            let title_y = "Make another feature".into();
+            let y = NewPullRequest {
+                repo_id: repo.id,
+                title: title_y,
+                link: "http://example.com".into(),
+                by: "Me".into(),
+            };
+
+            insert_new_pr(&conn, &x)?;
+            insert_new_pr(&conn, &y)?;
+
+            let prs = find_prs_for_repo(&conn, repo.id).unwrap();
+
+            let titles = prs.into_iter().map(|pr| pr.title).collect::<Vec<_>>();
+
+            assert_eq!(titles, vec![title_x, title_y]);
+
+            Result::<StoredRepo, anyhow::Error>::Ok(repo)
         })
         .unwrap();
     }
