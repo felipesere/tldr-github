@@ -14,6 +14,7 @@
       await doDelete(`/repos/${repoId}`)
       setTimeout(() => {
         dispatch('repo-deleted');
+        currentlyDeletingRepo = undefined
       }, 500)
     })()
   };

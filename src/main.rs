@@ -107,7 +107,17 @@ fn main() -> anyhow::Result<()> {
                             link: pr.link,
                         })
                         .collect();
-                    let issues = client.issues(name.clone()).unwrap_or(Vec::new());
+
+                    let issues: Vec<domain::Item> = db::find_issues_for_repo(&c, repo.id)
+                        .unwrap()
+                        .into_iter()
+                        .map(|pr| domain::Item {
+                            by: pr.by,
+                            title: pr.title,
+                            link: pr.link,
+                        })
+                        .collect();
+
                     let last_commit = client
                         .last_commit(name.clone())
                         .expect("there was no last commit");
@@ -138,6 +148,8 @@ fn main() -> anyhow::Result<()> {
                 match RepoName::from(add_repo.name) {
                     Ok(name) => {
                         let pulls = client.pull_requests(name.clone()).unwrap_or(Vec::new());
+                        let issues = client.issues(name.clone()).unwrap_or(Vec::new());
+
                         let repo = db::insert_new_repo(&c, &name.to_string()).unwrap();
                         for pr in pulls {
                             let new_pr = db::NewPullRequest {
@@ -148,6 +160,18 @@ fn main() -> anyhow::Result<()> {
                             };
                             db::insert_new_pr(&c, &new_pr).unwrap();
                         }
+
+                        for issue in issues {
+                            let new_issue = db::NewIssue {
+                                repo_id: repo.id,
+                                title: &issue.title,
+                                link: &issue.link,
+                                by: &issue.by,
+                            };
+                            db::insert_new_issue(&c, &new_issue).unwrap();
+                        }
+
+
                         Response::new(200)
                     }
                     Err(err) => {
