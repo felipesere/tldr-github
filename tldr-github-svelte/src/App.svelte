@@ -1,4 +1,5 @@
 <script>
+  import Error from './Error.svelte';
   import Repo from './Repo.svelte';
   import AddRepo from './AddRepo.svelte';
   import { onMount } from 'svelte';
@@ -13,12 +14,29 @@
   onMount(fetchRepos)
 </script>
 
-{#if repos.length === 0}
-  <p>No repos added yet</p>
-{/if}
-<div class="grid">
-  {#each repos as repo, index}
-    <Repo repo={repo}  on:repo-deleted={fetchRepos} />
-  {/each}
-  <AddRepo on:new-repo-added={fetchRepos}/>
-</div>
+<section class="section">
+  <div class="container">
+    <Error />
+    <h1 class="title">
+      Welcome to TLDR Github
+    </h1>
+    <p class="subtitle">
+    These are the repos you are currently tracking
+    </p>
+  </div>
+</section>
+
+
+<section class="section">
+  <div class="container">
+    {#if repos.length === 0}
+      <p>No repos added yet</p>
+    {/if}
+    <div class="grid">
+      {#each repos as repo, index}
+        <Repo repo={repo}  on:repo-deleted={fetchRepos} />
+      {/each}
+      <AddRepo on:new-repo-added={fetchRepos}/>
+    </div>
+  </div>
+</section>
