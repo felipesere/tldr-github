@@ -88,13 +88,7 @@ fn main() -> anyhow::Result<()> {
                 let conn = req.state().conn();
                 let client = req.state().client();
 
-                match get_all_repos(&conn, &client) {
-                    Ok(repos) => Response::new(200).body_json(&repos).unwrap(),
-                    Err(err) => {
-                        log::error!("failure get all repos: {}", err);
-                        error_response(500, err)
-                    }
-                }
+                ApiResult::from(get_all_repos(&conn, &client))
             }
         });
         r.at("/repos").post(|mut req: Request<State>| {
@@ -103,13 +97,7 @@ fn main() -> anyhow::Result<()> {
                 let conn = req.state().conn();
                 let add_repo: AddNewRepo = req.body_json().await.unwrap();
 
-                match add_new_repo(&conn, &client, add_repo) {
-                    Ok(()) => Response::new(200),
-                    Err(err) => {
-                        log::error!("failure to add repo: {}", err);
-                        error_response(500, err)
-                    }
-                }
+                ApiResult::empty(add_new_repo(&conn, &client, add_repo))
             }
         });
         r.at("/repos/:id").delete(|req: Request<State>| {
@@ -117,19 +105,74 @@ fn main() -> anyhow::Result<()> {
                 let conn = req.state().conn();
                 let id = req.param::<i32>("id").unwrap();
 
-                match db::delete(&conn, id) {
-                    Ok(_) => Response::new(200),
-                    Err(err) => {
-                        log::error!("failure to delete repo: {}", err);
-                        error_response(500, err)
-                    }
-                }
+                ApiResult::empty(db::delete(&conn, id).with_context(|| "failed to delete"))
             }
         });
     });
 
     task::block_on(async move { app.listen(config.server.address()).await })
         .with_context(|| "failed launch the server")
+}
+
+impl<T: Send + Sized + Serialize> tide::IntoResponse for ApiResult<T> {
+    fn into_response(self) -> Response {
+        use ApiResult::*;
+
+        match self {
+            Empty => Response::new(200),
+            Success(val) => Response::new(200).body_json(&val).unwrap(),
+            Failure(err) => {
+                Response::new(err.status)
+                    .body_json(&ErrorJson {
+                        error: format!("{:#}", err.error),
+                    }).unwrap()
+            },
+        }
+    }
+}
+
+impl<T> std::convert::From<anyhow::Result<T>> for ApiResult<T> {
+    fn from(res: anyhow::Result<T>) -> ApiResult<T> {
+        use ApiResult::*;
+
+        match res {
+            Ok(val) => Success(val),
+            Err(e) => Failure(ApiError {
+                status: 500,
+                error: e,
+            }),
+        }
+    }
+}
+
+enum ApiResult<T> {
+    Empty,
+    Success(T),
+    Failure(ApiError),
+}
+
+impl ApiResult<()> {
+    fn empty(result: anyhow::Result<()>) -> ApiResult<()> {
+        use ApiResult::*;
+
+        match result {
+            Ok(()) => Empty,
+            Err(e) => Failure(ApiError {
+                status: 500,
+                error: e,
+            }),
+        }
+    }
+}
+
+struct ApiError {
+    status: u16,
+    error: anyhow::Error,
+}
+
+#[derive(Serialize)]
+struct ErrorJson {
+    error: String,
 }
 
 fn add_new_repo(
@@ -195,17 +238,4 @@ fn get_all_repos(conn: &db::Conn, client: &GithubClient) -> anyhow::Result<Vec<d
         result.push(r)
     }
     anyhow::Result::Ok(result)
-}
-
-#[derive(Serialize)]
-struct ErrorJson {
-    error: String,
-}
-
-fn error_response(status: u16, error: anyhow::Error) -> Response {
-    Response::new(status)
-        .body_json(&ErrorJson {
-            error: format!("{:#}", error),
-        })
-        .unwrap()
 }
