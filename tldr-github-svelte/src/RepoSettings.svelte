@@ -1,21 +1,30 @@
 <script>
   import { createEventDispatcher } from 'svelte';
+  import { newError } from './errorStore.js';
+
   const dispatch = createEventDispatcher();
 
   export let repoId;
   let currentlyDeletingRepo;
 
   function doDelete(path) {
-    fetch(`/api${path}`, { "method": "DELETE" })
+    return fetch(`/api${path}`, { "method": "DELETE" })
   };
 
   function handleClick() {
     (currentlyDeletingRepo = async () => {
-      await doDelete(`/repos/${repoId}`)
-      setTimeout(() => {
-        dispatch('repo-deleted');
-        currentlyDeletingRepo = undefined
-      }, 500)
+      let response = await doDelete(`/repos/${repoId}`)
+      if (!response.ok) {
+          let body = await response.json();
+          console.log(body)
+          newError(`Unable to delete repo: ${body.error}`)
+          currentlyDeletingRepo = undefined
+      } else {
+        setTimeout(() => {
+          dispatch('repo-deleted');
+          currentlyDeletingRepo = undefined
+        }, 500)
+      }
     })()
   };
 
