@@ -1,22 +1,29 @@
 <script>
   import { createEventDispatcher } from 'svelte';
+  import {newError} from './errorStore.js';
   const dispatch = createEventDispatcher();
   let newRepoName = "";
   let currentlyAddingRepo
 
   function handleClick() {
     (currentlyAddingRepo = async () => {
-      await post("/repos", {name: newRepoName})
-      setTimeout(() => {
-        currentlyAddingRepo = undefined
-        dispatch('new-repo-added')
+      let response = await post("/repos", {name: newRepoName})
+      if (!response.ok) {
+        newError(`Could not add repo ${newRepoName}`);
         newRepoName = ""
-      }, 500)
+        currentlyAddingRepo = undefined
+      } else {
+        setTimeout(() => {
+          currentlyAddingRepo = undefined
+          dispatch('new-repo-added')
+          newRepoName = ""
+        }, 500)
+      }
     })()
   };
 
   async function post(path, data) {
-    await fetch(`/api${path}`, {
+    return await fetch(`/api${path}`, {
       "body": JSON.stringify(data),
       "method": "POST",
       "headers": {

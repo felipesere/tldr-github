@@ -1,30 +1,23 @@
 <script>
+  import {clear, error} from './errorStore.js';
   import { fade } from 'svelte/transition';
   import { onMount } from 'svelte';
 
-  let error = false;
-
-  onMount(() => {
-    setTimeout(() => {
-      error = "Something went wrong!"
-    }, 3000)
+  let message = false
+  error.subscribe(value => {
+    message = value.msg
   })
-
-  let dismiss = () => {
-    error = false
-  }
-
 </script>
 
 <div class="toast-container">
-  {#if error }
+  {#if message }
   <article transition:fade="{{duration: 500}}" class="message is-warning">
     <div class="message-header">
       <p>Warning</p>
-      <button class="delete" aria-label="delete" on:click={dismiss}></button>
+      <button class="delete" aria-label="delete" on:click={clear}></button>
     </div>
     <div class="message-body">
-      {error}
+      {message}
     </div>
   </article>
   {/if}
