@@ -11,6 +11,7 @@ use crate::domain::*;
 use schema::issues;
 use schema::pull_requests;
 use schema::repos;
+use schema::activity_log;
 
 pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -73,6 +74,21 @@ pub struct StoredIssue {
     pub link: String,
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
+}
+
+#[derive(Identifiable, Queryable, Associations)]
+#[belongs_to(StoredRepo, foreign_key = "repo_id")]
+#[belongs_to(StoredPullRequest, foreign_key = "pull_request_id")]
+#[belongs_to(StoredIssue, foreign_key = "issue_id")]
+#[table_name = "activity_log"]
+pub struct StoredActivity {
+    id: i32,
+    event: String,  // this will be turned into a enum with a proper ToSql/FromSql implementation
+                    // https://stackoverflow.com/questions/49092437/how-do-i-implement-queryable-and-insertable-for-custom-field-types-in-diesel
+    repo_id: Option<i32>,
+    pull_request_id: Option<i32>,
+    issue_id: Option<i32>,
+    created_at: NaiveDateTime,
 }
 
 pub fn delete(conn: &Conn, r: i32) -> Result<()> {
