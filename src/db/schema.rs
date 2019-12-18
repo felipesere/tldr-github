@@ -57,3 +57,20 @@ table! {
         updated_at -> Timestamp,
     }
 }
+
+table! {
+    activity_log (id) {
+        /// Id of the entry in the activity_log
+        id -> Integer,
+
+        /// The JSON blog representing the event
+        event -> Text,
+
+        repo_id -> Nullable<Integer>,
+        pull_request_id -> Nullable<Integer>,
+        issue_id -> Nullable<Integer>,
+
+        /// Technical columns:
+        created_at -> Timestamp,
+    }
+}
