@@ -208,21 +208,6 @@ pub fn all_repos(conn: &Conn) -> Result<Vec<StoredRepo>> {
     repos.load(conn).with_context(|| "getting all repos")
 }
 
-pub fn find_repo(conn: &Conn, n: i32) -> Option<StoredRepo> {
-    use schema::repos::dsl::*;
-    repos.find(n).first(conn).ok()
-}
-
-pub fn find_pr(conn: &Conn, n: i32) -> Option<StoredPullRequest> {
-    use schema::pull_requests::dsl::*;
-    pull_requests.find(n).first(conn).ok()
-}
-
-pub fn find_issue(conn: &Conn, n: i32) -> Option<StoredIssue> {
-    use schema::issues::dsl::*;
-    issues.find(n).first(conn).ok()
-}
-
 pub fn find_prs_for_repo(conn: &Conn, r: i32) -> Result<Vec<StoredPullRequest>> {
     use schema::pull_requests::dsl::*;
     pull_requests
@@ -244,6 +229,21 @@ mod test {
     use super::*;
     use crate::config::DatabaseConfig;
     use crate::domain::*;
+
+    pub fn find_repo(conn: &Conn, n: i32) -> Option<StoredRepo> {
+        use schema::repos::dsl::*;
+        repos.find(n).first(conn).ok()
+    }
+
+    pub fn find_pr(conn: &Conn, n: i32) -> Option<StoredPullRequest> {
+        use schema::pull_requests::dsl::*;
+        pull_requests.find(n).first(conn).ok()
+    }
+
+    pub fn find_issue(conn: &Conn, n: i32) -> Option<StoredIssue> {
+        use schema::issues::dsl::*;
+        issues.find(n).first(conn).ok()
+    }
 
     fn test_pool(
     ) -> r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::SqliteConnection>> {
