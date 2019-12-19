@@ -1,10 +1,13 @@
-use crate::db;
 use anyhow::Result;
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer, de};
+use serde::de::{Visitor, Unexpected};
+use core::fmt;
+
+use crate::db;
 
 embed_migrations!("./migrations");
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct DatabaseConfig {
     pub file: String,
     pub run_migrations: Option<bool>,
@@ -24,36 +27,66 @@ impl DatabaseConfig {
     }
 }
 
-#[derive(Deserialize, Clone)]
-enum AutoEnum {
-    #[serde(rename = "auto")]
-    Auto,
-}
-
-#[derive(Deserialize, Clone)]
-#[serde(untagged)]
+#[derive(Clone, Debug)]
 enum ServerPort {
-    Auto(AutoEnum),
-    Fixed(i32),
+    Auto,
+    Fixed(u64),
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct ServerConfig {
+    #[serde(deserialize_with = "port_or_auto")]
     port: ServerPort,
+}
+
+fn port_or_auto<'de, D>(deserializer: D) -> Result<ServerPort, D::Error>
+    where
+        D: Deserializer<'de>,
+{
+    struct ServerPortVisitor {}
+
+    impl<'de> Visitor<'de> for ServerPortVisitor
+    {
+        type Value = ServerPort;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("either \"auto\" or a port number")
+        }
+
+        fn visit_u64<E>(self, value: u64) -> Result<ServerPort, E>
+            where
+                E: de::Error,
+        {
+            Ok(ServerPort::Fixed(value))
+        }
+
+        fn visit_str<E>(self, value: &str) -> Result<ServerPort, E>
+            where
+                E: de::Error,
+        {
+            if value == "auto" {
+                Ok(ServerPort::Auto)
+            } else {
+                Err(de::Error::invalid_value(Unexpected::Str(value), &self))
+            }
+        }
+    }
+
+    deserializer.deserialize_any(ServerPortVisitor{})
 }
 
 impl ServerConfig {
     pub fn address(&self) -> String {
         let port = match self.port {
             ServerPort::Fixed(val) => val,
-            ServerPort::Auto(_) => 9000,
+            ServerPort::Auto => 9000,
         };
 
         format!("127.0.0.1:{}", port)
     }
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct UiConfig {
     pub local_files: String,
     pub hosted_on: String,
@@ -70,15 +103,72 @@ impl UiConfig {
     }
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct GithubConfig {
     pub token: String,
 }
 
-#[derive(Deserialize, Clone)]
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub database: DatabaseConfig,
     pub server: ServerConfig,
     pub ui: UiConfig,
     pub github: GithubConfig,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json;
+
+    #[test]
+    fn it_can_read_the_config_with_automatic_port_selection() {
+        let sample_config = r#"
+{
+  "database": {
+    "file": "./repos.db",
+    "run_migrations": true
+  },
+  "server": {
+    "port": "auto"
+  },
+  "ui": {
+    "local_files": "./tldr-github-svelte/public",
+    "hosted_on": "/files",
+    "entry_point": "index.html"
+  },
+  "github": {
+    "token": "some-token"
+  }
+}
+"#;
+        let result = serde_json::from_str::<Config>(sample_config);
+        assert!(result.is_ok())
+    }
+
+    #[test]
+    fn it_can_read_the_config_with_specific_port() {
+        let sample_config = r#"
+{
+  "database": {
+    "file": "./repos.db",
+    "run_migrations": true
+  },
+  "server": {
+    "port": 8080
+  },
+  "ui": {
+    "local_files": "./tldr-github-svelte/public",
+    "hosted_on": "/files",
+    "entry_point": "index.html"
+  },
+  "github": {
+    "token": "some-token"
+  }
+}
+"#;
+
+        let result = serde_json::from_str::<Config>(sample_config);
+        assert!(result.is_ok())
+    }
 }
