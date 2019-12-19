@@ -1,0 +1,8 @@
+-- Your SQL goes here
+CREATE TABLE repo_activity_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+  repo_id INTEGER NOT NULL,
+  event TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (repo_id) REFERENCES repos(id)
+);
