@@ -121,12 +121,11 @@ impl<T: Send + Sized + Serialize> tide::IntoResponse for ApiResult<T> {
         match self {
             Empty => Response::new(200),
             Success(val) => Response::new(200).body_json(&val).unwrap(),
-            Failure(err) => {
-                Response::new(err.status)
-                    .body_json(&ErrorJson {
-                        error: format!("{:#}", err.error),
-                    }).unwrap()
-            },
+            Failure(err) => Response::new(err.status)
+                .body_json(&ErrorJson {
+                    error: format!("{:#}", err.error),
+                })
+                .unwrap(),
         }
     }
 }

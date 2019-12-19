@@ -1,7 +1,7 @@
 use anyhow::Result;
-use serde::{Deserialize, Deserializer, de};
-use serde::de::{Visitor, Unexpected};
 use core::fmt;
+use serde::de::{Unexpected, Visitor};
+use serde::{de, Deserialize, Deserializer};
 
 use crate::db;
 
@@ -40,13 +40,12 @@ pub struct ServerConfig {
 }
 
 fn port_or_auto<'de, D>(deserializer: D) -> Result<ServerPort, D::Error>
-    where
-        D: Deserializer<'de>,
+where
+    D: Deserializer<'de>,
 {
     struct ServerPortVisitor {}
 
-    impl<'de> Visitor<'de> for ServerPortVisitor
-    {
+    impl<'de> Visitor<'de> for ServerPortVisitor {
         type Value = ServerPort;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -54,15 +53,15 @@ fn port_or_auto<'de, D>(deserializer: D) -> Result<ServerPort, D::Error>
         }
 
         fn visit_u64<E>(self, value: u64) -> Result<ServerPort, E>
-            where
-                E: de::Error,
+        where
+            E: de::Error,
         {
             Ok(ServerPort::Fixed(value))
         }
 
         fn visit_str<E>(self, value: &str) -> Result<ServerPort, E>
-            where
-                E: de::Error,
+        where
+            E: de::Error,
         {
             if value == "auto" {
                 Ok(ServerPort::Auto)
@@ -72,7 +71,7 @@ fn port_or_auto<'de, D>(deserializer: D) -> Result<ServerPort, D::Error>
         }
     }
 
-    deserializer.deserialize_any(ServerPortVisitor{})
+    deserializer.deserialize_any(ServerPortVisitor {})
 }
 
 impl ServerConfig {

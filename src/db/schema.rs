@@ -44,9 +44,4 @@ joinable!(issues -> repos (repo_id));
 joinable!(pull_requests -> repos (repo_id));
 joinable!(repo_activity_log -> repos (repo_id));
 
-allow_tables_to_appear_in_same_query!(
-    issues,
-    pull_requests,
-    repo_activity_log,
-    repos,
-);
+allow_tables_to_appear_in_same_query!(issues, pull_requests, repo_activity_log, repos,);

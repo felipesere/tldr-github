@@ -1,16 +1,23 @@
-mod schema;
+use std::io::Write;
 
 use anyhow::{bail, Context, Result};
 use chrono::NaiveDateTime;
+use diesel::backend::Backend;
+use diesel::deserialize::{self, FromSql};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::sqlite::SqliteConnection;
-
-use crate::domain::*;
+use diesel::serialize::{self, Output, ToSql};
+use diesel::sql_types::Text;
+use diesel::sqlite::{Sqlite, SqliteConnection};
 
 use schema::issues;
 use schema::pull_requests;
+use schema::repo_activity_log;
 use schema::repos;
+
+use crate::domain::*;
+
+mod schema;
 
 pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -73,6 +80,47 @@ pub struct StoredIssue {
     pub link: String,
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
+}
+
+#[derive(Debug, AsExpression)]
+#[sql_type = "Text"]
+#[derive(serde::Serialize, serde::Deserialize)]
+pub enum RepoEvents {
+    LatestCommitOnMaster(Commit),
+}
+
+impl ToSql<Text, Sqlite> for RepoEvents {
+    fn to_sql<W: Write>(&self, out: &mut Output<W, Sqlite>) -> serialize::Result {
+        use RepoEvents::*;
+        match self {
+            LatestCommitOnMaster(commit) => serde_json::ser::to_writer(out, &commit)
+                .map(|()| serialize::IsNull::Yes)
+                .map_err(|e| e.into()),
+        }
+    }
+}
+
+impl FromSql<Text, Sqlite> for RepoEvents {
+    fn from_sql(bytes: Option<&<Sqlite as Backend>::RawValue>) -> deserialize::Result<Self> {
+        if let Some(data) = bytes {
+            return serde_json::de::from_slice(data.read_blob()).map_err(|e| e.into());
+        } else {
+            return deserialize::Result::Err(
+                anyhow::Error::msg("Unable to read RepoEvents from DB").into(),
+            );
+        }
+    }
+}
+
+pub struct NewRepoEvent {
+    event: RepoEvents,
+}
+
+#[derive(Insertable)]
+#[table_name = "repo_activity_log"]
+pub struct InsertableRepoEvent {
+    repo_id: i32,
+    event: RepoEvents,
 }
 
 pub fn delete(conn: &Conn, r: i32) -> Result<()> {
@@ -169,6 +217,26 @@ pub fn insert_issues(
         .collect()
 }
 
+pub fn insert_new_repo_activity(
+    conn: &Conn,
+    repo: &StoredRepo,
+    new_event: NewRepoEvent,
+) -> Result<()> {
+    use schema::repo_activity_log::dsl::*;
+
+    let insertable_repo_event = InsertableRepoEvent {
+        repo_id: repo.id,
+        event: new_event.event,
+    };
+
+    diesel::insert_into(repo_activity_log)
+        .values(insertable_repo_event)
+        .execute(conn);
+
+    // TODO:
+    Result::Ok(())
+}
+
 pub fn insert_new_repo(conn: &Conn, repo_name: &str) -> Result<StoredRepo> {
     use schema::repos::dsl::*;
     let new_repo = NewRepo { title: repo_name };
@@ -210,9 +278,10 @@ pub fn find_issues_for_repo(conn: &Conn, r: i32) -> Result<Vec<StoredIssue>> {
 
 #[cfg(test)]
 mod test {
-    use super::*;
     use crate::config::DatabaseConfig;
     use crate::domain::*;
+
+    use super::*;
 
     pub fn find_repo(conn: &Conn, n: i32) -> Option<StoredRepo> {
         use schema::repos::dsl::*;
@@ -378,6 +447,29 @@ mod test {
                 .collect::<Vec<_>>();
 
             assert_eq!(titles, vec![title_x, title_y]);
+
+            Result::<StoredRepo, anyhow::Error>::Ok(repo)
+        })
+        .unwrap();
+    }
+
+    #[test]
+    fn can_add_new_activity_to_the_repo() {
+        let conn = test_pool();
+        in_test_transaction(&conn, || {
+            let repo = insert_new_repo(&conn, "felipesere/test")?;
+
+            let event = NewRepoEvent {
+                event: RepoEvents::LatestCommitOnMaster(Commit {
+                    branch: "master".into(),
+                    on: "some day".into(),
+                    by: "me".into(),
+                    sha1: "kasdhfgasljdhf".into(),
+                    comment: "This was a great commit".into(),
+                }),
+            };
+
+            insert_new_repo_activity(&conn, &repo, event);
 
             Result::<StoredRepo, anyhow::Error>::Ok(repo)
         })

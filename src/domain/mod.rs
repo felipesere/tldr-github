@@ -1,5 +1,5 @@
 use anyhow::{bail, Result};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
 #[derive(Clone)]
@@ -30,7 +30,7 @@ impl Display for RepoName {
     }
 }
 
-#[derive(Serialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Commit {
     pub branch: String,
     pub on: String,
