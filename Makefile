@@ -11,3 +11,6 @@ run:
 
 run-watch:
 	cargo watch --no-gitignore --clear -i tldr-github-svelte -w .trigger -x run
+
+migrate:
+	diesel migration run --database-url repos.db
