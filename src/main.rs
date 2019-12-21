@@ -1,22 +1,26 @@
 #[macro_use]
-extern crate diesel_migrations;
-#[macro_use]
 extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
 
 use std::io::Read;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::Context;
 use async_std::task;
+use serde::Serialize;
+use simplelog::CombinedLogger;
+use tide::{Request, Response};
+use tide_naive_static_files::{serve_static_files, StaticRootDir};
+
 use config::Config;
 use domain::RepoName;
 use github::graphql::GithubClient;
 use middleware::logger;
-use serde::Serialize;
-use simplelog::CombinedLogger;
-use std::path::{Path, PathBuf};
-use tide::{Request, Response};
-use tide_naive_static_files::{serve_static_files, StaticRootDir};
+
+use crate::db::{NewRepoEvent, RepoEvents};
+use crate::github::graphql::LastCommitView;
 
 mod config;
 mod db;
@@ -86,9 +90,8 @@ fn main() -> anyhow::Result<()> {
         r.at("/repos").get(|req: Request<State>| {
             async move {
                 let conn = req.state().conn();
-                let client = req.state().client();
 
-                ApiResult::from(get_all_repos(&conn, &client))
+                ApiResult::from(get_all_repos(&conn))
             }
         });
         r.at("/repos").post(|mut req: Request<State>| {
@@ -182,25 +185,29 @@ fn add_new_repo(
     let name = RepoName::from(repo_to_add.name)?;
     let pulls = client.pull_requests(&name).unwrap_or(Vec::new());
     let issues = client.issues(&name).unwrap_or(Vec::new());
+    let last_commit = client.last_commit(&name);
 
     let repo = db::insert_new_repo(&conn, &name.to_string())?;
     db::insert_prs(&conn, &repo, pulls)?;
     db::insert_issues(&conn, &repo, issues)?;
 
+    if let Ok(commit) = last_commit {
+        let r = db::insert_new_repo_activity(conn, &repo, NewRepoEvent {
+            event: RepoEvents::LatestCommitOnMaster(commit)
+        });
+
+        if let Err(e) = r {
+            log::error!("failed to insert new activity: {}", e)
+        }
+    }
+
     Ok(())
 }
 
-fn get_all_repos(conn: &db::Conn, client: &GithubClient) -> anyhow::Result<Vec<domain::Repo>> {
+fn get_all_repos(conn: &db::Conn) -> anyhow::Result<Vec<domain::Repo>> {
     let repos = db::all_repos(&conn).unwrap();
     let mut result = Vec::new();
     for repo in repos {
-        let name = match domain::RepoName::from(repo.title.clone()) {
-            Ok(n) => n,
-            Err(err) => {
-                log::error!("failure: {}", err);
-                continue;
-            }
-        };
         let pulls: Vec<domain::Item> = db::find_prs_for_repo(&conn, repo.id)
             .unwrap()
             .into_iter()
@@ -221,7 +228,16 @@ fn get_all_repos(conn: &db::Conn, client: &GithubClient) -> anyhow::Result<Vec<d
             })
             .collect();
 
-        let last_commit = client.last_commit(&name).expect("there was no last commit");
+        let repo_event = db::find_last_activity_for_repo(&conn, repo.id);
+
+        let mut last_commit = None;
+        if let Some(existing_event) = repo_event {
+            match existing_event.event {
+                db::RepoEvents::LatestCommitOnMaster(c) => last_commit = Some(c),
+                _ => {},
+            }
+        }
+
 
         let r = domain::Repo {
             id: repo.id,
@@ -230,7 +246,7 @@ fn get_all_repos(conn: &db::Conn, client: &GithubClient) -> anyhow::Result<Vec<d
             activity: domain::Activity {
                 master: domain::CommitsOnMaster { commits: 0 },
                 prs: pulls,
-                issues: issues,
+                issues,
             },
         };
 

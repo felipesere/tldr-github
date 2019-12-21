@@ -70,7 +70,7 @@ pub struct Repo {
     pub id: i32,
     pub title: String,
     #[serde(rename = "lastCommit")]
-    pub last_commit: Commit,
+    pub last_commit: Option<Commit>,
     pub activity: Activity,
 }
 

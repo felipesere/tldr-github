@@ -82,7 +82,7 @@ pub struct StoredIssue {
     updated_at: NaiveDateTime,
 }
 
-#[derive(Debug, AsExpression)]
+#[derive(Debug, AsExpression, FromSqlRow)]
 #[sql_type = "Text"]
 #[derive(serde::Serialize, serde::Deserialize)]
 pub enum RepoEvents {
@@ -92,28 +92,27 @@ pub enum RepoEvents {
 impl ToSql<Text, Sqlite> for RepoEvents {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Sqlite>) -> serialize::Result {
         use RepoEvents::*;
-        match self {
-            LatestCommitOnMaster(commit) => serde_json::ser::to_writer(out, &commit)
-                .map(|()| serialize::IsNull::Yes)
-                .map_err(|e| e.into()),
-        }
+
+        serde_json::to_writer(out, &self)
+            .map(|()| serialize::IsNull::No)
+            .map_err(|e| e.into())
     }
 }
 
 impl FromSql<Text, Sqlite> for RepoEvents {
     fn from_sql(bytes: Option<&<Sqlite as Backend>::RawValue>) -> deserialize::Result<Self> {
         if let Some(data) = bytes {
-            return serde_json::de::from_slice(data.read_blob()).map_err(|e| e.into());
+            serde_json::from_slice(data.read_blob()).map_err(|e| e.into())
         } else {
-            return deserialize::Result::Err(
+            deserialize::Result::Err(
                 anyhow::Error::msg("Unable to read RepoEvents from DB").into(),
-            );
+            )
         }
     }
 }
 
 pub struct NewRepoEvent {
-    event: RepoEvents,
+    pub event: RepoEvents,
 }
 
 #[derive(Insertable)]
@@ -121,6 +120,14 @@ pub struct NewRepoEvent {
 pub struct InsertableRepoEvent {
     repo_id: i32,
     event: RepoEvents,
+}
+
+#[derive(Debug, Queryable)]
+pub struct StoredRepoEvent {
+    id: i32,
+    repo_id: i32,
+    pub event: RepoEvents,
+    created_at: NaiveDateTime,
 }
 
 pub fn delete(conn: &Conn, r: i32) -> Result<()> {
@@ -221,7 +228,7 @@ pub fn insert_new_repo_activity(
     conn: &Conn,
     repo: &StoredRepo,
     new_event: NewRepoEvent,
-) -> Result<()> {
+) -> Result<StoredRepoEvent> {
     use schema::repo_activity_log::dsl::*;
 
     let insertable_repo_event = InsertableRepoEvent {
@@ -229,12 +236,26 @@ pub fn insert_new_repo_activity(
         event: new_event.event,
     };
 
-    diesel::insert_into(repo_activity_log)
-        .values(insertable_repo_event)
-        .execute(conn);
+    conn.transaction::<_, anyhow::Error, _>(|| {
+        diesel::insert_into(repo_activity_log)
+            .values(insertable_repo_event)
+            .execute(conn).map(|e| ()).map_err(|e| anyhow::Error::new(e))?;
 
-    // TODO:
-    Result::Ok(())
+        repo_activity_log
+            .order(id.desc())
+            .first(conn)
+            .with_context(|| "retrieving stored pull request")
+    })
+}
+
+pub fn find_last_activity_for_repo(conn: &Conn, r: i32) -> Option<StoredRepoEvent> {
+    use schema::repo_activity_log::dsl::*;
+
+    repo_activity_log
+        .filter(repo_id.eq(r))
+        .order(created_at.desc())
+        .first(conn)
+        .ok()
 }
 
 pub fn insert_new_repo(conn: &Conn, repo_name: &str) -> Result<StoredRepo> {
@@ -298,8 +319,7 @@ mod test {
         issues.find(n).first(conn).ok()
     }
 
-    fn test_pool(
-    ) -> r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::SqliteConnection>> {
+    fn test_pool() -> r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::SqliteConnection>> {
         let config = DatabaseConfig {
             file: ":memory:".into(),
             run_migrations: Some(true),
@@ -310,8 +330,8 @@ mod test {
     }
 
     fn in_test_transaction<T, F>(conn: &Conn, f: F) -> T
-    where
-        F: FnOnce() -> T,
+        where
+            F: FnOnce() -> T,
     {
         let mut user_result = None;
 
@@ -335,7 +355,7 @@ mod test {
 
             Result::<StoredRepo, anyhow::Error>::Ok(repo)
         })
-        .unwrap();
+            .unwrap();
     }
 
     #[test]
@@ -356,7 +376,7 @@ mod test {
 
             Result::<StoredPullRequest, anyhow::Error>::Ok(pr)
         })
-        .unwrap();
+            .unwrap();
     }
 
     #[test]
@@ -389,7 +409,7 @@ mod test {
 
             Result::<StoredRepo, anyhow::Error>::Ok(repo)
         })
-        .unwrap();
+            .unwrap();
     }
 
     #[test]
@@ -413,7 +433,7 @@ mod test {
 
             Result::<StoredIssue, anyhow::Error>::Ok(issue)
         })
-        .unwrap();
+            .unwrap();
     }
 
     #[test]
@@ -450,7 +470,7 @@ mod test {
 
             Result::<StoredRepo, anyhow::Error>::Ok(repo)
         })
-        .unwrap();
+            .unwrap();
     }
 
     #[test]
@@ -469,10 +489,16 @@ mod test {
                 }),
             };
 
-            insert_new_repo_activity(&conn, &repo, event);
+            let stored_event = insert_new_repo_activity(&conn, &repo, event)?;
 
+            match stored_event.event {
+                RepoEvents::LatestCommitOnMaster(c) => {
+                    assert_eq!(c.branch, "master".to_owned())
+                }
+                _ => assert!(false, "did mot get a 'LatestCommitOnMaster' event"),
+            }
             Result::<StoredRepo, anyhow::Error>::Ok(repo)
         })
-        .unwrap();
+            .unwrap();
     }
 }
