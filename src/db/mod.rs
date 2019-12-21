@@ -91,8 +91,6 @@ pub enum RepoEvents {
 
 impl ToSql<Text, Sqlite> for RepoEvents {
     fn to_sql<W: Write>(&self, out: &mut Output<W, Sqlite>) -> serialize::Result {
-        use RepoEvents::*;
-
         serde_json::to_writer(out, &self)
             .map(|()| serialize::IsNull::No)
             .map_err(|e| e.into())
@@ -239,7 +237,7 @@ pub fn insert_new_repo_activity(
     conn.transaction::<_, anyhow::Error, _>(|| {
         diesel::insert_into(repo_activity_log)
             .values(insertable_repo_event)
-            .execute(conn).map(|e| ()).map_err(|e| anyhow::Error::new(e))?;
+            .execute(conn).map(|_| ()).map_err(|e| anyhow::Error::new(e))?;
 
         repo_activity_log
             .order(id.desc())

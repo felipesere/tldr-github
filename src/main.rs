@@ -20,7 +20,6 @@ use github::graphql::GithubClient;
 use middleware::logger;
 
 use crate::db::{NewRepoEvent, RepoEvents};
-use crate::github::graphql::LastCommitView;
 
 mod config;
 mod db;
@@ -234,7 +233,6 @@ fn get_all_repos(conn: &db::Conn) -> anyhow::Result<Vec<domain::Repo>> {
         if let Some(existing_event) = repo_event {
             match existing_event.event {
                 db::RepoEvents::LatestCommitOnMaster(c) => last_commit = Some(c),
-                _ => {},
             }
         }
 
