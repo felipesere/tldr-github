@@ -16,7 +16,7 @@ use tide_naive_static_files::{serve_static_files, StaticRootDir};
 
 use config::Config;
 use domain::RepoName;
-use github::graphql::GithubClient;
+use github::GithubClient;
 use middleware::logger;
 
 use crate::db::{NewRepoEvent, RepoEvents};
@@ -37,7 +37,7 @@ pub struct AddNewRepo {
 struct State {
     pool: Arc<db::SqlitePool>,
     static_root_dir: PathBuf,
-    github: Arc<github::graphql::GithubClient>,
+    github: Arc<github::GithubClient>,
 }
 
 impl State {
