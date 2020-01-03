@@ -146,6 +146,12 @@ pub fn delete(conn: &Conn, r: i32) -> Result<()> {
         Err(m) => bail!("could not delete issues for repo repo: {}", m),
     };
 
+    use schema::repo_activity_log::dsl::{repo_activity_log, repo_id as activity_repo_id};
+    match diesel::delete(repo_activity_log.filter(activity_repo_id.eq(r))).execute(conn) {
+        Ok(_) => {}
+        Err(m) => bail!("could not delete issues for repo repo: {}", m),
+    };
+
     Ok(())
 }
 

@@ -190,21 +190,26 @@ fn add_new_repo(
     db::insert_prs(&conn, &repo, pulls)?;
     db::insert_issues(&conn, &repo, issues)?;
 
-    if let Ok(commit) = last_commit {
-        let r = db::insert_new_repo_activity(
-            conn,
-            &repo,
-            NewRepoEvent {
-                event: RepoEvents::LatestCommitOnMaster(commit),
-            },
-        );
+    match last_commit {
+        Ok(commit) => {
+            let r = db::insert_new_repo_activity(
+                conn,
+                &repo,
+                NewRepoEvent {
+                    event: RepoEvents::LatestCommitOnMaster(commit),
+                },
+            );
 
-        if let Err(e) = r {
+            if let Err(e) = r {
+                log::error!("failed to insert new activity: {}", e)
+            }
+        },
+        Err(e) => {
             log::error!("failed to insert new activity: {}", e)
-        }
-    }
+        },
+    };
 
-    Ok(())
+    Ok(()) // this shouldn't be ok???
 }
 
 fn get_all_repos(conn: &db::Conn) -> anyhow::Result<Vec<domain::api::Repo>> {
