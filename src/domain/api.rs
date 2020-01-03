@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use chrono_humanize::{Accuracy, HumanTime, Tense};
 use chrono::Utc;
+use chrono_humanize::{Accuracy, HumanTime, Tense};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Commit {

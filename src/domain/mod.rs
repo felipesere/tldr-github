@@ -1,6 +1,6 @@
 use anyhow::{bail, Result};
-use std::fmt::{Display, Formatter};
 use chrono::{DateTime, Utc};
+use std::fmt::{Display, Formatter};
 
 pub mod api;
 

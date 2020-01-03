@@ -191,9 +191,13 @@ fn add_new_repo(
     db::insert_issues(&conn, &repo, issues)?;
 
     if let Ok(commit) = last_commit {
-        let r = db::insert_new_repo_activity(conn, &repo, NewRepoEvent {
-            event: RepoEvents::LatestCommitOnMaster(commit)
-        });
+        let r = db::insert_new_repo_activity(
+            conn,
+            &repo,
+            NewRepoEvent {
+                event: RepoEvents::LatestCommitOnMaster(commit),
+            },
+        );
 
         if let Err(e) = r {
             log::error!("failed to insert new activity: {}", e)

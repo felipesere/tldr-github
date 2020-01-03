@@ -111,7 +111,14 @@ impl GithubClient {
 
         let data: last_commit_view::ResponseData = self.make_request(query)?;
 
-        let commit  = match data.repository.expect("no repository").ref_.expect("no ref").target.on {
+        let commit = match data
+            .repository
+            .expect("no repository")
+            .ref_
+            .expect("no ref")
+            .target
+            .on
+        {
             crate::github::last_commit_view::LastCommitViewRepositoryRefTargetOn::Commit(c) => c,
             _ => bail!("unexpected variant"),
         };
