@@ -82,7 +82,7 @@ fn main() -> anyhow::Result<()> {
             async move {
                 let conn = req.state().conn();
 
-                ApiResult::from(get_all_repos(&conn))
+                ApiResult::from(get_all_repos(&conn).with_context(|| "failed to get all repos"))
             }
         });
         r.at("/repos").post(|mut req: Request<State>| {
@@ -91,7 +91,7 @@ fn main() -> anyhow::Result<()> {
                 let conn = req.state().conn();
                 let add_repo: AddNewRepo = req.body_json().await.unwrap();
 
-                ApiResult::empty(add_new_repo(&conn, &client, add_repo))
+                ApiResult::empty(add_new_repo(&conn, &client, add_repo).with_context(|| "failed to add repo"))
             }
         });
         r.at("/repos/:id").delete(|req: Request<State>| {
