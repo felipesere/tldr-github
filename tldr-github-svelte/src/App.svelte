@@ -33,8 +33,8 @@
       <p>No repos added yet</p>
     {/if}
     <div class="grid">
-      {#each repos as repo, index}
-        <Repo repo={repo}  on:repo-deleted={fetchRepos} />
+      {#each repos as repo (repo.id) }
+        <Repo repo={repo}  on:repo-deleted={fetchRepos} k />
       {/each}
       <AddRepo on:new-repo-added={fetchRepos}/>
     </div>
