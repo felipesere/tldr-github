@@ -96,10 +96,6 @@ impl UiConfig {
     pub fn entry(&self) -> String {
         format!("{}/{}", self.hosted_on, self.entry_point)
     }
-
-    pub fn hosted(&self) -> String {
-        format!("{}/*path", self.hosted_on)
-    }
 }
 
 #[derive(Deserialize, Clone, Debug)]

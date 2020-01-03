@@ -4,7 +4,6 @@ extern crate diesel;
 extern crate diesel_migrations;
 
 use std::io::Read;
-use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::Context;
@@ -12,7 +11,7 @@ use async_std::task;
 use serde::Serialize;
 use simplelog::CombinedLogger;
 use tide::{Request, Response};
-use tide_naive_static_files::{serve_static_files, StaticRootDir};
+use tide_naive_static_files::StaticFilesEndpoint;
 
 use config::Config;
 use domain::RepoName;
@@ -36,7 +35,6 @@ pub struct AddNewRepo {
 
 struct State {
     pool: Arc<db::SqlitePool>,
-    static_root_dir: PathBuf,
     github: Arc<github::GithubClient>,
 }
 
@@ -47,12 +45,6 @@ impl State {
 
     fn client(&self) -> Arc<GithubClient> {
         self.github.clone()
-    }
-}
-
-impl StaticRootDir for State {
-    fn root_dir(&self) -> &Path {
-        &self.static_root_dir
     }
 }
 
@@ -76,15 +68,15 @@ fn main() -> anyhow::Result<()> {
 
     let state = State {
         pool: Arc::new(pool),
-        static_root_dir: ui.local_files.clone().into(),
         github: Arc::new(GithubClient::new(config.github.token.clone())),
     };
 
     let mut app = tide::with_state(state);
     app.middleware(logger::RequestLogger::new());
     app.at("/").get(tide::redirect(ui.entry()));
-    app.at(&ui.hosted())
-        .get(|req: Request<State>| async { serve_static_files(req).await.unwrap() });
+    app.at(&ui.hosted_on)
+        .strip_prefix()
+        .get(StaticFilesEndpoint{ root: ui.local_files.clone().into() });
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| {
             async move {
