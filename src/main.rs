@@ -144,12 +144,12 @@ enum ApiResult<T> {
     Failure(ApiError),
 }
 
-impl ApiResult<()> {
-    fn empty(result: anyhow::Result<()>) -> ApiResult<()> {
+impl <T> ApiResult<T> {
+    fn empty(result: anyhow::Result<T>) -> ApiResult<()> {
         use ApiResult::*;
 
         match result {
-            Ok(()) => Empty,
+            Ok(_) => Empty,
             Err(e) => Failure(ApiError {
                 status: 500,
                 error: e,
@@ -172,7 +172,7 @@ fn add_new_repo(
     conn: &db::Conn,
     client: &GithubClient,
     repo_to_add: AddNewRepo,
-) -> anyhow::Result<()> {
+) -> anyhow::Result<db::StoredRepo> {
     let name = RepoName::from(repo_to_add.name)?;
     let pulls = client.pull_requests(&name).unwrap_or(Vec::new());
     let issues = client.issues(&name).unwrap_or(Vec::new());
@@ -182,26 +182,14 @@ fn add_new_repo(
     db::insert_prs(&conn, &repo, pulls)?;
     db::insert_issues(&conn, &repo, issues)?;
 
-    match last_commit {
-        Ok(commit) => {
-            let r = db::insert_new_repo_activity(
-                conn,
-                &repo,
-                NewRepoEvent {
-                    event: RepoEvents::LatestCommitOnMaster(commit),
-                },
-            );
-
-            if let Err(e) = r {
-                log::error!("failed to insert new activity: {}", e)
-            }
-        },
-        Err(e) => {
-            log::error!("failed to insert new activity: {}", e)
-        },
-    };
-
-    Ok(()) // this shouldn't be ok???
+    last_commit.and_then(|commit| {
+        db::insert_new_repo_activity(
+            conn,
+            &repo,
+            NewRepoEvent {
+                event: RepoEvents::LatestCommitOnMaster(commit),
+            })
+    }).map(|_s| repo)
 }
 
 fn get_all_repos(conn: &db::Conn) -> anyhow::Result<Vec<domain::api::Repo>> {
