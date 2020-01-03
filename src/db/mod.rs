@@ -2,9 +2,9 @@ use std::io::Write;
 
 use anyhow::{bail, Context, Result};
 use chrono::NaiveDateTime;
+use diesel::prelude::*;
 use diesel::backend::Backend;
 use diesel::deserialize::{self, FromSql};
-use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::serialize::{self, Output, ToSql};
 use diesel::sql_types::Text;
@@ -15,7 +15,7 @@ use schema::pull_requests;
 use schema::repo_activity_log;
 use schema::repos;
 
-use crate::domain::*;
+use crate::domain::{Commit, NewIssue, NewPullRequest};
 
 mod schema;
 
@@ -299,8 +299,10 @@ pub fn find_issues_for_repo(conn: &Conn, r: i32) -> Result<Vec<StoredIssue>> {
 mod test {
     use crate::config::DatabaseConfig;
     use crate::domain::*;
+    use chrono::{Utc, TimeZone};
 
     use super::*;
+
 
     pub fn find_repo(conn: &Conn, n: i32) -> Option<StoredRepo> {
         use schema::repos::dsl::*;
@@ -480,7 +482,7 @@ mod test {
             let event = NewRepoEvent {
                 event: RepoEvents::LatestCommitOnMaster(Commit {
                     branch: "master".into(),
-                    on: "some day".into(),
+                    on: Utc.ymd(2019, 4, 22).and_hms(15, 37, 18),
                     by: "me".into(),
                     sha1: "kasdhfgasljdhf".into(),
                     comment: "This was a great commit".into(),

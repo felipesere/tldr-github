@@ -203,24 +203,24 @@ fn add_new_repo(
     Ok(())
 }
 
-fn get_all_repos(conn: &db::Conn) -> anyhow::Result<Vec<domain::Repo>> {
+fn get_all_repos(conn: &db::Conn) -> anyhow::Result<Vec<domain::api::Repo>> {
     let repos = db::all_repos(&conn).unwrap();
     let mut result = Vec::new();
     for repo in repos {
-        let pulls: Vec<domain::Item> = db::find_prs_for_repo(&conn, repo.id)
+        let pulls: Vec<domain::api::Item> = db::find_prs_for_repo(&conn, repo.id)
             .unwrap()
             .into_iter()
-            .map(|pr| domain::Item {
+            .map(|pr| domain::api::Item {
                 by: pr.by,
                 title: pr.title,
                 link: pr.link,
             })
             .collect();
 
-        let issues: Vec<domain::Item> = db::find_issues_for_repo(&conn, repo.id)
+        let issues: Vec<domain::api::Item> = db::find_issues_for_repo(&conn, repo.id)
             .unwrap()
             .into_iter()
-            .map(|pr| domain::Item {
+            .map(|pr| domain::api::Item {
                 by: pr.by,
                 title: pr.title,
                 link: pr.link,
@@ -236,13 +236,12 @@ fn get_all_repos(conn: &db::Conn) -> anyhow::Result<Vec<domain::Repo>> {
             }
         }
 
-
-        let r = domain::Repo {
+        let r = domain::api::Repo {
             id: repo.id,
             title: repo.title,
-            last_commit,
-            activity: domain::Activity {
-                master: domain::CommitsOnMaster { commits: 0 },
+            last_commit: last_commit.map(|c| domain::api::Commit::from(c)),
+            activity: domain::api::Activity {
+                master: domain::api::CommitsOnMaster { commits: 0 },
                 prs: pulls,
                 issues,
             },

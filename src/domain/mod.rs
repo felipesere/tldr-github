@@ -1,6 +1,8 @@
 use anyhow::{bail, Result};
-use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
+use chrono::{DateTime, Utc};
+
+pub mod api;
 
 #[derive(Clone)]
 pub struct RepoName {
@@ -30,50 +32,6 @@ impl Display for RepoName {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct Commit {
-    pub branch: String,
-    pub on: String,
-    pub by: String,
-    pub sha1: String,
-    pub comment: String,
-}
-
-#[derive(Serialize, Debug)]
-pub struct CommitsOnMaster {
-    pub commits: u32,
-}
-
-#[derive(Serialize, Debug)]
-pub struct Item {
-    pub title: String,
-    pub link: String,
-    pub by: String,
-}
-
-#[derive(Serialize, Debug)]
-pub struct PullRequest {
-    pub title: String,
-    pub link: String,
-    pub by: String,
-}
-
-#[derive(Serialize, Debug)]
-pub struct Activity {
-    pub master: CommitsOnMaster,
-    pub prs: Vec<Item>,
-    pub issues: Vec<Item>,
-}
-
-#[derive(Serialize, Debug)]
-pub struct Repo {
-    pub id: i32,
-    pub title: String,
-    #[serde(rename = "lastCommit")]
-    pub last_commit: Option<Commit>,
-    pub activity: Activity,
-}
-
 /// used for inserting
 #[derive(Debug)]
 pub struct NewPullRequest {
@@ -88,4 +46,13 @@ pub struct NewIssue {
     pub title: String,
     pub link: String,
     pub by: String,
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct Commit {
+    pub branch: String,
+    pub on: DateTime<Utc>,
+    pub by: String,
+    pub sha1: String,
+    pub comment: String,
 }

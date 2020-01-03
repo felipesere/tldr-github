@@ -1,7 +1,6 @@
 use crate::domain;
 use anyhow::{bail, Result};
 use async_std::task;
-use chrono_humanize::{Accuracy, HumanTime, Tense};
 use graphql_client::GraphQLQuery;
 
 type DateTime = chrono::DateTime<chrono::Utc>;
@@ -126,16 +125,12 @@ impl GithubClient {
             .expect("there was no node");
 
         let author = real_commit.clone().author.expect("no author");
-        let time_since_commit = author
-            .date
-            .unwrap()
-            .signed_duration_since(chrono::Utc::now());
-        let human = HumanTime::from(time_since_commit);
+        let time_of_commit = author.date.unwrap();
 
         let result = domain::Commit {
             by: author.name.expect("no name"),
             comment: real_commit.clone().message_headline,
-            on: human.to_text_en(Accuracy::Rough, Tense::Present),
+            on: time_of_commit,
             branch: "master".into(),
             sha1: real_commit.clone().oid,
         };
