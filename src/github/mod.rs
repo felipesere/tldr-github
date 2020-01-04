@@ -43,7 +43,44 @@ impl GithubClient {
         }
     }
 
-    pub fn issues(&self, repo: &domain::RepoName) -> Result<Vec<domain::NewIssue>> {
+    fn make_request<Q: serde::Serialize, R: serde::de::DeserializeOwned>(
+        &self,
+        query: Q,
+    ) -> Result<R> {
+        task::block_on(async {
+            let mut response = match surf::post("https://api.github.com/graphql")
+                .set_header("Authorization", format!("Bearer {}", self.token))
+                .body_json(&query)
+                .unwrap()
+                .await
+            {
+                Ok(r) => r,
+                Err(err) => bail!(err),
+            };
+
+            if response.status() != 200 {
+                match response.body_string().await {
+                    Ok(http_error) => bail!("Did not get a positive response: {}", http_error),
+                    Err(e) => bail!(e),
+                };
+            };
+
+            let inner: graphql_client::Response<R> = response.body_json().await?;
+
+            if let Some(errors) = inner.errors {
+                bail!(errors[0].message.clone());
+            }
+
+            match inner.data {
+                Some(valuable_stuff) => Result::Ok(valuable_stuff),
+                None => bail!("There was no data in response"),
+            }
+        })
+    }
+}
+
+impl domain::ClientForRepositories for GithubClient {
+    fn issues(&self, repo: &domain::RepoName) -> Result<Vec<domain::NewIssue>> {
         let query = IssuesView::build_query(issues_view::Variables {
             owner: repo.owner.clone(),
             name: repo.name.clone(),
@@ -74,7 +111,7 @@ impl GithubClient {
         Result::Ok(items)
     }
 
-    pub fn pull_requests(&self, repo: &domain::RepoName) -> Result<Vec<domain::NewPullRequest>> {
+    fn pull_requests(&self, repo: &domain::RepoName) -> Result<Vec<domain::NewPullRequest>> {
         let query = PullRequestsView::build_query(pull_requests_view::Variables {
             owner: repo.owner.clone(),
             name: repo.name.clone(),
@@ -103,7 +140,7 @@ impl GithubClient {
         Result::Ok(items)
     }
 
-    pub fn last_commit(&self, repo: &domain::RepoName) -> Result<domain::Commit> {
+    fn last_commit(&self, repo: &domain::RepoName) -> Result<domain::Commit> {
         let query = LastCommitView::build_query(last_commit_view::Variables {
             owner: repo.owner.clone(),
             name: repo.name.clone(),
@@ -144,46 +181,12 @@ impl GithubClient {
 
         Result::Ok(result)
     }
-
-    fn make_request<Q: serde::Serialize, R: serde::de::DeserializeOwned>(
-        &self,
-        query: Q,
-    ) -> Result<R> {
-        task::block_on(async {
-            let mut response = match surf::post("https://api.github.com/graphql")
-                .set_header("Authorization", format!("Bearer {}", self.token))
-                .body_json(&query)
-                .unwrap()
-                .await
-            {
-                Ok(r) => r,
-                Err(err) => bail!(err),
-            };
-
-            if response.status() != 200 {
-                match response.body_string().await {
-                    Ok(http_error) => bail!("Did not get a positive response: {}", http_error),
-                    Err(e) => bail!(e),
-                };
-            };
-
-            let inner: graphql_client::Response<R> = response.body_json().await?;
-
-            if let Some(errors) = inner.errors {
-                bail!(errors[0].message.clone());
-            }
-
-            match inner.data {
-                Some(valuable_stuff) => Result::Ok(valuable_stuff),
-                None => bail!("There was no data in response"),
-            }
-        })
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::domain::ClientForRepositories;
 
     #[test]
     fn grabs_pull_requests() {

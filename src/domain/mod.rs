@@ -4,6 +4,12 @@ use std::fmt::{Display, Formatter};
 
 pub mod api;
 
+pub trait ClientForRepositories {
+    fn issues(&self, repo: &RepoName) -> Result<Vec<NewIssue>>;
+    fn pull_requests(&self, repo: &RepoName) -> Result<Vec<NewPullRequest>>;
+    fn last_commit(&self, repo: &RepoName) -> Result<Commit>;
+}
+
 #[derive(Clone)]
 pub struct RepoName {
     pub owner: String,

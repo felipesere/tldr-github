@@ -14,7 +14,7 @@ use tide::{Request, Response};
 use tide_naive_static_files::StaticFilesEndpoint;
 
 use config::Config;
-use domain::RepoName;
+use domain::{ClientForRepositories, RepoName};
 use github::GithubClient;
 use middleware::logger;
 
@@ -35,7 +35,7 @@ pub struct AddNewRepo {
 
 struct State {
     pool: Arc<db::SqlitePool>,
-    github: Arc<github::GithubClient>,
+    github: Arc<dyn ClientForRepositories + Send + Sync>,
 }
 
 impl State {
@@ -43,7 +43,7 @@ impl State {
         self.pool.get().unwrap()
     }
 
-    fn client(&self) -> Arc<GithubClient> {
+    fn client(&self) -> Arc<dyn ClientForRepositories + Send + Sync> {
         self.github.clone()
     }
 }
@@ -91,7 +91,7 @@ fn main() -> anyhow::Result<()> {
                 let conn = req.state().conn();
                 let add_repo: AddNewRepo = req.body_json().await.unwrap();
 
-                ApiResult::empty(add_new_repo(&conn, &client, add_repo).with_context(|| "failed to add repo"))
+                ApiResult::empty(add_new_repo(&conn, client, add_repo).with_context(|| "failed to add repo"))
             }
         });
         r.at("/repos/:id").delete(|req: Request<State>| {
@@ -170,7 +170,7 @@ struct ErrorJson {
 
 fn add_new_repo(
     conn: &db::Conn,
-    client: &GithubClient,
+    client: Arc<dyn ClientForRepositories + Send + Sync>,
     repo_to_add: AddNewRepo,
 ) -> anyhow::Result<db::StoredRepo> {
     let name = RepoName::from(repo_to_add.name)?;
