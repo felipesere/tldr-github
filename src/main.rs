@@ -91,7 +91,9 @@ fn main() -> anyhow::Result<()> {
                 let db = req.state().db();
                 let add_repo: AddNewRepo = req.body_json().await.unwrap();
 
-                ApiResult::empty(add_new_repo(db, client, add_repo).with_context(|| "failed to add repo"))
+                let name = RepoName::from(add_repo.name).unwrap();
+
+                ApiResult::empty(domain::add_new_repo(db, client, name).with_context(|| "failed to add repo"))
             }
         });
         r.at("/repos/:id").delete(|req: Request<State>| {
@@ -166,29 +168,6 @@ struct ApiError {
 #[derive(Serialize)]
 struct ErrorJson {
     error: String,
-}
-
-fn add_new_repo(
-    db: Box<dyn Db>,
-    client: Arc<dyn ClientForRepositories>,
-    repo_to_add: AddNewRepo,
-) -> anyhow::Result<db::StoredRepo> {
-    let name = RepoName::from(repo_to_add.name)?;
-    let pulls = client.pull_requests(&name).unwrap_or(Vec::new());
-    let issues = client.issues(&name).unwrap_or(Vec::new());
-    let last_commit = client.last_commit(&name);
-
-    let repo = db.insert_new_repo(&name.to_string())?;
-    db.insert_prs(&repo, pulls)?;
-    db.insert_issues(&repo, issues)?;
-
-    last_commit.and_then(|commit| {
-        db.insert_new_repo_activity(
-            &repo,
-            NewRepoEvent {
-                event: RepoEvents::LatestCommitOnMaster(commit),
-            })
-    }).map(|_s| repo)
 }
 
 fn get_all_repos(db: Box<dyn Db>) -> anyhow::Result<Vec<domain::api::Repo>> {

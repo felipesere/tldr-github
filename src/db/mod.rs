@@ -31,10 +31,18 @@ pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
 pub trait Db {
     fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
     fn insert_new_pr(&self, repo: &StoredRepo, pr: &NewPullRequest) -> Result<StoredPullRequest>;
-    fn insert_prs(&self, repo: &StoredRepo, prs: Vec<NewPullRequest>) -> Result<Vec<StoredPullRequest>>;
+    fn insert_prs(
+        &self,
+        repo: &StoredRepo,
+        prs: Vec<NewPullRequest>,
+    ) -> Result<Vec<StoredPullRequest>>;
     fn insert_new_issue(&self, repo: &StoredRepo, issue: &NewIssue) -> Result<StoredIssue>;
     fn insert_issues(&self, repo: &StoredRepo, issues: Vec<NewIssue>) -> Result<Vec<StoredIssue>>;
-    fn insert_new_repo_activity(&self, repo: &StoredRepo, new_event: NewRepoEvent) -> Result<StoredRepoEvent>;
+    fn insert_new_repo_activity(
+        &self,
+        repo: &StoredRepo,
+        new_event: NewRepoEvent,
+    ) -> Result<StoredRepoEvent>;
     fn find_last_activity_for_repo(&self, r: i32) -> Option<StoredRepoEvent>;
     fn find_prs_for_repo(&self, r: i32) -> Result<Vec<StoredPullRequest>>;
     fn find_issues_for_repo(&self, r: i32) -> Result<Vec<StoredIssue>>;
@@ -53,42 +61,59 @@ impl Db for SqliteDB {
     fn insert_new_pr(&self, repo: &StoredRepo, pr: &NewPullRequest) -> Result<StoredPullRequest> {
         insert_new_pr(&self.conn, repo, pr)
     }
-    fn insert_prs(&self, repo: &StoredRepo, prs: Vec<NewPullRequest>) -> Result<Vec<StoredPullRequest>>{
+    fn insert_prs(
+        &self,
+        repo: &StoredRepo,
+        prs: Vec<NewPullRequest>,
+    ) -> Result<Vec<StoredPullRequest>> {
         insert_prs(&self.conn, repo, prs)
     }
-    fn insert_new_issue(&self, repo: &StoredRepo, issue: &NewIssue) -> Result<StoredIssue>{
+    fn insert_new_issue(&self, repo: &StoredRepo, issue: &NewIssue) -> Result<StoredIssue> {
         insert_new_issue(&self.conn, repo, issue)
     }
-    fn insert_issues(&self, repo: &StoredRepo, issues: Vec<NewIssue>) -> Result<Vec<StoredIssue>>{
+    fn insert_issues(&self, repo: &StoredRepo, issues: Vec<NewIssue>) -> Result<Vec<StoredIssue>> {
         insert_issues(&self.conn, repo, issues)
     }
-    fn insert_new_repo_activity(&self, repo: &StoredRepo, new_event: NewRepoEvent) -> Result<StoredRepoEvent> {
+    fn insert_new_repo_activity(
+        &self,
+        repo: &StoredRepo,
+        new_event: NewRepoEvent,
+    ) -> Result<StoredRepoEvent> {
         insert_new_repo_activity(&self.conn, repo, new_event)
     }
-    fn find_last_activity_for_repo(&self, r: i32) -> Option<StoredRepoEvent>{
+    fn find_last_activity_for_repo(&self, r: i32) -> Option<StoredRepoEvent> {
         find_last_activity_for_repo(&self.conn, r)
     }
-    fn find_prs_for_repo(&self, r: i32) -> Result<Vec<StoredPullRequest>>{
+    fn find_prs_for_repo(&self, r: i32) -> Result<Vec<StoredPullRequest>> {
         find_prs_for_repo(&self.conn, r)
     }
-    fn find_issues_for_repo(&self, r: i32) -> Result<Vec<StoredIssue>>{
+    fn find_issues_for_repo(&self, r: i32) -> Result<Vec<StoredIssue>> {
         find_issues_for_repo(&self.conn, r)
     }
-    fn all_repos(&self, ) -> Result<Vec<StoredRepo>>{
+    fn all_repos(&self) -> Result<Vec<StoredRepo>> {
         all_repos(&self.conn)
     }
-    fn delete(&self, r: i32) -> Result<()>{
+    fn delete(&self, r: i32) -> Result<()> {
         delete(&self.conn, r)
     }
 }
 
-
-#[derive(Debug, Queryable)]
+#[derive(Identifiable, Queryable, Debug)]
+#[table_name = "repos"]
 pub struct StoredRepo {
     pub id: i32,
     pub title: String,
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
+}
+
+#[derive(Debug)]
+pub struct FullStoredRepo {
+    pub id: i32,
+    pub title: String,
+    issues: Vec<StoredIssue>,
+    prs: Vec<StoredPullRequest>,
+    events: Vec<StoredRepoEvent>,
 }
 
 #[derive(Insertable)]
@@ -106,7 +131,9 @@ struct InsertPullRequest<'a> {
     by: &'a str,
 }
 
-#[derive(Debug, Queryable)]
+#[derive(Associations, Identifiable, Queryable, Debug)]
+#[belongs_to(StoredRepo, foreign_key = "repo_id")]
+#[table_name = "pull_requests"]
 pub struct StoredPullRequest {
     id: i32,
     repo_id: i32,
@@ -126,7 +153,9 @@ pub struct InsertableIssue<'a> {
     pub by: &'a str,
 }
 
-#[derive(Debug, Queryable)]
+#[derive(Associations, Identifiable, Queryable, Debug)]
+#[belongs_to(StoredRepo, foreign_key = "repo_id")]
+#[table_name = "issues"]
 pub struct StoredIssue {
     id: i32,
     repo_id: i32,
@@ -173,7 +202,9 @@ pub struct InsertableRepoEvent {
     event: RepoEvents,
 }
 
-#[derive(Debug, Queryable)]
+#[derive(Associations, Identifiable, Queryable, Debug)]
+#[belongs_to(StoredRepo, foreign_key = "repo_id")]
+#[table_name = "repo_activity_log"]
 pub struct StoredRepoEvent {
     id: i32,
     repo_id: i32,
@@ -330,14 +361,55 @@ pub fn insert_new_repo(conn: &Conn, repo_name: &str) -> Result<StoredRepo> {
         // this is kinda meh, but there is no 'RETURNING'
         repos
             .order(id.desc())
-            .first(conn)
+            .first::<StoredRepo>(conn)
             .with_context(|| "retrieving stored repo")
     })
 }
 
 pub fn all_repos(conn: &Conn) -> Result<Vec<StoredRepo>> {
     use schema::repos::dsl::*;
+
     repos.load(conn).with_context(|| "getting all repos")
+}
+
+pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
+    use schema::repos::dsl::*;
+    let rs: Vec<StoredRepo> = repos.load(conn).with_context(|| "getting all repos")?;
+
+    let ids: Vec<i32> = rs.iter().map(|r| r.id).collect();
+
+    use schema::issues::dsl::{issues, repo_id as issue_repo_id};
+    let isx = issues
+        .filter(issue_repo_id.eq_any(ids.clone()))
+        .load::<StoredIssue>(conn)?
+        .grouped_by(&rs[..]);
+
+    use schema::pull_requests::dsl::{pull_requests, repo_id as pr_repo_id};
+    let prs = pull_requests
+        .filter(pr_repo_id.eq_any(ids.clone()))
+        .load::<StoredPullRequest>(conn)?
+        .grouped_by(&rs[..]);
+
+    use schema::repo_activity_log::dsl::{repo_activity_log, repo_id as activity_repo_id};
+    let activities = repo_activity_log
+        .filter(activity_repo_id.eq_any(ids.clone()))
+        .load::<StoredRepoEvent>(conn)?
+        .grouped_by(&rs[..]);
+
+    Result::Ok(
+        rs.into_iter()
+            .zip(isx)
+            .zip(prs)
+            .zip(activities)
+            .map(|(((repo, issue), prs), events)| FullStoredRepo {
+                id: repo.id,
+                title: repo.title.clone(),
+                issues: issue,
+                prs,
+                events,
+            })
+            .collect(),
+    )
 }
 
 pub fn find_prs_for_repo(conn: &Conn, r: i32) -> Result<Vec<StoredPullRequest>> {
