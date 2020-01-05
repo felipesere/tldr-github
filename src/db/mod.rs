@@ -28,6 +28,61 @@ pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
         .with_context(|| format!("failed to access db: {}", database_url))
 }
 
+pub trait Db {
+    fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
+    fn insert_new_pr(&self, repo: &StoredRepo, pr: &NewPullRequest) -> Result<StoredPullRequest>;
+    fn insert_prs(&self, repo: &StoredRepo, prs: Vec<NewPullRequest>) -> Result<Vec<StoredPullRequest>>;
+    fn insert_new_issue(&self, repo: &StoredRepo, issue: &NewIssue) -> Result<StoredIssue>;
+    fn insert_issues(&self, repo: &StoredRepo, issues: Vec<NewIssue>) -> Result<Vec<StoredIssue>>;
+    fn insert_new_repo_activity(&self, repo: &StoredRepo, new_event: NewRepoEvent) -> Result<StoredRepoEvent>;
+    fn find_last_activity_for_repo(&self, r: i32) -> Option<StoredRepoEvent>;
+    fn find_prs_for_repo(&self, r: i32) -> Result<Vec<StoredPullRequest>>;
+    fn find_issues_for_repo(&self, r: i32) -> Result<Vec<StoredIssue>>;
+    fn all_repos(&self) -> Result<Vec<StoredRepo>>;
+    fn delete(&self, r: i32) -> Result<()>;
+}
+
+pub struct SqliteDB {
+    pub(crate) conn: Conn,
+}
+
+impl Db for SqliteDB {
+    fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo> {
+        insert_new_repo(&self.conn, repo_name)
+    }
+    fn insert_new_pr(&self, repo: &StoredRepo, pr: &NewPullRequest) -> Result<StoredPullRequest> {
+        insert_new_pr(&self.conn, repo, pr)
+    }
+    fn insert_prs(&self, repo: &StoredRepo, prs: Vec<NewPullRequest>) -> Result<Vec<StoredPullRequest>>{
+        insert_prs(&self.conn, repo, prs)
+    }
+    fn insert_new_issue(&self, repo: &StoredRepo, issue: &NewIssue) -> Result<StoredIssue>{
+        insert_new_issue(&self.conn, repo, issue)
+    }
+    fn insert_issues(&self, repo: &StoredRepo, issues: Vec<NewIssue>) -> Result<Vec<StoredIssue>>{
+        insert_issues(&self.conn, repo, issues)
+    }
+    fn insert_new_repo_activity(&self, repo: &StoredRepo, new_event: NewRepoEvent) -> Result<StoredRepoEvent> {
+        insert_new_repo_activity(&self.conn, repo, new_event)
+    }
+    fn find_last_activity_for_repo(&self, r: i32) -> Option<StoredRepoEvent>{
+        find_last_activity_for_repo(&self.conn, r)
+    }
+    fn find_prs_for_repo(&self, r: i32) -> Result<Vec<StoredPullRequest>>{
+        find_prs_for_repo(&self.conn, r)
+    }
+    fn find_issues_for_repo(&self, r: i32) -> Result<Vec<StoredIssue>>{
+        find_issues_for_repo(&self.conn, r)
+    }
+    fn all_repos(&self, ) -> Result<Vec<StoredRepo>>{
+        all_repos(&self.conn)
+    }
+    fn delete(&self, r: i32) -> Result<()>{
+        delete(&self.conn, r)
+    }
+}
+
+
 #[derive(Debug, Queryable)]
 pub struct StoredRepo {
     pub id: i32,

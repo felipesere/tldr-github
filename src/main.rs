@@ -18,7 +18,7 @@ use domain::{ClientForRepositories, RepoName};
 use github::GithubClient;
 use middleware::logger;
 
-use crate::db::{NewRepoEvent, RepoEvents};
+use db::{Db, SqliteDB, NewRepoEvent, RepoEvents};
 
 mod config;
 mod db;
@@ -41,6 +41,10 @@ struct State {
 impl State {
     fn conn(&self) -> db::Conn {
         self.pool.get().unwrap()
+    }
+
+    fn db(&self) -> Box<dyn Db> {
+        Box::new(SqliteDB { conn: self.conn() })
     }
 
     fn client(&self) -> Arc<dyn ClientForRepositories + Send + Sync> {
@@ -80,26 +84,26 @@ fn main() -> anyhow::Result<()> {
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| {
             async move {
-                let conn = req.state().conn();
+                let db = req.state().db();
 
-                ApiResult::from(get_all_repos(&conn).with_context(|| "failed to get all repos"))
+                ApiResult::from(get_all_repos(db).with_context(|| "failed to get all repos"))
             }
         });
         r.at("/repos").post(|mut req: Request<State>| {
             async move {
-                let client = req.state().client();
-                let conn = req.state().conn();
                 let add_repo: AddNewRepo = req.body_json().await.unwrap();
+                let client = req.state().client();
+                let db = req.state().db(); // Can not live across await points due to inner Conn not being Send?
 
-                ApiResult::empty(add_new_repo(&conn, client, add_repo).with_context(|| "failed to add repo"))
+                ApiResult::empty(add_new_repo(db, client, add_repo).with_context(|| "failed to add repo"))
             }
         });
         r.at("/repos/:id").delete(|req: Request<State>| {
             async move {
-                let conn = req.state().conn();
+                let db = req.state().db();
                 let id = req.param::<i32>("id").unwrap();
 
-                ApiResult::empty(db::delete(&conn, id).with_context(|| "failed to delete"))
+                ApiResult::empty(db.delete(id).with_context(|| "failed to delete"))
             }
         });
     });
@@ -169,7 +173,7 @@ struct ErrorJson {
 }
 
 fn add_new_repo(
-    conn: &db::Conn,
+    db: Box<dyn Db>,
     client: Arc<dyn ClientForRepositories + Send + Sync>,
     repo_to_add: AddNewRepo,
 ) -> anyhow::Result<db::StoredRepo> {
@@ -178,13 +182,12 @@ fn add_new_repo(
     let issues = client.issues(&name).unwrap_or(Vec::new());
     let last_commit = client.last_commit(&name);
 
-    let repo = db::insert_new_repo(&conn, &name.to_string())?;
-    db::insert_prs(&conn, &repo, pulls)?;
-    db::insert_issues(&conn, &repo, issues)?;
+    let repo = db.insert_new_repo(&name.to_string())?;
+    db.insert_prs(&repo, pulls)?;
+    db.insert_issues(&repo, issues)?;
 
     last_commit.and_then(|commit| {
-        db::insert_new_repo_activity(
-            conn,
+        db.insert_new_repo_activity(
             &repo,
             NewRepoEvent {
                 event: RepoEvents::LatestCommitOnMaster(commit),
@@ -192,11 +195,11 @@ fn add_new_repo(
     }).map(|_s| repo)
 }
 
-fn get_all_repos(conn: &db::Conn) -> anyhow::Result<Vec<domain::api::Repo>> {
-    let repos = db::all_repos(&conn).unwrap();
+fn get_all_repos(db: Box<dyn Db>) -> anyhow::Result<Vec<domain::api::Repo>> {
+    let repos = db.all_repos().unwrap();
     let mut result = Vec::new();
     for repo in repos {
-        let pulls: Vec<domain::api::Item> = db::find_prs_for_repo(&conn, repo.id)
+        let pulls: Vec<domain::api::Item> = db.find_prs_for_repo(repo.id)
             .unwrap()
             .into_iter()
             .map(|pr| domain::api::Item {
@@ -206,7 +209,7 @@ fn get_all_repos(conn: &db::Conn) -> anyhow::Result<Vec<domain::api::Repo>> {
             })
             .collect();
 
-        let issues: Vec<domain::api::Item> = db::find_issues_for_repo(&conn, repo.id)
+        let issues: Vec<domain::api::Item> = db.find_issues_for_repo(repo.id)
             .unwrap()
             .into_iter()
             .map(|pr| domain::api::Item {
@@ -216,7 +219,7 @@ fn get_all_repos(conn: &db::Conn) -> anyhow::Result<Vec<domain::api::Repo>> {
             })
             .collect();
 
-        let repo_event = db::find_last_activity_for_repo(&conn, repo.id);
+        let repo_event = db.find_last_activity_for_repo(repo.id);
 
         let mut last_commit = None;
         if let Some(existing_event) = repo_event {
