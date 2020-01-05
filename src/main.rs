@@ -39,12 +39,8 @@ struct State {
 }
 
 impl State {
-    fn conn(&self) -> db::Conn {
-        self.pool.get().unwrap()
-    }
-
-    fn db(&self) -> Box<dyn Db> {
-        Box::new(SqliteDB { conn: self.conn() })
+    fn db(&self) -> Box<dyn Db + Send> {
+        Box::new(SqliteDB { conn: self.pool.get().unwrap() })
     }
 
     fn client(&self) -> Arc<dyn ClientForRepositories + Send + Sync> {
@@ -91,9 +87,9 @@ fn main() -> anyhow::Result<()> {
         });
         r.at("/repos").post(|mut req: Request<State>| {
             async move {
-                let add_repo: AddNewRepo = req.body_json().await.unwrap();
                 let client = req.state().client();
-                let db = req.state().db(); // Can not live across await points due to inner Conn not being Send?
+                let db = req.state().db();
+                let add_repo: AddNewRepo = req.body_json().await.unwrap();
 
                 ApiResult::empty(add_new_repo(db, client, add_repo).with_context(|| "failed to add repo"))
             }
@@ -174,7 +170,7 @@ struct ErrorJson {
 
 fn add_new_repo(
     db: Box<dyn Db>,
-    client: Arc<dyn ClientForRepositories + Send + Sync>,
+    client: Arc<dyn ClientForRepositories>,
     repo_to_add: AddNewRepo,
 ) -> anyhow::Result<db::StoredRepo> {
     let name = RepoName::from(repo_to_add.name)?;
