@@ -14,11 +14,12 @@ use tide::{Request, Response};
 use tide_naive_static_files::StaticFilesEndpoint;
 
 use config::Config;
+use domain::api::Repo;
 use domain::{ClientForRepositories, RepoName};
 use github::GithubClient;
 use middleware::logger;
 
-use db::{Db, SqliteDB, NewRepoEvent, RepoEvents};
+use db::{Db, SqliteDB};
 
 mod config;
 mod db;
@@ -40,7 +41,9 @@ struct State {
 
 impl State {
     fn db(&self) -> Box<dyn Db + Send> {
-        Box::new(SqliteDB { conn: self.pool.get().unwrap() })
+        Box::new(SqliteDB {
+            conn: self.pool.get().unwrap(),
+        })
     }
 
     fn client(&self) -> Arc<dyn ClientForRepositories + Send + Sync> {
@@ -76,7 +79,9 @@ fn main() -> anyhow::Result<()> {
     app.at("/").get(tide::redirect(ui.entry()));
     app.at(&ui.hosted_on)
         .strip_prefix()
-        .get(StaticFilesEndpoint{ root: ui.local_files.clone().into() });
+        .get(StaticFilesEndpoint {
+            root: ui.local_files.clone().into(),
+        });
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| {
             async move {
@@ -93,7 +98,9 @@ fn main() -> anyhow::Result<()> {
 
                 let name = RepoName::from(add_repo.name).unwrap();
 
-                ApiResult::empty(domain::add_new_repo(db, client, name).with_context(|| "failed to add repo"))
+                ApiResult::empty(
+                    domain::add_new_repo(db, client, name).with_context(|| "failed to add repo"),
+                )
             }
         });
         r.at("/repos/:id").delete(|req: Request<State>| {
@@ -146,7 +153,7 @@ enum ApiResult<T> {
     Failure(ApiError),
 }
 
-impl <T> ApiResult<T> {
+impl<T> ApiResult<T> {
     fn empty(result: anyhow::Result<T>) -> ApiResult<()> {
         use ApiResult::*;
 
@@ -171,50 +178,10 @@ struct ErrorJson {
 }
 
 fn get_all_repos(db: Box<dyn Db>) -> anyhow::Result<Vec<domain::api::Repo>> {
-    let repos = db.all_repos().unwrap();
+    let repos = db.all().unwrap();
     let mut result = Vec::new();
     for repo in repos {
-        let pulls: Vec<domain::api::Item> = db.find_prs_for_repo(repo.id)
-            .unwrap()
-            .into_iter()
-            .map(|pr| domain::api::Item {
-                by: pr.by,
-                title: pr.title,
-                link: pr.link,
-            })
-            .collect();
-
-        let issues: Vec<domain::api::Item> = db.find_issues_for_repo(repo.id)
-            .unwrap()
-            .into_iter()
-            .map(|pr| domain::api::Item {
-                by: pr.by,
-                title: pr.title,
-                link: pr.link,
-            })
-            .collect();
-
-        let repo_event = db.find_last_activity_for_repo(repo.id);
-
-        let mut last_commit = None;
-        if let Some(existing_event) = repo_event {
-            match existing_event.event {
-                db::RepoEvents::LatestCommitOnMaster(c) => last_commit = Some(c),
-            }
-        }
-
-        let r = domain::api::Repo {
-            id: repo.id,
-            title: repo.title,
-            last_commit: last_commit.map(|c| domain::api::Commit::from(c)),
-            activity: domain::api::Activity {
-                master: domain::api::CommitsOnMaster { commits: 0 },
-                prs: pulls,
-                issues,
-            },
-        };
-
-        result.push(r)
+        result.push(Repo::from(repo))
     }
     anyhow::Result::Ok(result)
 }

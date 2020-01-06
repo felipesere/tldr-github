@@ -47,6 +47,7 @@ pub trait Db {
     fn find_prs_for_repo(&self, r: i32) -> Result<Vec<StoredPullRequest>>;
     fn find_issues_for_repo(&self, r: i32) -> Result<Vec<StoredIssue>>;
     fn all_repos(&self) -> Result<Vec<StoredRepo>>;
+    fn all(&self) -> Result<Vec<FullStoredRepo>>;
     fn delete(&self, r: i32) -> Result<()>;
 }
 
@@ -93,6 +94,9 @@ impl Db for SqliteDB {
     fn all_repos(&self) -> Result<Vec<StoredRepo>> {
         all_repos(&self.conn)
     }
+    fn all(&self) -> Result<Vec<FullStoredRepo>> {
+        all(&self.conn)
+    }
     fn delete(&self, r: i32) -> Result<()> {
         delete(&self.conn, r)
     }
@@ -111,9 +115,21 @@ pub struct StoredRepo {
 pub struct FullStoredRepo {
     pub id: i32,
     pub title: String,
-    issues: Vec<StoredIssue>,
-    prs: Vec<StoredPullRequest>,
-    events: Vec<StoredRepoEvent>,
+    pub issues: Vec<StoredIssue>,
+    pub prs: Vec<StoredPullRequest>,
+    pub events: Vec<StoredRepoEvent>,
+}
+
+impl FullStoredRepo {
+    pub fn last_commit(&self) -> Option<Commit> {
+        let mut last_commit = None;
+        if let Some(existing_event) = self.events.first() {
+            match existing_event.event {
+                RepoEvents::LatestCommitOnMaster(ref c) => last_commit = Some(c.clone()),
+            }
+        };
+        last_commit
+    }
 }
 
 #[derive(Insertable)]

@@ -1,6 +1,7 @@
 use chrono::Utc;
 use chrono_humanize::{Accuracy, HumanTime, Tense};
 use serde::{Deserialize, Serialize};
+use std::convert::From;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Commit {
@@ -23,6 +24,51 @@ impl From<crate::domain::Commit> for Commit {
             by: other.by,
             sha1: other.sha1,
             comment: other.comment,
+        }
+    }
+}
+
+impl From<crate::db::FullStoredRepo> for Repo {
+    fn from(other: crate::db::FullStoredRepo) -> Self {
+        let last_commit = other.last_commit().map(|c| Commit::from(c));
+
+        let crate::db::FullStoredRepo {
+            id,
+            title,
+            issues,
+            prs,
+            ..
+        } = other;
+
+        Repo {
+            id: id,
+            title: title,
+            activity: Activity {
+                master: CommitsOnMaster { commits: 0 },
+                issues: issues.into_iter().map(|i| Item::from(i)).collect(),
+                prs: prs.into_iter().map(|i| Item::from(i)).collect(),
+            },
+            last_commit,
+        }
+    }
+}
+
+impl From<crate::db::StoredPullRequest> for Item {
+    fn from(other: crate::db::StoredPullRequest) -> Self {
+        Item {
+            title: other.title,
+            link: other.link,
+            by: other.by,
+        }
+    }
+}
+
+impl From<crate::db::StoredIssue> for Item {
+    fn from(other: crate::db::StoredIssue) -> Self {
+        Item {
+            title: other.title,
+            link: other.link,
+            by: other.by,
         }
     }
 }
