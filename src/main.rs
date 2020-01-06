@@ -178,7 +178,7 @@ struct ErrorJson {
 }
 
 fn get_all_repos(db: Box<dyn Db>) -> anyhow::Result<Vec<domain::api::Repo>> {
-    let repos = db.all().unwrap();
+    let repos = db.all()?;
     let mut result = Vec::new();
     for repo in repos {
         result.push(Repo::from(repo))

@@ -46,7 +46,6 @@ pub trait Db {
     fn find_last_activity_for_repo(&self, r: i32) -> Option<StoredRepoEvent>;
     fn find_prs_for_repo(&self, r: i32) -> Result<Vec<StoredPullRequest>>;
     fn find_issues_for_repo(&self, r: i32) -> Result<Vec<StoredIssue>>;
-    fn all_repos(&self) -> Result<Vec<StoredRepo>>;
     fn all(&self) -> Result<Vec<FullStoredRepo>>;
     fn delete(&self, r: i32) -> Result<()>;
 }
@@ -90,9 +89,6 @@ impl Db for SqliteDB {
     }
     fn find_issues_for_repo(&self, r: i32) -> Result<Vec<StoredIssue>> {
         find_issues_for_repo(&self.conn, r)
-    }
-    fn all_repos(&self) -> Result<Vec<StoredRepo>> {
-        all_repos(&self.conn)
     }
     fn all(&self) -> Result<Vec<FullStoredRepo>> {
         all(&self.conn)
@@ -380,12 +376,6 @@ pub fn insert_new_repo(conn: &Conn, repo_name: &str) -> Result<StoredRepo> {
             .first::<StoredRepo>(conn)
             .with_context(|| "retrieving stored repo")
     })
-}
-
-pub fn all_repos(conn: &Conn) -> Result<Vec<StoredRepo>> {
-    use schema::repos::dsl::*;
-
-    repos.load(conn).with_context(|| "getting all repos")
 }
 
 pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
