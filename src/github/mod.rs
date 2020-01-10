@@ -176,7 +176,7 @@ impl domain::ClientForRepositories for GithubClient {
             comment: real_commit.clone().message_headline,
             on: time_of_commit,
             branch: "master".into(),
-            sha1: real_commit.clone().oid,
+            sha1: real_commit.oid,
         };
 
         Result::Ok(result)

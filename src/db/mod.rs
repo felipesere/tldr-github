@@ -341,7 +341,7 @@ pub fn insert_new_repo_activity(
             .values(insertable_repo_event)
             .execute(conn)
             .map(|_| ())
-            .map_err(|e| anyhow::Error::new(e))?;
+            .map_err(anyhow::Error::new)?;
 
         repo_activity_log
             .order(id.desc())
@@ -398,7 +398,7 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
 
     use schema::repo_activity_log::dsl::{repo_activity_log, repo_id as activity_repo_id};
     let activities = repo_activity_log
-        .filter(activity_repo_id.eq_any(ids.clone()))
+        .filter(activity_repo_id.eq_any(ids))
         .load::<StoredRepoEvent>(conn)?
         .grouped_by(&rs[..]);
 
@@ -409,7 +409,7 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
             .zip(activities)
             .map(|(((repo, issue), prs), events)| FullStoredRepo {
                 id: repo.id,
-                title: repo.title.clone(),
+                title: repo.title,
                 issues: issue,
                 prs,
                 events,

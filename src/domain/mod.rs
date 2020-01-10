@@ -22,7 +22,7 @@ pub struct RepoName {
 impl RepoName {
     pub fn from<S: Into<String>>(input: S) -> Result<Self> {
         let t = input.into();
-        let parts = t.split("/").collect::<Vec<_>>();
+        let parts = t.split('/').collect::<Vec<_>>();
 
         if parts.len() < 2 {
             bail!("Could not derive owner and name from repo: {}", t);
@@ -71,8 +71,8 @@ pub fn add_new_repo(
     client: Arc<dyn ClientForRepositories>,
     name: RepoName,
 ) -> anyhow::Result<StoredRepo> {
-    let pulls = client.pull_requests(&name).unwrap_or(Vec::new());
-    let issues = client.issues(&name).unwrap_or(Vec::new());
+    let pulls = client.pull_requests(&name).unwrap_or_default();
+    let issues = client.issues(&name).unwrap_or_default();
     let last_commit = client.last_commit(&name);
 
     let repo = db.insert_new_repo(&name.to_string())?;

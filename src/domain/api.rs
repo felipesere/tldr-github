@@ -30,7 +30,7 @@ impl From<crate::domain::Commit> for Commit {
 
 impl From<crate::db::FullStoredRepo> for Repo {
     fn from(other: crate::db::FullStoredRepo) -> Self {
-        let last_commit = other.last_commit().map(|c| Commit::from(c));
+        let last_commit = other.last_commit().map(Commit::from);
 
         let crate::db::FullStoredRepo {
             id,
@@ -41,12 +41,12 @@ impl From<crate::db::FullStoredRepo> for Repo {
         } = other;
 
         Repo {
-            id: id,
-            title: title,
+            id,
+            title,
             activity: Activity {
                 master: CommitsOnMaster { commits: 0 },
-                issues: issues.into_iter().map(|i| Item::from(i)).collect(),
-                prs: prs.into_iter().map(|i| Item::from(i)).collect(),
+                issues: issues.into_iter().map(Item::from).collect(),
+                prs: prs.into_iter().map(Item::from).collect(),
             },
             last_commit,
         }
