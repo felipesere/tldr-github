@@ -67,7 +67,7 @@ pub struct Commit {
 }
 
 pub fn add_new_repo(
-    db: Box<dyn Db>,
+    db: Arc<dyn Db>,
     client: Arc<dyn ClientForRepositories>,
     name: RepoName,
 ) -> anyhow::Result<StoredRepo> {

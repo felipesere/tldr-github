@@ -35,15 +35,13 @@ pub struct AddNewRepo {
 }
 
 struct State {
-    pool: Arc<db::SqlitePool>,
+    db: Arc<dyn Db + Send + Sync>,
     github: Arc<dyn ClientForRepositories + Send + Sync>,
 }
 
 impl State {
-    fn db(&self) -> Box<dyn Db + Send> {
-        Box::new(SqliteDB {
-            conn: self.pool.get().unwrap(),
-        })
+    fn db(&self) -> Arc<dyn Db + Send + Sync> {
+        self.db.clone()
     }
 
     fn client(&self) -> Arc<dyn ClientForRepositories + Send + Sync> {
@@ -69,8 +67,10 @@ fn main() -> anyhow::Result<()> {
 
     let ui = config.ui.clone();
 
+    let pool = Arc::new(pool);
+
     let state = State {
-        pool: Arc::new(pool),
+        db: Arc::new(SqliteDB { conn: pool.clone()}),
         github: Arc::new(GithubClient::new(config.github.token.clone())),
     };
 
@@ -177,7 +177,7 @@ struct ErrorJson {
     error: String,
 }
 
-fn get_all_repos(db: Box<dyn Db>) -> anyhow::Result<Vec<domain::api::Repo>> {
+fn get_all_repos(db: Arc<dyn Db>) -> anyhow::Result<Vec<domain::api::Repo>> {
     let repos = db.all()?;
     let mut result = Vec::new();
     for repo in repos {
