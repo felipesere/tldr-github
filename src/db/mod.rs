@@ -11,10 +11,7 @@ use diesel::serialize::{self, Output, ToSql};
 use diesel::sql_types::Text;
 use diesel::sqlite::{Sqlite, SqliteConnection};
 
-use schema::issues;
-use schema::pull_requests;
-use schema::repo_activity_log;
-use schema::repos;
+use schema::{issues, pull_requests, repo_activity_log, repos};
 
 use crate::domain::{Commit, NewIssue, NewPullRequest};
 
@@ -237,28 +234,25 @@ pub struct StoredRepoEvent {
     created_at: NaiveDateTime,
 }
 
+// this needs to be made transactional
 pub fn delete(conn: &Conn, r: i32) -> Result<()> {
-    use schema::repos::dsl::{id, repos};
-    match diesel::delete(repos.filter(id.eq(r))).execute(conn) {
+    match diesel::delete(repos::table.filter(repos::id.eq(r))).execute(conn) {
         Ok(size) if size == 1 => {}
         Ok(_) => bail!("{} not found", r),
         Err(m) => bail!("could not delete repo: {}", m),
     };
 
-    use schema::pull_requests::dsl::{pull_requests, repo_id};
-    match diesel::delete(pull_requests.filter(repo_id.eq(r))).execute(conn) {
+    match diesel::delete(pull_requests::table.filter(pull_requests::repo_id.eq(r))).execute(conn) {
         Ok(_) => {}
         Err(m) => bail!("could not delete prs for repo repo: {}", m),
     };
 
-    use schema::issues::dsl::{issues, repo_id as issue_repo_id};
-    match diesel::delete(issues.filter(issue_repo_id.eq(r))).execute(conn) {
+    match diesel::delete(issues::table.filter(issues::repo_id.eq(r))).execute(conn) {
         Ok(_) => {}
         Err(m) => bail!("could not delete issues for repo repo: {}", m),
     };
 
-    use schema::repo_activity_log::dsl::{repo_activity_log, repo_id as activity_repo_id};
-    match diesel::delete(repo_activity_log.filter(activity_repo_id.eq(r))).execute(conn) {
+    match diesel::delete(repo_activity_log::table.filter(repo_activity_log::repo_id.eq(r))).execute(conn) {
         Ok(_) => {}
         Err(m) => bail!("could not delete issues for repo repo: {}", m),
     };
