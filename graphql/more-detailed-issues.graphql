@@ -1,0 +1,66 @@
+{
+  repository(owner: "async-rs", name: "async-std") {
+    issues(states: OPEN, first: 30) {
+      nodes {
+        id
+        number
+        title
+        publishedAt
+        timelineItems(last: 20, itemTypes: [ISSUE_COMMENT, CROSS_REFERENCED_EVENT, CLOSED_EVENT]) {
+          totalCount
+          filteredCount
+          nodes {
+            __typename
+            ...on IssueComment {
+              author {
+                login
+              }
+              bodyText,
+              publishedAt
+            }
+            ...on ClosedEvent {
+              actor {
+                login
+              }
+              createdAt
+            }
+            ...on CrossReferencedEvent {
+              actor {
+                login
+              }
+              createdAt
+              source {
+                ...on Issue {
+                  title,
+                  repository {
+                    nameWithOwner
+                  }
+                }
+                ...on PullRequest {
+                  title,
+                  repository {
+                    nameWithOwner
+                  }
+                }
+              }
+              target {
+                 ...on Issue {
+                  title,
+                  repository {
+                    nameWithOwner
+                  }
+                }
+                ...on PullRequest {
+                  title,
+                  repository {
+                    nameWithOwner
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

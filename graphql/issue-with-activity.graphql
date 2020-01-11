@@ -1,0 +1,64 @@
+query IssueWithActivity($owner: String!, $name: $String!, issue_number: Int!) {
+  repository(owner: $owner, name: $name) {
+    issue(number: $issue_number) {
+      # TODO: the number 10 is hardcoded and needs to be done better...
+      timelineItems(last: 10, itemTypes: [ISSUE_COMMENT, CROSS_REFERENCED_EVENT, CLOSED_EVENT],) {
+        totalCount
+        filteredCount
+        nodes {
+          __typename
+          ... on IssueComment {
+            author {
+              login
+            }
+            bodyText
+            publishedAt
+            id
+          }
+          ... on ClosedEvent {
+            actor {
+              login
+            }
+            createdAt
+            id
+          }
+          ... on CrossReferencedEvent {
+            actor {
+              login
+            }
+            createdAt
+            id
+            source {
+              ... on Issue {
+                title
+                repository {
+                  nameWithOwner
+                }
+              }
+              ... on PullRequest {
+                title
+                repository {
+                  nameWithOwner
+                }
+              }
+            }
+            target {
+              ... on Issue {
+                title
+                repository {
+                  nameWithOwner
+                }
+              }
+              ... on PullRequest {
+                title
+                repository {
+                  nameWithOwner
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
