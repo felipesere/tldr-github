@@ -70,7 +70,7 @@ fn main() -> anyhow::Result<()> {
     let pool = Arc::new(pool);
 
     let state = State {
-        db: Arc::new(SqliteDB { conn: pool.clone()}),
+        db: Arc::new(SqliteDB { conn: pool.clone() }),
         github: Arc::new(GithubClient::new(config.github.token.clone())),
     };
 

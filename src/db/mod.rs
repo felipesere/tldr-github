@@ -252,7 +252,9 @@ pub fn delete(conn: &Conn, r: i32) -> Result<()> {
         Err(m) => bail!("could not delete issues for repo repo: {}", m),
     };
 
-    match diesel::delete(repo_activity_log::table.filter(repo_activity_log::repo_id.eq(r))).execute(conn) {
+    match diesel::delete(repo_activity_log::table.filter(repo_activity_log::repo_id.eq(r)))
+        .execute(conn)
+    {
         Ok(_) => {}
         Err(m) => bail!("could not delete issues for repo repo: {}", m),
     };
