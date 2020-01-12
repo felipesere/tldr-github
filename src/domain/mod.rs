@@ -55,6 +55,16 @@ pub struct NewIssue {
     pub title: String,
     pub link: String,
     pub by: String,
+    pub labels: Vec<Label>,
+}
+
+#[derive(Debug)]
+pub struct Label(String);
+
+impl Label {
+    pub fn new(name: String) -> Self {
+        Label(name)
+    }
 }
 
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]

@@ -48,7 +48,7 @@ impl GithubClient {
         query: Q,
     ) -> Result<R> {
         task::block_on(async {
-            let mut response = match surf::post("https://api.github.com/graphql")
+            let mut response = match surf::post("https://api.github.com/graphql") // TODO: this will need extracting or I'll need a second client for a fake backend?
                 .set_header("Authorization", format!("Bearer {}", self.token))
                 .body_json(&query)
                 .unwrap()
@@ -79,8 +79,22 @@ impl GithubClient {
     }
 }
 
+fn funky_flatten<T>(input: Option<Vec<Option<T>>>) -> Vec<T> {
+    if input.is_none() {
+        return Vec::new();
+    }
+
+    let input = input.unwrap();
+
+    input
+        .into_iter()
+        .filter_map(|item| item)
+        .collect::<Vec<T>>()
+}
+
 impl domain::ClientForRepositories for GithubClient {
     fn issues(&self, repo: &domain::RepoName) -> Result<Vec<domain::NewIssue>> {
+        use crate::github::issues_view::IssuesViewRepositoryIssuesNodesLabelsNodes;
         let query = IssuesView::build_query(issues_view::Variables {
             owner: repo.owner.clone(),
             name: repo.name.clone(),
@@ -97,10 +111,17 @@ impl domain::ClientForRepositories for GithubClient {
             .expect("nodes not present")
         {
             let issue = maybe_issue.unwrap();
+
+            let labels: Vec<domain::Label> = funky_flatten(issue.labels.unwrap().nodes)
+                .into_iter()
+                .map(|s: IssuesViewRepositoryIssuesNodesLabelsNodes| domain::Label::new(s.name))
+                .collect();
+
             let item = domain::NewIssue {
                 by: issue.author.unwrap().login,
                 link: issue.url,
                 title: issue.title,
+                labels,
             };
 
             items.push(item)
