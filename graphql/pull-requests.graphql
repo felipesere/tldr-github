@@ -11,6 +11,11 @@ query PullRequestsView($owner: String!, $name: String!) {
             login,
             url
           },
+          labels(first: 10) {
+            nodes {
+              name
+            }
+          }
           url
         }
     }

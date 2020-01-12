@@ -47,6 +47,7 @@ pub struct NewPullRequest {
     pub title: String,
     pub link: String,
     pub by: Author,
+    pub labels: Vec<Label>,
 }
 
 /// used for inserting

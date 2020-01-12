@@ -516,6 +516,7 @@ mod test {
                 title: "Make the feature".into(),
                 link: "http://example.com".into(),
                 by: "Me".into(),
+                labels: Vec::new(),
             };
 
             let pr = insert_new_pr(&conn, &repo, &x)?;
@@ -538,6 +539,7 @@ mod test {
                 title: title_x.clone(),
                 link: "http://example.com".into(),
                 by: "Me".into(),
+                labels: Vec::new(),
             };
 
             let title_y: String = "Make another feature".into();
@@ -545,6 +547,7 @@ mod test {
                 title: title_y.clone(),
                 link: "http://example.com".into(),
                 by: "Me".into(),
+                labels: Vec::new(),
             };
 
             insert_prs(&conn, &repo, vec![x, y])?;

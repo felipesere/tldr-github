@@ -94,7 +94,6 @@ fn funky_flatten<T>(input: Option<Vec<Option<T>>>) -> Vec<T> {
 
 impl domain::ClientForRepositories for GithubClient {
     fn issues(&self, repo: &domain::RepoName) -> Result<Vec<domain::NewIssue>> {
-        use crate::github::issues_view::IssuesViewRepositoryIssuesNodesLabelsNodes;
         let query = IssuesView::build_query(issues_view::Variables {
             owner: repo.owner.clone(),
             name: repo.name.clone(),
@@ -114,7 +113,7 @@ impl domain::ClientForRepositories for GithubClient {
 
             let labels: Vec<domain::Label> = funky_flatten(issue.labels.unwrap().nodes)
                 .into_iter()
-                .map(|s: IssuesViewRepositoryIssuesNodesLabelsNodes| domain::Label::new(s.name))
+                .map(|s| domain::Label::new(s.name))
                 .collect();
 
             let item = domain::NewIssue {
@@ -150,12 +149,18 @@ impl domain::ClientForRepositories for GithubClient {
         {
             let pr = maybe_pr.unwrap();
 
+            let labels: Vec<domain::Label> = funky_flatten(pr.labels.unwrap().nodes)
+                .into_iter()
+                .map(|s| domain::Label::new(s.name))
+                .collect();
+
             let author = pr.author.unwrap();
 
             let item = domain::NewPullRequest {
                 by: domain::Author::new(author.login).with_link(author.url),
                 link: pr.url,
                 title: pr.title,
+                labels,
             };
 
             items.push(item)
