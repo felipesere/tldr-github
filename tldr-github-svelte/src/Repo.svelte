@@ -2,7 +2,7 @@
   import { fade } from 'svelte/transition';
   import LastCommit from './LastCommit.svelte';
   import Activity from './Activity.svelte';
-  import RepoSettings from './RepoSettings.svelte';
+  import Settings from './settings/Settings.svelte';
   export let repo
 
   let showSettings = false
@@ -20,7 +20,7 @@
   <div class="card-content grow">
     <div class="content stack">
       {#if showSettings }
-        <RepoSettings repoId={repo.id} on:repo-deleted/>
+        <Settings repoId={repo.id} on:repo-deleted/>
       {:else}
         {#if repo.lastCommit }
           <LastCommit lastCommit={repo.lastCommit} />

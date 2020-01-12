@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-  import { newError } from './errorStore.js';
+  import { newError } from '../errors/errorStore.js';
 
   const dispatch = createEventDispatcher();
 

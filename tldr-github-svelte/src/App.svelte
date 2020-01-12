@@ -1,5 +1,5 @@
 <script>
-  import Error from './Error.svelte';
+  import Error from './errors/Error.svelte';
   import Repo from './Repo.svelte';
   import AddRepo from './AddRepo.svelte';
   import { onMount } from 'svelte';
@@ -26,6 +26,12 @@
   </div>
 </section>
 
+<section class="section">
+  <div class="container">
+    <AddRepo on:new-repo-added={fetchRepos}/>
+  </div>
+</section>
+
 
 <section class="section">
   <div class="container">
@@ -36,7 +42,6 @@
       {#each repos as repo (repo.id) }
         <Repo repo={repo}  on:repo-deleted={fetchRepos} k />
       {/each}
-      <AddRepo on:new-repo-added={fetchRepos}/>
     </div>
   </div>
 </section>

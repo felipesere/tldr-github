@@ -1,6 +1,6 @@
 <script>
   import { createEventDispatcher } from 'svelte';
-  import {newError} from './errorStore.js';
+  import {newError} from './errors/errorStore.js';
   const dispatch = createEventDispatcher();
   let newRepoName = "";
   let currentlyAddingRepo
@@ -33,8 +33,8 @@
   };
 </script>
 
-<article class="card horizontal-flex">
-  <div class="card-content content grow">
+<article class="horizontal-flex at-most-450">
+  <div class="content">
     <form class="field has-addons">
       <div class="control has-icons-right grow">
         <input bind:value={newRepoName} class="input" type="text" placeholder="Add new repo" />
@@ -54,3 +54,9 @@
     </form>
   </div>
 </article>
+
+<style>
+  .at-most-450 {
+    max-width: 450px;
+  }
+</style>
