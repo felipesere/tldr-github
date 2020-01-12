@@ -24,6 +24,7 @@ use db::{Db, SqliteDB};
 mod config;
 mod db;
 mod domain;
+mod filter;
 mod github;
 mod middleware;
 

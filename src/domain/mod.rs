@@ -59,12 +59,18 @@ pub struct NewIssue {
     pub labels: Vec<Label>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Label(String);
 
 impl Label {
     pub fn new(name: String) -> Self {
         Label(name)
+    }
+}
+
+impl <T: Into<String>> From<T> for Label {
+    fn from(val: T) -> Self {
+        Label::new(val.into())
     }
 }
 
