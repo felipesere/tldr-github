@@ -46,7 +46,7 @@ impl Display for RepoName {
 pub struct NewPullRequest {
     pub title: String,
     pub link: String,
-    pub by: String,
+    pub by: Author,
 }
 
 /// used for inserting
@@ -54,7 +54,7 @@ pub struct NewPullRequest {
 pub struct NewIssue {
     pub title: String,
     pub link: String,
-    pub by: String,
+    pub by: Author,
     pub labels: Vec<Label>,
 }
 
@@ -67,11 +67,37 @@ impl Label {
     }
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct Author {
+    pub name: String,
+    link: Option<String>,
+}
+
+impl Author {
+    pub fn new(name: String) -> Self {
+        Author {
+            name,
+            link: None,
+        }
+    }
+
+    pub fn with_link(mut self, url: String) -> Self {
+        self.link = Some(url);
+        self
+    }
+}
+
+impl <T: Into<String>> From<T> for Author {
+    fn from(val: T) -> Self {
+        Author::new(val.into())
+    }
+}
+
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct Commit {
     pub branch: String,
     pub on: DateTime<Utc>,
-    pub by: String,
+    pub by: Author,
     pub sha1: String,
     pub comment: String,
 }

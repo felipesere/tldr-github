@@ -118,7 +118,7 @@ impl domain::ClientForRepositories for GithubClient {
                 .collect();
 
             let item = domain::NewIssue {
-                by: issue.author.unwrap().login,
+                by: domain::Author::new(issue.author.unwrap().login),
                 link: issue.url,
                 title: issue.title,
                 labels,
@@ -149,8 +149,11 @@ impl domain::ClientForRepositories for GithubClient {
             .expect("nodes not present")
         {
             let pr = maybe_pr.unwrap();
+
+            let author = pr.author.unwrap();
+
             let item = domain::NewPullRequest {
-                by: pr.author.unwrap().login,
+                by: domain::Author::new(author.login).with_link(author.url),
                 link: pr.url,
                 title: pr.title,
             };
@@ -193,7 +196,7 @@ impl domain::ClientForRepositories for GithubClient {
         let time_of_commit = author.date.unwrap();
 
         let result = domain::Commit {
-            by: author.name.expect("no name"),
+            by: domain::Author::new(author.name.expect("no name")),
             comment: real_commit.clone().message_headline,
             on: time_of_commit,
             branch: "master".into(),

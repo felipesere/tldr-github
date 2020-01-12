@@ -21,7 +21,7 @@ impl From<crate::domain::Commit> for Commit {
         Commit {
             branch: other.branch,
             on: human.to_text_en(Accuracy::Rough, Tense::Present),
-            by: other.by,
+            by: other.by.name,
             sha1: other.sha1,
             comment: other.comment,
         }

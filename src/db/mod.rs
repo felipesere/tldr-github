@@ -273,7 +273,7 @@ pub fn insert_new_pr(
         repo_id: repo.id,
         title: &pr.title,
         link: &pr.link,
-        by: &pr.by,
+        by: &pr.by.name,
     };
 
     conn.transaction::<_, anyhow::Error, _>(|| {
@@ -305,7 +305,7 @@ pub fn insert_new_issue(conn: &Conn, repo: &StoredRepo, issue: &NewIssue) -> Res
         repo_id: repo.id,
         title: &issue.title,
         link: &issue.link,
-        by: &issue.by,
+        by: &issue.by.name,
     };
 
     conn.transaction::<_, anyhow::Error, _>(|| {
