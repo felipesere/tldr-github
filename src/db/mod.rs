@@ -396,19 +396,19 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
     use schema::issues::dsl::{issues, repo_id as issue_repo_id};
     let isx = issues
         .filter(issue_repo_id.eq_any(ids.clone()))
-        .load::<StoredIssue>(conn)?
+        .load::<StoredIssue>(conn).context("loading issues")?
         .grouped_by(&rs[..]);
 
     use schema::pull_requests::dsl::{pull_requests, repo_id as pr_repo_id};
     let prs = pull_requests
         .filter(pr_repo_id.eq_any(ids.clone()))
-        .load::<StoredPullRequest>(conn)?
+        .load::<StoredPullRequest>(conn).context("loading pull requests")?
         .grouped_by(&rs[..]);
 
     use schema::repo_activity_log::dsl::{repo_activity_log, repo_id as activity_repo_id};
     let activities = repo_activity_log
         .filter(activity_repo_id.eq_any(ids))
-        .load::<StoredRepoEvent>(conn)?
+        .load::<StoredRepoEvent>(conn).context("loading activity")?
         .grouped_by(&rs[..]);
 
     Result::Ok(
