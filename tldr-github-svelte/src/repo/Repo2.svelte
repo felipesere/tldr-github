@@ -9,16 +9,6 @@
   let showSettings = false
   let items = []
   let currentTab = 'all'
-
-  function itemsToUse(tab) {
-    if (tab === 'all') {
-      return [...repo.activity.prs, ...repo.activity.issues]
-    } 
-    if (tab === 'prs') {
-      return [...repo.activity.prs]
-    } 
-    return [...repo.activity.issues]
-  }
 </script>
 
 <article transition:fade="{{duration: 500}}" class="card vertical-flex">
@@ -26,7 +16,7 @@
     <div class="card-header-title">
       <p class="grow">{repo.title}</p>
       <a href="#" on:click|preventDefault={() => showSettings = !showSettings}>
-        <i class="icon ion-md-settings" />
+        <i class="icon ion-md-settings" data-testid="settings" />
       </a>
     </div>
   </header>
@@ -39,18 +29,18 @@
         <div class="tabs is-boxed">
           <ul>
             <li class:is-active={currentTab === 'all'}>
-              <a on:click={() => currentTab = 'all'}>
+              <a on:click|preventDefault={() => currentTab = 'all'}>
                 <span>All</span>
               </a>
             </li>
             <li class:is-active={currentTab === 'prs'}>
-              <a on:click={() => currentTab = 'prs'}>
+              <a on:click|preventDefault={() => currentTab = 'prs'}>
                 <Github icon='git-pull-request' />
                 <span>PRs</span>
               </a>
             </li>
             <li class:is-active={currentTab === 'issues'}>
-              <a on:click={() => currentTab = 'issues'}>
+              <a on:click|preventDefault={() => currentTab = 'issues'}>
                 <Github icon='issue-opened' />
                 <span>Issues</span>
               </a>

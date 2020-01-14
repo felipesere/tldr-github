@@ -6,7 +6,7 @@
     "dev": "rollup -c -w",
     "serve": "RUN_SERVER=true rollup -c -w",
     "start": "sirv public",
-    "test": "jest src",
+    "test": "jest test",
     "test:watch": "npm run test -- --watch"
   },
   "jest": {
@@ -18,6 +18,10 @@
       "js",
       "json",
       "svelte"
+    ],
+    "moduleDirectories": [
+      "node_modules",
+      "src"
     ],
     "setupFilesAfterEnv": [
       "@testing-library/jest-dom/extend-expect"
@@ -35,12 +39,10 @@
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-svelte": "^5.0.3",
     "rollup-plugin-terser": "^5.1.2",
-    "@rollup/plugin-json": "^4.0.1",
     "svelte": "^3.0.0",
     "svelte-jest": "^0.3.1"
   },
   "dependencies": {
-    "@primer/octicons": "^9.3.1",
     "sirv-cli": "^0.4.4"
   }
 }

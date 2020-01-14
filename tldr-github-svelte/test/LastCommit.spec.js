@@ -1,7 +1,7 @@
 import "@testing-library/jest-dom/extend-expect";
 import { render, fireEvent } from "@testing-library/svelte";
 
-import LastCommit from "./LastCommit";
+import LastCommit from "LastCommit";
 
 describe("the last commit", () => {
   it("shows the comment", () => {
