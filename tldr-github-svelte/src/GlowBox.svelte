@@ -2,7 +2,7 @@
   export let content;
 </script>
 
-<div class="glow-box">
+<div class="glow-box grow">
   <a href={content.link}>{content.title}</a>
   <p class="is-size-7">by {content.by}</p>
 </div>
@@ -13,10 +13,6 @@
   background-color: #F8F8F8;
   border: 1px solid #DDDDDB;
   border-radius: 3px;
-}
-
-.glow-box + .glow-box {
-  margin-top: 10px;
 }
 
 .glow-box:hover {

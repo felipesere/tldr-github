@@ -8,7 +8,7 @@
   let showSettings = false
 </script>
 
-<article transition:fade="{{duration: 500}}" class="card horizontal-flex">
+<article transition:fade="{{duration: 500}}" class="card vertical-flex">
   <header class="card-header">
     <div class="card-header-title">
       <p class="grow">{repo.title}</p>

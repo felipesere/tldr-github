@@ -33,7 +33,7 @@
   };
 </script>
 
-<article class="horizontal-flex at-most-450">
+<article class="vertical-flex at-most-450">
   <div class="content">
     <form class="field has-addons">
       <div class="control has-icons-right grow">
