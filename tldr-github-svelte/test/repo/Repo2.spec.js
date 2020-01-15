@@ -1,6 +1,6 @@
 import { render, fireEvent } from "@testing-library/svelte";
 
-import Repo2 from "repo/Repo2";
+import Repo from "repo/Repo";
 
 describe("Second variation of the repo", () => {
 
@@ -12,7 +12,7 @@ describe("Second variation of the repo", () => {
   }
 
   it("shows three tabs", () => {
-    const { getByText } = render(Repo2, { repo: sampleRepo} );
+    const { getByText } = render(Repo, { repo: sampleRepo} );
 
     expect(getByText("All")).toBeInTheDocument();
     expect(getByText("PRs")).toBeInTheDocument();
@@ -23,7 +23,7 @@ describe("Second variation of the repo", () => {
   });
 
   it("can pick the PR tab ", async () => {
-    const { getByText, queryByText } = render(Repo2, { repo: sampleRepo} );
+    const { getByText, queryByText } = render(Repo, { repo: sampleRepo} );
 
     const prs = getByText("PRs")
 
@@ -33,7 +33,7 @@ describe("Second variation of the repo", () => {
   });
 
   it("can pick the issues tab ", async () => {
-    const { getByText, queryByText } = render(Repo2, { repo: sampleRepo} );
+    const { getByText, queryByText } = render(Repo, { repo: sampleRepo} );
 
     const issues = getByText("Issues")
 
@@ -43,7 +43,7 @@ describe("Second variation of the repo", () => {
   });
 
   it("can go to the settings", async () => {
-    const { getByTestId, getByText } = render(Repo2, { repo: sampleRepo} );
+    const { getByTestId, getByText } = render(Repo, { repo: sampleRepo} );
 
     const settings = getByTestId("settings")
 

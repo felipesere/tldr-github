@@ -1,6 +1,6 @@
 <script>
   import Error from './errors/Error.svelte';
-  import Repo2 from './repo/Repo2.svelte';
+  import Repo from './repo/Repo.svelte';
   import AddRepo from './AddRepo.svelte';
   import { onMount } from 'svelte';
 
@@ -40,7 +40,7 @@
     {/if}
     <div class="grid">
       {#each repos as repo (repo.id) }
-        <Repo2 repo={repo}  on:repo-deleted={fetchRepos}/>
+        <Repo repo={repo}  on:repo-deleted={fetchRepos}/>
       {/each}
     </div>
   </div>
