@@ -7,13 +7,20 @@
 </script>
 
 
-{#each toBeDisplayed as item}
-  <div class="horizontal-flex">
-    <Indicator /><GlowBox content={item} />
-  </div>
-{/each}
+<ul>
+  {#each toBeDisplayed as item}
+    <li class="horizontal-flex">
+      <Indicator /><GlowBox content={item} />
+    <li>
+  {/each}
+</ul>
 
 <style>
+  ul {
+    list-style-type: none;
+    margin-left: 0;
+  }
+
   .horizontal-flex {
     display: flex;
     flex-direction: row;
