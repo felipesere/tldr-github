@@ -20,9 +20,4 @@
     list-style-type: none;
     margin-left: 0;
   }
-
-  .horizontal-flex {
-    display: flex;
-    flex-direction: row;
-  }
 </style>

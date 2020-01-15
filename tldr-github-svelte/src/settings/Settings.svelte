@@ -31,17 +31,13 @@
 </script>
 
 <section class="content">
-  <div class="thing">
+  <div class="horizontal-flex">
     <button class="button is-normal" class:is-loading={currentlyDeletingRepo} on:click|preventDefault={handleClick}>Delete</button>
     <p class="grow is-normal">to stop tracking this repo</p>
     <div>
 </section>
 
 <style>
-.thing {
-  display: flex;
-  flex-direction: row;
-}
 
 p {
   margin-top: auto;

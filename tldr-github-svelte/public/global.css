@@ -23,6 +23,11 @@ code {
   flex-direction: column;
 }
 
+.horizontal-flex {
+  display: flex;
+  flex-direction: row;
+}
+
 .grow {
   flex-grow: 1;
 }
