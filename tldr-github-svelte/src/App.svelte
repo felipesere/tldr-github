@@ -1,6 +1,5 @@
 <script>
   import Error from './errors/Error.svelte';
-  import Repo from './Repo.svelte';
   import Repo2 from './repo/Repo2.svelte';
   import AddRepo from './AddRepo.svelte';
   import { onMount } from 'svelte';
