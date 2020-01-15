@@ -1,14 +1,34 @@
 <script>
   import { fade } from 'svelte/transition';
   import Github from './Github.svelte';
-  import GlowBox from '../GlowBox.svelte';
-  import Indicator, {Recency} from './Indicator.svelte';
   import Settings from '../settings/Settings.svelte';
   import Content from './Content.svelte';
   export let repo
-  let showSettings = false
-  let items = []
-  let currentTab = 'all'
+  let showSettings = false;
+
+  let currentTab = 'all';
+
+  function filterItems(theRepo, tab) {
+    if (tab === 'all') {
+      return [...theRepo.activity.prs, ...theRepo.activity.issues]
+    }
+
+    if (tab === 'prs') {
+      return[...theRepo.activity.prs]
+    }
+
+    if (tab === 'issues') {
+      return [...theRepo.activity.issues]
+    }
+  };
+
+  $: items = filterItems(repo, currentTab);
+
+  const tabs = [
+    {value: 'all', text: 'All', icon: false },
+    {value: 'prs', text: 'PRs', icon: 'git-pull-request' },
+    {value: 'issues', text: 'Issues', icon: 'issue-opened' },
+  ]
 </script>
 
 <article transition:fade="{{duration: 500}}" class="card vertical-flex">
@@ -28,39 +48,20 @@
       <div class="content stack">
         <div class="tabs is-boxed">
           <ul>
-            <li class:is-active={currentTab === 'all'}>
-              <a on:click|preventDefault={() => currentTab = 'all'}>
-                <span>All</span>
-              </a>
-            </li>
-            <li class:is-active={currentTab === 'prs'}>
-              <a on:click|preventDefault={() => currentTab = 'prs'}>
-                <Github icon='git-pull-request' />
-                <span>PRs</span>
-              </a>
-            </li>
-            <li class:is-active={currentTab === 'issues'}>
-              <a on:click|preventDefault={() => currentTab = 'issues'}>
-                <Github icon='issue-opened' />
-                <span>Issues</span>
-              </a>
-            </li>
+            {#each tabs as tab}
+              <li class:is-active={currentTab === tab.value}>
+                <a on:click|preventDefault={() => currentTab = tab.value }>
+                  <Github icon={tab.icon} />
+                  <span>{tab.text}</span>
+                </a>
+              </li>
+            {/each}
           </ul>
         </div>
-        {#if currentTab === 'all'}
-          <Content items={[...repo.activity.prs, ...repo.activity.issues]} />
-        {:else if currentTab === 'prs'}
-          <Content items={[...repo.activity.prs]} />
-        {:else if currentTab === 'issues'}
-          <Content items={[...repo.activity.issues]} />
-        {/if}
-
+        <Content items={items} />
       </div>
     {/if}
   </div>
-  <footer class="card-footer">
-    <p class="is-size-7 card-footer-item">Last update 2min ago</p>
-  </footer>
 </article>
 
 <style>
