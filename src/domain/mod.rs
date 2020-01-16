@@ -11,6 +11,7 @@ pub trait ClientForRepositories {
     fn issues(&self, repo: &RepoName) -> Result<Vec<NewIssue>>;
     fn pull_requests(&self, repo: &RepoName) -> Result<Vec<NewPullRequest>>;
     fn last_commit(&self, repo: &RepoName) -> Result<Commit>;
+    fn entire_repo(&self, repo: &RepoName) -> Result<Vec<NewTrackedItem>>;
 }
 
 #[derive(Clone)]
@@ -39,6 +40,23 @@ impl Display for RepoName {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}/{}", self.owner, self.name)
     }
+}
+
+#[derive(Debug)]
+pub enum ItemKind {
+    PR,
+    Issue,
+}
+
+#[derive(Debug)]
+pub struct NewTrackedItem {
+    pub title: String,
+    pub link: String,
+    pub by: Author,
+    pub labels: Vec<Label>,
+    pub kind: ItemKind,
+    pub foreign_id: String,
+    pub last_updated: DateTime<Utc>,
 }
 
 /// used for inserting

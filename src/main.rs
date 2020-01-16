@@ -186,3 +186,16 @@ fn get_all_repos(db: Arc<dyn Db>) -> anyhow::Result<Vec<domain::api::Repo>> {
     }
     anyhow::Result::Ok(result)
 }
+
+pub trait BetterOption<T> {
+    fn possibly(self, messge: &'static str) -> anyhow::Result<T>;
+}
+
+impl<T> BetterOption<T> for Option<T> {
+    fn possibly(self, message: &'static str) -> anyhow::Result<T> {
+        match self {
+            None => anyhow::Result::Err(anyhow::anyhow!(message)),
+            Some(val) => anyhow::Result::Ok(val),
+        }
+    }
+}

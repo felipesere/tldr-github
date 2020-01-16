@@ -1,4 +1,5 @@
 use crate::domain;
+use crate::BetterOption;
 use anyhow::{bail, Result};
 use async_std::task;
 use graphql_client::GraphQLQuery;
@@ -31,6 +32,14 @@ pub struct IssuesView;
     response_derives = "Debug,Clone"
 )]
 pub struct LastCommitView;
+
+#[derive(GraphQLQuery)]
+#[graphql(
+    schema_path = "graphql/schema.graphql",
+    query_path = "graphql/broad-repo.graphql",
+    response_derives = "Debug,Clone"
+)]
+pub struct BroadRepoView;
 
 pub struct GithubClient {
     token: String,
@@ -93,6 +102,61 @@ fn funky_flatten<T>(input: Option<Vec<Option<T>>>) -> Vec<T> {
 }
 
 impl domain::ClientForRepositories for GithubClient {
+    fn entire_repo(&self, repo: &domain::RepoName) -> Result<Vec<domain::NewTrackedItem>> {
+        let query = BroadRepoView::build_query(broad_repo_view::Variables {
+            owner: repo.owner.clone(),
+            name: repo.name.clone(),
+        });
+
+        let data: broad_repo_view::ResponseData = self.make_request(query)?;
+        let broad_repo_view::BroadRepoViewRepository{ pull_requests, issues} = data.repository.possibly("repository not present")?;
+
+        let mut items = Vec::new();
+        for maybe_pr in pull_requests
+            .nodes
+            .possibly("nodes not present")?
+        {
+            let pr = maybe_pr.possibly("no pr present")?;
+            let labels = funky_flatten(pr.labels.possibly("no lables")?.nodes).into_iter().map(|s| domain::Label::new(s.name)).collect();
+
+            let author = pr.author.possibly("no author present")?;
+
+
+            items.push(domain::NewTrackedItem{
+                foreign_id: pr.id,
+                title: pr.title,
+                link: pr.url,
+                by: domain::Author::new(author.login).with_link(author.url),
+                labels: labels,
+                kind: domain::ItemKind::PR,
+                last_updated: pr.updated_at,
+            })
+        }
+
+        for maybe_issue in issues
+            .nodes
+            .possibly("nodes not present")?
+        {
+            let issue = maybe_issue.possibly("no issue present")?;
+            let labels = funky_flatten(issue.labels.possibly("no lables")?.nodes).into_iter().map(|s| domain::Label::new(s.name)).collect();
+
+            let author = issue.author.possibly("no author present")?;
+
+
+            items.push(domain::NewTrackedItem{
+                foreign_id: issue.id,
+                title: issue.title,
+                link: issue.url,
+                by: domain::Author::new(author.login).with_link(author.url),
+                labels: labels,
+                kind: domain::ItemKind::Issue,
+                last_updated: issue.updated_at,
+            })
+        }
+
+        return Result::Ok(items);
+    }
+
     fn issues(&self, repo: &domain::RepoName) -> Result<Vec<domain::NewIssue>> {
         let query = IssuesView::build_query(issues_view::Variables {
             owner: repo.owner.clone(),
@@ -260,5 +324,17 @@ mod tests {
             .expect("should be able to get PRs");
 
         assert_eq!("a7f20cbde5fbf313a39e522859be5ffd04d0de80", &commit.sha1)
+    }
+
+    #[test]
+    fn broad_repo_view() {
+        let client = GithubClient::new("<< token >>");
+        let repo = domain::RepoName::from("felipesere/advisorex").unwrap();
+
+        let entire_repo = client
+            .entire_repo(&repo)
+            .expect("should be able to get PRs");
+
+        assert_eq!(entire_repo.len(), 11);
     }
 }

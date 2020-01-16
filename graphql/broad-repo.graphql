@@ -1,0 +1,42 @@
+query BroadRepoView($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    pullRequests(states: [OPEN], first: 100, orderBy: {field: UPDATED_AT, direction: ASC}) {
+      totalCount
+      nodes {
+        id
+        updatedAt
+        title
+        author {
+          __typename
+          login
+          url
+        }
+         labels(first: 10) {
+          nodes {
+            name
+          }
+        }
+        url
+      }
+    }
+    issues(states: [OPEN], first: 100, , orderBy: {field: UPDATED_AT, direction: ASC}) {
+      totalCount
+      nodes {
+        id
+        updatedAt
+        title
+        author {
+          __typename
+          login
+          url
+        }
+        labels(first: 10) {
+          nodes {
+            name
+          }
+        }
+        url
+      }
+    }
+  }
+}
