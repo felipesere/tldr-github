@@ -109,20 +109,22 @@ impl domain::ClientForRepositories for GithubClient {
         });
 
         let data: broad_repo_view::ResponseData = self.make_request(query)?;
-        let broad_repo_view::BroadRepoViewRepository{ pull_requests, issues} = data.repository.possibly("repository not present")?;
+        let broad_repo_view::BroadRepoViewRepository {
+            pull_requests,
+            issues,
+        } = data.repository.possibly("repository not present")?;
 
         let mut items = Vec::new();
-        for maybe_pr in pull_requests
-            .nodes
-            .possibly("nodes not present")?
-        {
+        for maybe_pr in pull_requests.nodes.possibly("nodes not present")? {
             let pr = maybe_pr.possibly("no pr present")?;
-            let labels = funky_flatten(pr.labels.possibly("no lables")?.nodes).into_iter().map(|s| domain::Label::new(s.name)).collect();
+            let labels = funky_flatten(pr.labels.possibly("no lables")?.nodes)
+                .into_iter()
+                .map(|s| domain::Label::new(s.name))
+                .collect();
 
             let author = pr.author.possibly("no author present")?;
 
-
-            items.push(domain::NewTrackedItem{
+            items.push(domain::NewTrackedItem {
                 foreign_id: pr.id,
                 title: pr.title,
                 link: pr.url,
@@ -133,17 +135,16 @@ impl domain::ClientForRepositories for GithubClient {
             })
         }
 
-        for maybe_issue in issues
-            .nodes
-            .possibly("nodes not present")?
-        {
+        for maybe_issue in issues.nodes.possibly("nodes not present")? {
             let issue = maybe_issue.possibly("no issue present")?;
-            let labels = funky_flatten(issue.labels.possibly("no lables")?.nodes).into_iter().map(|s| domain::Label::new(s.name)).collect();
+            let labels = funky_flatten(issue.labels.possibly("no lables")?.nodes)
+                .into_iter()
+                .map(|s| domain::Label::new(s.name))
+                .collect();
 
             let author = issue.author.possibly("no author present")?;
 
-
-            items.push(domain::NewTrackedItem{
+            items.push(domain::NewTrackedItem {
                 foreign_id: issue.id,
                 title: issue.title,
                 link: issue.url,

@@ -86,7 +86,7 @@ impl Label {
     }
 }
 
-impl <T: Into<String>> From<T> for Label {
+impl<T: Into<String>> From<T> for Label {
     fn from(val: T) -> Self {
         Label::new(val.into())
     }
@@ -100,10 +100,7 @@ pub struct Author {
 
 impl Author {
     pub fn new(name: String) -> Self {
-        Author {
-            name,
-            link: None,
-        }
+        Author { name, link: None }
     }
 
     pub fn with_link(mut self, url: String) -> Self {
@@ -112,7 +109,7 @@ impl Author {
     }
 }
 
-impl <T: Into<String>> From<T> for Author {
+impl<T: Into<String>> From<T> for Author {
     fn from(val: T) -> Self {
         Author::new(val.into())
     }
@@ -131,7 +128,7 @@ pub fn add_new_repo(
     db: Arc<dyn Db>,
     client: Arc<dyn ClientForRepositories>,
     name: RepoName,
-) -> anyhow::Result<StoredRepo> {
+) -> Result<StoredRepo> {
     let pulls = client.pull_requests(&name).unwrap_or_default();
     let issues = client.issues(&name).unwrap_or_default();
     let last_commit = client.last_commit(&name);

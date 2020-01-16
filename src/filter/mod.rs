@@ -1,4 +1,4 @@
-use crate::domain::{Label};
+use crate::domain::Label;
 
 #[derive(Copy, Clone)]
 pub enum Operator {
@@ -27,21 +27,21 @@ impl Filter for FilterByLabel {
 }
 
 // This will need to be storable in the DB
-pub struct StoredFilter<T, F: Filter<Item=T>> {
+pub struct StoredFilter<T, F: Filter<Item = T>> {
     operator: Operator,
     filter: F,
 }
 
-impl <T, F: Filter<Item=T>> StoredFilter<T, F> {
-    fn matches(&self, item: T) -> bool  {
+impl<T, F: Filter<Item = T>> StoredFilter<T, F> {
+    fn matches(&self, item: T) -> bool {
         self.filter.matches(self.operator, item)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::domain::Label;
     use super::*;
+    use crate::domain::Label;
 
     #[test]
     fn matches_the_same_label() {
@@ -50,11 +50,12 @@ mod tests {
 
         let filter = StoredFilter {
             operator: Operator::Equal,
-            filter: FilterByLabel {  label: "foo".into() },
+            filter: FilterByLabel {
+                label: "foo".into(),
+            },
         };
 
         assert!(filter.matches(foo));
         assert!(!filter.matches(bar));
-
     }
 }
