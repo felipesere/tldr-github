@@ -13,7 +13,7 @@ use diesel::sqlite::{Sqlite, SqliteConnection};
 
 use schema::{issues, pull_requests, repo_activity_log, repos};
 
-use crate::domain::{Commit, NewIssue, NewPullRequest};
+use crate::domain::{Commit, NewIssue, NewPullRequest, NewTrackedItem};
 
 mod schema;
 
@@ -27,6 +27,8 @@ pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
 }
 
 pub trait Db {
+    // TODO better return type
+    fn insert_tracked_items(&self, repo_name: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()>;
     fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
     fn insert_new_pr(&self, repo: &StoredRepo, pr: &NewPullRequest) -> Result<StoredPullRequest>;
     fn insert_prs(
@@ -57,6 +59,11 @@ impl Db for SqliteDB {
         let conn = self.conn.get()?;
         insert_new_repo(&conn, repo_name)
     }
+
+    fn insert_tracked_items(&self, repo_name: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()> {
+        Result::Ok(())
+    }
+
     fn insert_new_pr(&self, repo: &StoredRepo, pr: &NewPullRequest) -> Result<StoredPullRequest> {
         let conn = self.conn.get()?;
         insert_new_pr(&conn, repo, pr)
