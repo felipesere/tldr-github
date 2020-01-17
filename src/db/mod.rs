@@ -22,9 +22,7 @@ pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
 }
 
 pub trait Db {
-    // TODO better return type
     fn insert_tracked_items(&self, repo_name: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()>;
-    // TODO: to be used in future
     fn all(&self) -> Result<Vec<FullStoredRepo>>;
     fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
     fn delete(&self, r: i32) -> Result<()>;

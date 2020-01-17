@@ -10,7 +10,6 @@ pub mod api;
 pub trait ClientForRepositories {
     fn issues(&self, repo: &RepoName) -> Result<Vec<NewIssue>>;
     fn pull_requests(&self, repo: &RepoName) -> Result<Vec<NewPullRequest>>;
-    fn last_commit(&self, repo: &RepoName) -> Result<Commit>;
     fn entire_repo(&self, repo: &RepoName) -> Result<Vec<NewTrackedItem>>;
 }
 
@@ -123,15 +122,6 @@ impl<T: Into<String>> From<T> for Author {
     fn from(val: T) -> Self {
         Author::new(val.into())
     }
-}
-
-#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
-pub struct Commit {
-    pub branch: String,
-    pub on: DateTime<Utc>,
-    pub by: Author,
-    pub sha1: String,
-    pub comment: String,
 }
 
 pub fn add_new_repo(
