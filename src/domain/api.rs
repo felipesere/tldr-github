@@ -1,4 +1,4 @@
-use serde::{Serialize};
+use serde::Serialize;
 use std::convert::From;
 
 impl From<crate::db::FullStoredRepo> for Repo {

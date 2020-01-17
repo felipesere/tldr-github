@@ -25,7 +25,4 @@ table! {
 
 joinable!(tracked_items -> repos (repo_id));
 
-allow_tables_to_appear_in_same_query!(
-    repos,
-    tracked_items,
-);
+allow_tables_to_appear_in_same_query!(repos, tracked_items,);

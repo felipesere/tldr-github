@@ -4,11 +4,11 @@ use anyhow::{bail, Context, Result};
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::sqlite::{SqliteConnection};
+use diesel::sqlite::SqliteConnection;
 
 use schema::{repos, tracked_items};
 
-use crate::domain::{NewTrackedItem};
+use crate::domain::NewTrackedItem;
 
 mod schema;
 
@@ -22,7 +22,11 @@ pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
 }
 
 pub trait Db {
-    fn insert_tracked_items(&self, repo_name: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()>;
+    fn insert_tracked_items(
+        &self,
+        repo_name: &StoredRepo,
+        items: Vec<NewTrackedItem>,
+    ) -> Result<()>;
     fn all(&self) -> Result<Vec<FullStoredRepo>>;
     fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
     fn delete(&self, r: i32) -> Result<()>;
@@ -99,7 +103,6 @@ pub struct StoredIssue {
     updated_at: NaiveDateTime,
 }
 
-
 // this needs to be made transactional
 pub fn delete(conn: &Conn, r: i32) -> Result<()> {
     match diesel::delete(repos::table.filter(repos::id.eq(r))).execute(conn) {
@@ -140,42 +143,52 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
 
     let ids: Vec<i32> = rs.iter().map(|r| r.id).collect();
 
-    let items: Vec<Vec<StoredTrackedItem>> = tracked_items::table.filter(tracked_items::columns::repo_id.eq_any(ids)).load(conn).context("loading tracked items")?.grouped_by(&rs[..]);
+    let items: Vec<Vec<StoredTrackedItem>> = tracked_items::table
+        .filter(tracked_items::columns::repo_id.eq_any(ids))
+        .load(conn)
+        .context("loading tracked items")?
+        .grouped_by(&rs[..]);
 
     Result::Ok(
-        rs.into_iter().zip(items).map(|(repo, tracked)| {
-            let prs = tracked.iter().filter(|t| t.kind == "pr").map(|item| {
-                StoredPullRequest {
-                    id: item.id,
-                    repo_id: item.repo_id,
-                    title: item.title.clone(),
-                    by: item.by.clone(),
-                    link: item.link.clone(),
-                    created_at: item.created_at,
-                    updated_at: item.updated_at,
+        rs.into_iter()
+            .zip(items)
+            .map(|(repo, tracked)| {
+                let prs = tracked
+                    .iter()
+                    .filter(|t| t.kind == "pr")
+                    .map(|item| StoredPullRequest {
+                        id: item.id,
+                        repo_id: item.repo_id,
+                        title: item.title.clone(),
+                        by: item.by.clone(),
+                        link: item.link.clone(),
+                        created_at: item.created_at,
+                        updated_at: item.updated_at,
+                    })
+                    .collect();
+                let issues = tracked
+                    .iter()
+                    .filter(|t| t.kind == "issue")
+                    .map(|item| StoredIssue {
+                        id: item.id,
+                        repo_id: item.repo_id,
+                        title: item.title.clone(),
+                        by: item.by.clone(),
+                        link: item.link.clone(),
+                        created_at: item.created_at,
+                        updated_at: item.updated_at,
+                    })
+                    .collect();
+                FullStoredRepo {
+                    id: repo.id,
+                    title: repo.title,
+                    prs,
+                    issues,
                 }
-            }).collect();
-            let issues = tracked.iter().filter(|t| t.kind == "issue").map(|item| {
-                StoredIssue {
-                    id: item.id,
-                    repo_id: item.repo_id,
-                    title: item.title.clone(),
-                    by: item.by.clone(),
-                    link: item.link.clone(),
-                    created_at: item.created_at,
-                    updated_at: item.updated_at,
-                }
-            }).collect();
-            FullStoredRepo {
-                id: repo.id,
-                title: repo.title,
-                prs,
-                issues,
-            }
-        }).collect()
+            })
+            .collect(),
     )
 }
-
 
 #[derive(Insertable)]
 #[table_name = "tracked_items"]
@@ -189,7 +202,6 @@ struct InsertableTrackedItem<'a> {
     kind: String,
     last_updated: NaiveDateTime,
 }
-
 
 #[derive(Associations, Identifiable, Queryable, Debug)]
 #[belongs_to(StoredRepo, foreign_key = "repo_id")]
@@ -208,7 +220,11 @@ struct StoredTrackedItem {
     updated_at: NaiveDateTime,
 }
 
-pub fn insert_tracked_items(conn: &Conn, repo: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()> {
+pub fn insert_tracked_items(
+    conn: &Conn,
+    repo: &StoredRepo,
+    items: Vec<NewTrackedItem>,
+) -> Result<()> {
     conn.transaction::<_, anyhow::Error, _>(|| {
         for i in items.iter() {
             let item = InsertableTrackedItem {
@@ -222,7 +238,9 @@ pub fn insert_tracked_items(conn: &Conn, repo: &StoredRepo, items: Vec<NewTracke
                 last_updated: i.last_updated.naive_utc(),
             };
 
-            diesel::insert_into(tracked_items::table).values(&item).execute(conn)?;
+            diesel::insert_into(tracked_items::table)
+                .values(&item)
+                .execute(conn)?;
         }
 
         Result::Ok(())

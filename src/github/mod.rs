@@ -113,9 +113,13 @@ impl domain::ClientForRepositories for GithubClient {
                 .map(|s| domain::Label::new(s.name))
                 .collect();
 
-            let author = pr.author.map(|a| {
-                domain::Author::new(a.login).with_link(a.url)
-            }).unwrap_or(domain::Author::new("ghost".into()).with_link("https://github.com/ghost".into()));
+            let author = pr
+                .author
+                .map(|a| domain::Author::new(a.login).with_link(a.url))
+                .unwrap_or(
+                    domain::Author::new("ghost".into())
+                        .with_link("https://github.com/ghost".into()),
+                );
 
             items.push(domain::NewTrackedItem {
                 foreign_id: pr.id,
@@ -135,9 +139,13 @@ impl domain::ClientForRepositories for GithubClient {
                 .map(|s| domain::Label::new(s.name))
                 .collect();
 
-            let author = issue.author.map(|a| {
-                domain::Author::new(a.login).with_link(a.url)
-            }).unwrap_or(domain::Author::new("ghost".into()).with_link("https://github.com/ghost".into()));
+            let author = issue
+                .author
+                .map(|a| domain::Author::new(a.login).with_link(a.url))
+                .unwrap_or(
+                    domain::Author::new("ghost".into())
+                        .with_link("https://github.com/ghost".into()),
+                );
 
             items.push(domain::NewTrackedItem {
                 foreign_id: issue.id,
