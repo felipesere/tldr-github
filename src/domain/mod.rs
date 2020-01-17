@@ -2,7 +2,7 @@ use anyhow::{bail, Result};
 use chrono::{DateTime, Utc};
 use std::fmt::{Display, Formatter};
 
-use crate::db::{Db, NewRepoEvent, RepoEvents, StoredRepo};
+use crate::db::{Db, StoredRepo};
 use std::sync::Arc;
 
 pub mod api;
