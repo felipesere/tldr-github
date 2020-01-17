@@ -139,22 +139,10 @@ pub fn add_new_repo(
     client: Arc<dyn ClientForRepositories>,
     name: RepoName,
 ) -> Result<StoredRepo> {
-    let pulls = client.pull_requests(&name).unwrap_or_default();
-    let issues = client.issues(&name).unwrap_or_default();
-    let last_commit = client.last_commit(&name);
+    let items = client.entire_repo(&name)?;
 
     let repo = db.insert_new_repo(&name.to_string())?;
-    db.insert_prs(&repo, pulls)?;
-    db.insert_issues(&repo, issues)?;
+    db.insert_tracked_items(&repo, items)?;
 
-    last_commit
-        .and_then(|commit| {
-            db.insert_new_repo_activity(
-                &repo,
-                NewRepoEvent {
-                    event: RepoEvents::LatestCommitOnMaster(commit),
-                },
-            )
-        })
-        .map(|_s| repo)
+    Result::Ok(repo)
 }

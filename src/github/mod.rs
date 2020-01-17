@@ -122,13 +122,15 @@ impl domain::ClientForRepositories for GithubClient {
                 .map(|s| domain::Label::new(s.name))
                 .collect();
 
-            let author = pr.author.possibly("no author present")?;
+            let author = pr.author.map(|a| {
+                domain::Author::new(a.login).with_link(a.url)
+            }).unwrap_or(domain::Author::new("ghost".into()).with_link("https://github.com/ghost".into()));
 
             items.push(domain::NewTrackedItem {
                 foreign_id: pr.id,
                 title: pr.title,
                 link: pr.url,
-                by: domain::Author::new(author.login).with_link(author.url),
+                by: author,
                 labels: labels,
                 kind: domain::ItemKind::PR,
                 last_updated: pr.updated_at,
@@ -142,13 +144,15 @@ impl domain::ClientForRepositories for GithubClient {
                 .map(|s| domain::Label::new(s.name))
                 .collect();
 
-            let author = issue.author.possibly("no author present")?;
+            let author = issue.author.map(|a| {
+                domain::Author::new(a.login).with_link(a.url)
+            }).unwrap_or(domain::Author::new("ghost".into()).with_link("https://github.com/ghost".into()));
 
             items.push(domain::NewTrackedItem {
                 foreign_id: issue.id,
                 title: issue.title,
                 link: issue.url,
-                by: domain::Author::new(author.login).with_link(author.url),
+                by: author,
                 labels: labels,
                 kind: domain::ItemKind::Issue,
                 last_updated: issue.updated_at,

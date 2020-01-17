@@ -179,7 +179,7 @@ struct ErrorJson {
 }
 
 fn get_all_repos(db: Arc<dyn Db>) -> anyhow::Result<Vec<domain::api::Repo>> {
-    let repos = db.all()?;
+    let repos = db.all2()?;
     let mut result = Vec::new();
     for repo in repos {
         result.push(Repo::from(repo))
