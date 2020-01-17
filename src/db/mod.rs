@@ -11,7 +11,7 @@ use diesel::serialize::{self, Output, ToSql};
 use diesel::sql_types::Text;
 use diesel::sqlite::{Sqlite, SqliteConnection};
 
-use schema::{issues, pull_requests, repo_activity_log, repos};
+use schema::{issues, pull_requests, repo_activity_log, repos, tracked_items};
 
 use crate::domain::{Commit, NewIssue, NewPullRequest, NewTrackedItem};
 
@@ -29,6 +29,8 @@ pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
 pub trait Db {
     // TODO better return type
     fn insert_tracked_items(&self, repo_name: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()>;
+    // TODO: to be used in future
+    fn all2(&self) -> Result<Vec<FullStoredRepo>>;
     fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
     fn insert_new_pr(&self, repo: &StoredRepo, pr: &NewPullRequest) -> Result<StoredPullRequest>;
     fn insert_prs(
@@ -60,8 +62,14 @@ impl Db for SqliteDB {
         insert_new_repo(&conn, repo_name)
     }
 
-    fn insert_tracked_items(&self, repo_name: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()> {
-        Result::Ok(())
+    fn insert_tracked_items(&self, repo: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()> {
+        let conn = self.conn.get()?;
+        insert_tracked_items(&conn, repo, items)
+    }
+
+    fn all2(&self) -> Result<Vec<FullStoredRepo>> {
+        let conn = self.conn.get()?;
+        all2(&conn)
     }
 
     fn insert_new_pr(&self, repo: &StoredRepo, pr: &NewPullRequest) -> Result<StoredPullRequest> {
@@ -437,6 +445,49 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
     )
 }
 
+pub fn all2(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
+    use schema::repos::dsl::*;
+    let rs: Vec<StoredRepo> = repos.load(conn).with_context(|| "getting all repos")?;
+
+    let ids: Vec<i32> = rs.iter().map(|r| r.id).collect();
+
+    let items: Vec<Vec<StoredTrackedItem>> = tracked_items::table.filter(tracked_items::columns::repo_id.eq_any(ids)).load(conn).context("loading tracked items")?.grouped_by(&rs[..]);
+
+    Result::Ok(
+        rs.into_iter().zip(items).map(|(repo, tracked)| {
+            let prs = tracked.iter().filter(|t| t.kind == "pr").map(|item| {
+                StoredPullRequest {
+                    id: item.id,
+                    repo_id: item.repo_id,
+                    title: item.title.clone(),
+                    by: item.by.clone(),
+                    link: item.link.clone(),
+                    created_at: item.created_at,
+                    updated_at: item.updated_at,
+                }
+            }).collect();
+            let issues = tracked.iter().filter(|t| t.kind == "issue").map(|item| {
+                StoredIssue {
+                    id: item.id,
+                    repo_id: item.repo_id,
+                    title: item.title.clone(),
+                    by: item.by.clone(),
+                    link: item.link.clone(),
+                    created_at: item.created_at,
+                    updated_at: item.updated_at,
+                }
+            }).collect();
+            FullStoredRepo {
+                id: repo.id,
+                title: repo.title,
+                prs,
+                issues,
+                events: Vec::new(),
+            }
+        }).collect()
+    )
+}
+
 pub fn find_prs_for_repo(conn: &Conn, r: i32) -> Result<Vec<StoredPullRequest>> {
     use schema::pull_requests::dsl::*;
     pull_requests
@@ -451,6 +502,58 @@ pub fn find_issues_for_repo(conn: &Conn, r: i32) -> Result<Vec<StoredIssue>> {
         .filter(repo_id.eq(r))
         .load(conn)
         .with_context(|| "getting issues for repo")
+}
+
+#[derive(Insertable)]
+#[table_name = "tracked_items"]
+struct InsertableTrackedItem<'a> {
+    repo_id: i32,
+    foreign_id: &'a str,
+    title: &'a str,
+    link: &'a str,
+    by: &'a str,
+    labels: &'a str,
+    kind: String,
+    last_updated: NaiveDateTime,
+}
+
+
+#[derive(Associations, Identifiable, Queryable, Debug)]
+#[belongs_to(StoredRepo, foreign_key = "repo_id")]
+#[table_name = "tracked_items"]
+struct StoredTrackedItem {
+    id: i32,
+    repo_id: i32,
+    foreign_id: String,
+    title: String,
+    by: String,
+    link: String,
+    labels: String,
+    kind: String,
+    last_updated: NaiveDateTime,
+    created_at: NaiveDateTime,
+    updated_at: NaiveDateTime,
+}
+
+pub fn insert_tracked_items(conn: &Conn, repo: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()> {
+    conn.transaction::<_, anyhow::Error, _>(|| {
+        for i in items.iter() {
+            let item = InsertableTrackedItem {
+                repo_id: repo.id,
+                title: &i.title,
+                link: &i.link,
+                by: &i.by.name,
+                labels: "",
+                kind: i.kind.to_string(),
+                foreign_id: &i.foreign_id,
+                last_updated: i.last_updated.naive_utc(),
+            };
+
+            diesel::insert_into(tracked_items::table).values(&item).execute(conn)?;
+        }
+
+        Result::Ok(())
+    })
 }
 
 #[cfg(test)]
@@ -659,6 +762,47 @@ mod test {
                 RepoEvents::LatestCommitOnMaster(c) => assert_eq!(c.branch, "master".to_owned()),
                 _ => assert!(false, "did mot get a 'LatestCommitOnMaster' event"),
             }
+            Result::<StoredRepo, anyhow::Error>::Ok(repo)
+        })
+        .unwrap();
+    }
+
+    #[test]
+    fn can_insert_tracked_items() {
+        let conn = test_pool();
+        in_test_transaction(&conn, || {
+            let repo = insert_new_repo(&conn, "felipesere/test")?;
+
+            let item1 = NewTrackedItem {
+                title: "pr".into(),
+                link: "something".into(),
+                by: "felipe".into(),
+                labels: vec!["foo".into(), "bar".into()],
+                kind: ItemKind::PR,
+                foreign_id: "abc123".into(),
+                last_updated: Utc.ymd(2019, 4, 22).and_hms(15, 37, 18),
+            };
+
+            let item2 = NewTrackedItem {
+                title: "an issue".into(),
+                link: "something".into(),
+                by: "felipe".into(),
+                labels: vec!["foo".into(), "bar".into()],
+                kind: ItemKind::Issue,
+                foreign_id: "abc123".into(),
+                last_updated: Utc.ymd(2019, 4, 22).and_hms(15, 37, 18),
+            };
+
+            insert_tracked_items(&conn, &repo, vec![item1, item2])?;
+
+            let repos: Vec<FullStoredRepo> = all2(&conn)?;
+
+            let repos = dbg!(repos);
+
+            assert_eq!(repos.len(), 1);
+            assert_eq!(repos[0].issues.len(), 1);
+            assert_eq!(repos[0].prs.len(), 1);
+
             Result::<StoredRepo, anyhow::Error>::Ok(repo)
         })
         .unwrap();

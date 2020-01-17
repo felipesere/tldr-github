@@ -48,6 +48,16 @@ pub enum ItemKind {
     Issue,
 }
 
+impl ToString for ItemKind {
+    fn to_string(&self) -> String {
+        use ItemKind::*;
+        match self {
+            PR => String::from("pr"),
+            Issue => String::from("issue"),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct NewTrackedItem {
     pub title: String,
