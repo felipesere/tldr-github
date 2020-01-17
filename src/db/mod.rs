@@ -6,7 +6,7 @@ use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::sqlite::{SqliteConnection};
 
-use schema::{issues, pull_requests, repo_activity_log, repos, tracked_items};
+use schema::{repos, tracked_items};
 
 use crate::domain::{NewTrackedItem};
 
@@ -108,21 +108,9 @@ pub fn delete(conn: &Conn, r: i32) -> Result<()> {
         Err(m) => bail!("could not delete repo: {}", m),
     };
 
-    match diesel::delete(pull_requests::table.filter(pull_requests::repo_id.eq(r))).execute(conn) {
+    match diesel::delete(tracked_items::table.filter(tracked_items::repo_id.eq(r))).execute(conn) {
         Ok(_) => {}
-        Err(m) => bail!("could not delete prs for repo repo: {}", m),
-    };
-
-    match diesel::delete(issues::table.filter(issues::repo_id.eq(r))).execute(conn) {
-        Ok(_) => {}
-        Err(m) => bail!("could not delete issues for repo repo: {}", m),
-    };
-
-    match diesel::delete(repo_activity_log::table.filter(repo_activity_log::repo_id.eq(r)))
-        .execute(conn)
-    {
-        Ok(_) => {}
-        Err(m) => bail!("could not delete issues for repo repo: {}", m),
+        Err(m) => bail!("could not delete tracked for repo repo: {}", m),
     };
 
     Ok(())
