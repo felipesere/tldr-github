@@ -25,7 +25,7 @@ pub trait Db {
     // TODO better return type
     fn insert_tracked_items(&self, repo_name: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()>;
     // TODO: to be used in future
-    fn all2(&self) -> Result<Vec<FullStoredRepo>>;
+    fn all(&self) -> Result<Vec<FullStoredRepo>>;
     fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
     fn delete(&self, r: i32) -> Result<()>;
 }
@@ -45,9 +45,9 @@ impl Db for SqliteDB {
         insert_tracked_items(&conn, repo, items)
     }
 
-    fn all2(&self) -> Result<Vec<FullStoredRepo>> {
+    fn all(&self) -> Result<Vec<FullStoredRepo>> {
         let conn = self.conn.get()?;
-        all2(&conn)
+        all(&conn)
     }
 
     fn delete(&self, r: i32) -> Result<()> {
@@ -148,7 +148,7 @@ pub fn insert_new_repo(conn: &Conn, repo_name: &str) -> Result<StoredRepo> {
     })
 }
 
-pub fn all2(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
+pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
     use schema::repos::dsl::*;
     let rs: Vec<StoredRepo> = repos.load(conn).with_context(|| "getting all repos")?;
 
@@ -324,7 +324,7 @@ mod test {
 
             insert_tracked_items(&conn, &repo, vec![item1, item2])?;
 
-            let repos: Vec<FullStoredRepo> = all2(&conn)?;
+            let repos: Vec<FullStoredRepo> = all(&conn)?;
 
             let repos = dbg!(repos);
 
