@@ -11,6 +11,7 @@ use async_std::task;
 use serde::Serialize;
 use simplelog::CombinedLogger;
 use tide::{Request, Response};
+use tide::middleware::RequestLogger;
 use tide_naive_static_files::StaticFilesEndpoint;
 
 use config::Config;
@@ -76,7 +77,7 @@ fn main() -> anyhow::Result<()> {
     };
 
     let mut app = tide::with_state(state);
-    app.middleware(logger::RequestLogger::new());
+    app.middleware(RequestLogger::new());
     app.at("/").get(tide::redirect(ui.entry()));
     app.at(&ui.hosted_on)
         .strip_prefix()
