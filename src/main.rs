@@ -5,20 +5,20 @@ extern crate diesel_migrations;
 
 use std::io::Read;
 use std::sync::Arc;
+use std::fs::File;
 
 use anyhow::Context;
 use async_std::task;
 use serde::Serialize;
-use simplelog::CombinedLogger;
 use tide::{Request, Response};
 use tide::middleware::RequestLogger;
 use tide_naive_static_files::StaticFilesEndpoint;
+use simplelog::{CombinedLogger, WriteLogger, TermLogger, LevelFilter, TerminalMode, SharedLogger};
 
 use config::Config;
 use domain::api::Repo;
 use domain::{ClientForRepositories, RepoName};
 use github::GithubClient;
-use middleware::logger;
 
 use db::{Db, SqliteDB};
 
@@ -27,7 +27,6 @@ mod db;
 mod domain;
 mod filter;
 mod github;
-mod middleware;
 
 embed_migrations!("./migrations");
 
@@ -51,15 +50,27 @@ impl State {
     }
 }
 
+pub fn terminal() -> Box<dyn SharedLogger> {
+    TermLogger::new(LevelFilter::Info, simplelog::Config::default(), TerminalMode::Mixed).unwrap()
+}
+
+pub fn file(name: &'static str) -> Box<dyn SharedLogger> {
+    WriteLogger::new(
+        LevelFilter::Info,
+        simplelog::Config::default(),
+        File::create(name).unwrap(),
+    )
+}
+
 fn main() -> anyhow::Result<()> {
-    let mut file = std::fs::File::open("./config.json")?;
+    let mut f = std::fs::File::open("./config.json")?;
     let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
+    f.read_to_string(&mut contents)?;
 
     let config: Config =
         serde_json::from_str(&contents).with_context(|| "Unable to read config")?;
 
-    CombinedLogger::init(vec![logger::terminal(), logger::file("tldr-github.log")])
+    CombinedLogger::init(vec![terminal(), file("tldr-github.log")])
         .with_context(|| "failed to initialize the logging system")?;
 
     let pool = config
