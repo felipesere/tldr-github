@@ -85,6 +85,7 @@ pub struct NewRepo<'a> {
 pub struct StoredPullRequest {
     id: i32,
     repo_id: i32,
+    pub nr: i32,
     pub title: String,
     pub by: String,
     pub link: String,
@@ -96,6 +97,7 @@ pub struct StoredPullRequest {
 pub struct StoredIssue {
     id: i32,
     repo_id: i32,
+    pub nr: i32,
     pub title: String,
     pub by: String,
     pub link: String,
@@ -161,6 +163,7 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
                         repo_id: item.repo_id,
                         title: item.title.clone(),
                         by: item.by.clone(),
+                        nr: item.number,
                         link: item.link.clone(),
                         created_at: item.created_at,
                         updated_at: item.updated_at,
@@ -174,6 +177,7 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
                         repo_id: item.repo_id,
                         title: item.title.clone(),
                         by: item.by.clone(),
+                        nr: item.number,
                         link: item.link.clone(),
                         created_at: item.created_at,
                         updated_at: item.updated_at,
