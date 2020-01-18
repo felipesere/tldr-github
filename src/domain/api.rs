@@ -1,6 +1,8 @@
 use serde::Serialize;
 use std::convert::From;
 
+use crate::domain::Label;
+
 impl From<crate::db::FullStoredRepo> for Repo {
     fn from(other: crate::db::FullStoredRepo) -> Self {
         let crate::db::FullStoredRepo {
@@ -29,7 +31,7 @@ impl From<crate::db::StoredPullRequest> for Item {
             title: other.title,
             link: other.link,
             by: other.by,
-            labels: Vec::new(),
+            labels: Label::expose(&other.labels),
         }
     }
 }
@@ -41,7 +43,7 @@ impl From<crate::db::StoredIssue> for Item {
             title: other.title,
             link: other.link,
             by: other.by,
-            labels: Vec::new(),
+            labels: Label::expose(&other.labels),
         }
     }
 }

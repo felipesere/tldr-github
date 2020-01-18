@@ -8,7 +8,7 @@ use diesel::sqlite::SqliteConnection;
 
 use schema::{repos, tracked_items};
 
-use crate::domain::NewTrackedItem;
+use crate::domain::{Label, NewTrackedItem};
 
 mod schema;
 
@@ -89,6 +89,7 @@ pub struct StoredPullRequest {
     pub title: String,
     pub by: String,
     pub link: String,
+    pub labels: Vec<Label>,
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
 }
@@ -101,6 +102,7 @@ pub struct StoredIssue {
     pub title: String,
     pub by: String,
     pub link: String,
+    pub labels: Vec<Label>,
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
 }
@@ -165,6 +167,7 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
                         by: item.by.clone(),
                         nr: item.number,
                         link: item.link.clone(),
+                        labels: Label::split(&item.labels),
                         created_at: item.created_at,
                         updated_at: item.updated_at,
                     })
@@ -179,6 +182,7 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
                         by: item.by.clone(),
                         nr: item.number,
                         link: item.link.clone(),
+                        labels: Label::split(&item.labels),
                         created_at: item.created_at,
                         updated_at: item.updated_at,
                     })
@@ -238,7 +242,7 @@ pub fn insert_tracked_items(
                 title: &i.title,
                 link: &i.link,
                 by: &i.by.name,
-                labels: "",
+                labels: &Label::join(&i.labels),
                 kind: i.kind.to_string(),
                 foreign_id: &i.foreign_id,
                 number: i.number,

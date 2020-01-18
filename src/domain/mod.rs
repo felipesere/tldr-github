@@ -94,6 +94,21 @@ impl Label {
     pub fn new(name: String) -> Self {
         Label(name)
     }
+
+    pub fn join(labels: &Vec<Label>) -> String {
+        labels.iter().map(|l| l.0.clone()).collect::<Vec<_>>().join(",")
+    }
+
+    pub fn split(raw: &str) -> Vec<Label> {
+        if raw == "" {
+            return Vec::new();
+        }
+        raw.split(",").map(|l| Label(l.to_owned())).collect()
+    }
+
+    pub fn expose(labels: &Vec<Label>) -> Vec<String> {
+        labels.iter().map(|l| l.0.clone()).collect()
+    }
 }
 
 impl<T: Into<String>> From<T> for Label {
