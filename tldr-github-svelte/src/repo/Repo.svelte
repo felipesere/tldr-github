@@ -2,8 +2,8 @@
   import { fade } from 'svelte/transition';
   import Github from './Github.svelte';
   import Settings from '../settings/Settings.svelte';
-  import Content from './Content.svelte';
-  export let repo
+  import TrackedItems from './TrackedItems.svelte';
+  export let repo;
   let showSettings = false;
 
   let currentTab = 'all';
@@ -20,7 +20,7 @@
     if (tab === 'issues') {
       return [...theRepo.activity.issues]
     }
-  };
+  }
 
   $: items = filterItems(repo, currentTab);
 
@@ -36,14 +36,14 @@
     <div class="card-header-title">
       <p class="grow">{repo.title}</p>
       <a href="#" on:click|preventDefault={() => showSettings = !showSettings}>
-        <i class="icon ion-md-settings" data-testid="settings" />
+        <i class="icon ion-md-settings" data-testid="settings"></i>
       </a>
     </div>
   </header>
 
   <div class="card-content grow">
     {#if showSettings }
-      <Settings repoId={repo.id} on:repo-deleted/>
+      <Settings repo={repo} on:repo-deleted/>
     {:else}
       <div class="content stack">
         <div class="tabs is-boxed">
@@ -58,7 +58,7 @@
             {/each}
           </ul>
         </div>
-        <Content items={items} />
+        <TrackedItems items={items} />
       </div>
     {/if}
   </div>
