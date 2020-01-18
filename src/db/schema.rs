@@ -12,6 +12,7 @@ table! {
         id -> Integer,
         repo_id -> Integer,
         foreign_id -> Text,
+        number -> Integer,
         title -> Text,
         by -> Text,
         link -> Text,

@@ -6,6 +6,7 @@ query BroadRepoView($owner: String!, $name: String!) {
         id
         updatedAt
         title
+        number
         author {
           __typename
           login
@@ -25,6 +26,7 @@ query BroadRepoView($owner: String!, $name: String!) {
         id
         updatedAt
         title
+        number
         author {
           __typename
           login

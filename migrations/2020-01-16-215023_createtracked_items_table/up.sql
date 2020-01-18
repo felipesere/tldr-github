@@ -4,6 +4,7 @@ CREATE TABLE tracked_items
     id         INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
     repo_id    INTEGER                           NOT NULL,
     foreign_id TEXT                              NOT NULL,
+    number     INTEGER                           NOT NULL,
     title      TEXT                              NOT NULL,
     by         TEXT                              NOT NULL,
     link       TEXT                              NOT NULL,

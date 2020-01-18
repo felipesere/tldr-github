@@ -195,6 +195,7 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
 struct InsertableTrackedItem<'a> {
     repo_id: i32,
     foreign_id: &'a str,
+    number: i32,
     title: &'a str,
     link: &'a str,
     by: &'a str,
@@ -210,6 +211,7 @@ struct StoredTrackedItem {
     id: i32,
     repo_id: i32,
     foreign_id: String,
+    number: i32,
     title: String,
     by: String,
     link: String,
@@ -235,6 +237,7 @@ pub fn insert_tracked_items(
                 labels: "",
                 kind: i.kind.to_string(),
                 foreign_id: &i.foreign_id,
+                number: i.number,
                 last_updated: i.last_updated.naive_utc(),
             };
 
@@ -314,6 +317,7 @@ mod test {
                 kind: ItemKind::PR,
                 foreign_id: "abc123".into(),
                 last_updated: Utc.ymd(2019, 4, 22).and_hms(15, 37, 18),
+                number: 7,
             };
 
             let item2 = NewTrackedItem {
@@ -324,6 +328,7 @@ mod test {
                 kind: ItemKind::Issue,
                 foreign_id: "abc123".into(),
                 last_updated: Utc.ymd(2019, 4, 22).and_hms(15, 37, 18),
+                number: 1,
             };
 
             insert_tracked_items(&conn, &repo, vec![item1, item2])?;

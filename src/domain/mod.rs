@@ -66,6 +66,7 @@ pub struct NewTrackedItem {
     pub kind: ItemKind,
     pub foreign_id: String,
     pub last_updated: DateTime<Utc>,
+    pub number: i32,
 }
 
 /// used for inserting

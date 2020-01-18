@@ -129,6 +129,7 @@ impl domain::ClientForRepositories for GithubClient {
                 labels: labels,
                 kind: domain::ItemKind::PR,
                 last_updated: pr.updated_at,
+                number: pr.number as i32,
             })
         }
 
@@ -155,6 +156,7 @@ impl domain::ClientForRepositories for GithubClient {
                 labels: labels,
                 kind: domain::ItemKind::Issue,
                 last_updated: issue.updated_at,
+                number: issue.number as i32,
             })
         }
 

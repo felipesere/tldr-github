@@ -3,17 +3,17 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
+use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
-use std::fs::File;
 
 use anyhow::Context;
 use async_std::task;
 use serde::Serialize;
-use tide::{Request, Response};
+use simplelog::{CombinedLogger, LevelFilter, SharedLogger, TermLogger, TerminalMode, WriteLogger};
 use tide::middleware::RequestLogger;
+use tide::{Request, Response};
 use tide_naive_static_files::StaticFilesEndpoint;
-use simplelog::{CombinedLogger, WriteLogger, TermLogger, LevelFilter, TerminalMode, SharedLogger};
 
 use config::Config;
 use domain::api::Repo;
@@ -51,7 +51,12 @@ impl State {
 }
 
 pub fn terminal() -> Box<dyn SharedLogger> {
-    TermLogger::new(LevelFilter::Info, simplelog::Config::default(), TerminalMode::Mixed).unwrap()
+    TermLogger::new(
+        LevelFilter::Info,
+        simplelog::Config::default(),
+        TerminalMode::Mixed,
+    )
+    .unwrap()
 }
 
 pub fn file(name: &'static str) -> Box<dyn SharedLogger> {
