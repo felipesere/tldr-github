@@ -20,8 +20,7 @@
       "svelte"
     ],
     "moduleDirectories": [
-      "node_modules",
-      "src"
+      "node_modules"
     ],
     "setupFilesAfterEnv": [
       "@testing-library/jest-dom/extend-expect"
@@ -33,6 +32,7 @@
     "@testing-library/svelte": "^1.11.0",
     "babel-jest": "^24.9.0",
     "jest": "^24.9.0",
+    "jest-fetch-mock": "^3.0.1",
     "rollup": "^1.29.0",
     "rollup-plugin-commonjs": "^10.0.0",
     "rollup-plugin-livereload": "^1.0.0",

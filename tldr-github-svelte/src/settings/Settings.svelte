@@ -1,47 +1,38 @@
 <script>
-  import { createEventDispatcher } from 'svelte';
-  import { newError } from '../errors/errorStore.js';
+    import {deleteRepo} from '../client/api.js'
+    import {createEventDispatcher} from 'svelte';
 
-  const dispatch = createEventDispatcher();
+    const dispatch = createEventDispatcher();
 
-  export let repoId;
-  let currentlyDeletingRepo;
+    export let repoId;
+    let currentlyDeletingRepo;
 
-  function doDelete(path) {
-    return fetch(`/api${path}`, { "method": "DELETE" })
-  };
-
-  function handleClick() {
-    (currentlyDeletingRepo = async () => {
-      let response = await doDelete(`/repos/${repoId}`)
-      if (!response.ok) {
-          let body = await response.json();
-          console.log(body)
-          newError(`Unable to delete repo: ${body.error}`)
-          currentlyDeletingRepo = undefined
-      } else {
-        setTimeout(() => {
-          dispatch('repo-deleted');
-          currentlyDeletingRepo = undefined
-        }, 500)
-      }
-    })()
-  };
-
+    function handleClick() {
+        (currentlyDeletingRepo = async () => {
+            try {
+                await deleteRepo(repoId);
+                dispatch('repo-deleted');
+            } catch (e) {
+            }
+            currentlyDeletingRepo = undefined
+        })()
+    }
 </script>
 
 <section class="content">
-  <div class="horizontal-flex">
-    <button class="button is-normal" class:is-loading={currentlyDeletingRepo} on:click|preventDefault={handleClick}>Delete</button>
-    <p class="grow is-normal">to stop tracking this repo</p>
-    <div>
+    <div class="horizontal-flex">
+        <button class="button is-normal" class:is-loading={currentlyDeletingRepo} on:click|preventDefault={handleClick}>
+            Delete
+        </button>
+        <p class="grow is-normal">to stop tracking this repo</p>
+        <div>
 </section>
 
 <style>
 
-p {
-  margin-top: auto;
-  margin-bottom: auto !important;
-  padding-left: 5px;
-}
+    p {
+        margin-top: auto;
+        margin-bottom: auto !important;
+        padding-left: 5px;
+    }
 </style>
