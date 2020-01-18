@@ -114,10 +114,8 @@ fn main() -> anyhow::Result<()> {
                 let db = req.state().db();
                 let add_repo: AddNewRepo = req.body_json().await.unwrap();
 
-                let name = RepoName::from(add_repo.name).unwrap();
-
                 ApiResult::empty(
-                    domain::add_new_repo(db, client, name).with_context(|| "failed to add repo"),
+                    domain::add_new_repo(db, client, add_repo.name).with_context(|| "failed to add repo"),
                 )
             }
         });

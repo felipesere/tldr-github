@@ -128,8 +128,9 @@ impl<T: Into<String>> From<T> for Author {
 pub fn add_new_repo(
     db: Arc<dyn Db>,
     client: Arc<dyn ClientForRepositories>,
-    name: RepoName,
+    maybe_name: String,
 ) -> Result<StoredRepo> {
+    let name = RepoName::from(maybe_name)?;
     let items = client.entire_repo(&name)?;
 
     let repo = db.insert_new_repo(&name.to_string())?;
