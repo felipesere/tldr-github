@@ -9,7 +9,7 @@
     const dispatch = createEventDispatcher();
 
     const close = () => dispatch('close');
-    let searchResults = repo.activity.prs
+    let searchResults = [...repo.activity.prs, ...repo.activity.issues]
 </script>
 
 <div class="modal is-active">
@@ -20,7 +20,7 @@
             <button class="delete" aria-label="close" on:click={close}></button>
         </header>
         <section class="modal-card-body">
-            <SearchBar items={repo.activity.prs} fields={["title", "by", "labels"]} bind:searchResults/>
+            <SearchBar items={[...repo.activity.prs, ...repo.activity.issues]} fields={["title", "by", "labels"]} bind:searchResults/>
             <table>
                 <thead>
                 <tr>
@@ -64,6 +64,6 @@
 <style>
     .modal-card {
         width: 900px !important;
-        min-height: calc(100vh - 250px);
+        height: calc(100vh - 250px);
     }
 </style>
