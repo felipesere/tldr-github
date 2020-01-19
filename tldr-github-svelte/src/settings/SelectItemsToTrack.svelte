@@ -1,11 +1,13 @@
 <script>
     import {createEventDispatcher} from 'svelte';
     import Label from "./Label.svelte";
+    import GlowBox from "../GlowBox.svelte";
 
     export let repo;
     const dispatch = createEventDispatcher();
 
-    const close = () => dispatch('close')
+    const close = () => dispatch('close');
+
 </script>
 
 <div class="modal is-active">
@@ -16,28 +18,36 @@
             <button class="delete" aria-label="close" on:click={close}></button>
         </header>
         <section class="modal-card-body">
-            <table class="table is-striped is-hoverable">
+            <table>
                 <thead>
                 <tr>
-                    <th>Title</th>
-                    <th>By</th>
-                    <th>Labels</th>
+                    <th>Track?</th>
+                    <th></th>
+                    <th></th>
                 </tr>
                 </thead>
                 <tbody>
                 {#each repo.activity.prs as pr}
-                    <tr class="fixed-height">
-                        <td class="item-title">{pr.title}</td>
-                        <td>{pr.by}</td>
+                    <tr>
                         <td>
                             <div class="horizontal-flex">
-                                {#each pr.labels as l}
-                                    <Label value={l}/>
-                                {/each}
+                                <input type="checkbox" name="track">
+                            </div>
+                        </td>
+                        <td>
+                            <GlowBox content={pr}/>
+                        </td>
+                        <td>
+                            <div class="cluster">
+                                <div>
+                                    {#each pr.labels as l}
+                                        <Label value={l}/>
+                                    {/each}
+                                </div>
                             </div>
                         </td>
                     </tr>
-                {/each}
+                {/each}}
                 </tbody>
             </table>
         </section>
@@ -49,20 +59,7 @@
 </div>
 
 <style>
-    .item-title {
-        width: 200px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
     .modal-card {
-        width: 1200px !important;
-        max-height: calc(100vh - 200px) !important;
+        width: 900px !important;
     }
-
-    .fixed-height {
-        min-height: 20px;
-    }
-
 </style>
