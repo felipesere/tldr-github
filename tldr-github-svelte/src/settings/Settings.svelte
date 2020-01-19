@@ -24,7 +24,7 @@
     const closeModal = () => isModalOpen = false;
 </script>
 
-<section class="content">
+<section class="content stack">
     <div class="horizontal-flex">
         <button class="button is-normal" class:is-loading={currentlyDeletingRepo}
                 on:click|preventDefault={deleteThisRepo}>
