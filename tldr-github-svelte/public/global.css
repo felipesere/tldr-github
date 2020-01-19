@@ -49,3 +49,17 @@ code {
 .grow {
     flex-grow: 1;
 }
+
+.w-200 {
+    width: 200px;
+}
+
+.w-100 {
+    width: 100px;
+}
+
+.center {
+    max-width: 60ch;
+    margin-left: auto;
+    margin-right: auto;
+}

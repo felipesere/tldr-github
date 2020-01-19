@@ -1,4 +1,5 @@
 <script>
+    import {fade} from 'svelte/transition'
     import {createEventDispatcher} from 'svelte';
     import Label from "./Label.svelte";
     import GlowBox from "../GlowBox.svelte";
@@ -30,8 +31,8 @@
                 </thead>
                 <tbody>
                 {#each searchResults as pr (pr.nr)}
-                    <tr>
-                        <td>
+                    <tr out:fade="{{duration: 250}}">
+                        <td class="w-100">
                             <div class="horizontal-flex">
                                 <input type="checkbox" name="track">
                             </div>
@@ -39,7 +40,7 @@
                         <td>
                             <GlowBox content={pr}/>
                         </td>
-                        <td>
+                        <td class="w-200">
                             <div class="cluster">
                                 <div>
                                     {#each pr.labels as l}
@@ -63,5 +64,6 @@
 <style>
     .modal-card {
         width: 900px !important;
+        min-height: calc(100vh - 250px);
     }
 </style>
