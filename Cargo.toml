@@ -22,3 +22,6 @@ tide = "0.5.1"
 tide-naive-static-files = "2.1.0"
 graphql_client = "0.8.0"
 chrono-humanize = "0.0.11"
+
+[dev-dependencies]
+assert-json-diff = "1.0.0"

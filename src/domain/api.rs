@@ -86,3 +86,105 @@ pub struct Repo {
     pub title: String,
     pub activity: Activity,
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use assert_json_diff::assert_json_eq;
+    use serde_json::json;
+
+    #[test]
+    fn serialize_add_repo_json() {
+        let data =r#"
+        {
+            "name": "foo/bar"
+        }
+        "#;
+
+        let add: AddNewRepo = serde_json::from_str(data).unwrap();
+
+        assert_eq!(add.name, "foo/bar".to_owned())
+    }
+
+    #[test]
+    fn serialize_adding_items_to_track_json() {
+        let data =r#"
+        {
+          "items": [
+            {
+              "kind": "issue",
+              "nr": 32
+            },
+            {
+              "kind": "pr",
+              "nr": 11
+            }
+          ]
+        }
+        "#;
+
+        let add: AddTrackedItemsForRepo = serde_json::from_str(data).unwrap();
+
+        assert_eq!(add.items.len(), 2)
+    }
+
+    #[test]
+    fn serialize_an_entire_repo_json() {
+        let repo = Repo {
+            id: 42,
+            title: "foo/bar".into(),
+            activity: Activity {
+                prs: vec![
+                    Item{
+                        nr: 1,
+                        title: "Fix important build failure".into(),
+                        link: "https://example.com/1".into(),
+                        by: "Someone".into(),
+                        labels: vec!["foo".to_string(), "bar".to_string()],
+                    }
+                ],
+                issues: vec![
+                    Item{
+                        nr: 10,
+                        title: "Important".into(),
+                        link: "https://example.com/1".into(),
+                        by: "Someone".into(),
+                        labels: vec!["foo".to_string()],
+                    }
+                ]
+            }
+        };
+
+        let repo_json = serde_json::to_value(&repo).unwrap();
+
+        assert_json_eq!(repo_json, json!({
+          "id": 42,
+          "title": "foo/bar",
+          "activity": {
+            "prs": [
+              {
+                "nr": 1,
+                "title": "Fix important build failure",
+                "link": "https://example.com/1",
+                "by": "Someone",
+                "labels": [
+                  "foo",
+                  "bar"
+                ]
+              }
+            ],
+            "issues": [
+              {
+                "nr": 10,
+                "title": "Important",
+                "link": "https://example.com/1",
+                "by": "Someone",
+                "labels": [
+                  "foo"
+                ]
+              }
+            ]
+          }
+        }));
+    }
+}

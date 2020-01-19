@@ -43,7 +43,9 @@ impl Display for RepoName {
 
 #[derive(serde::Deserialize, Debug)]
 pub enum ItemKind {
+    #[serde(rename = "pr")]
     PR,
+    #[serde(rename = "issue")]
     Issue,
 }
 
