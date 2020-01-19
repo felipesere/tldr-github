@@ -2,12 +2,13 @@
     import {createEventDispatcher} from 'svelte';
     import Label from "./Label.svelte";
     import GlowBox from "../GlowBox.svelte";
+    import SearchBar from "./SearchBar.svelte";
 
     export let repo;
     const dispatch = createEventDispatcher();
 
     const close = () => dispatch('close');
-
+    let searchResults = repo.activity.prs
 </script>
 
 <div class="modal is-active">
@@ -18,6 +19,7 @@
             <button class="delete" aria-label="close" on:click={close}></button>
         </header>
         <section class="modal-card-body">
+            <SearchBar items={repo.activity.prs} fields={["title", "by", "labels"]} bind:searchResults/>
             <table>
                 <thead>
                 <tr>
@@ -27,7 +29,7 @@
                 </tr>
                 </thead>
                 <tbody>
-                {#each repo.activity.prs as pr}
+                {#each searchResults as pr (pr.nr)}
                     <tr>
                         <td>
                             <div class="horizontal-flex">
@@ -47,7 +49,7 @@
                             </div>
                         </td>
                     </tr>
-                {/each}}
+                {/each}
                 </tbody>
             </table>
         </section>
