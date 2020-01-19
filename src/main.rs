@@ -16,8 +16,8 @@ use tide::{Request, Response};
 use tide_naive_static_files::StaticFilesEndpoint;
 
 use config::Config;
-use domain::api::Repo;
-use domain::{ClientForRepositories, RepoName};
+use domain::api::{AddNewRepo, Repo};
+use domain::{ClientForRepositories};
 use github::GithubClient;
 
 use db::{Db, SqliteDB};
@@ -29,11 +29,6 @@ mod filter;
 mod github;
 
 embed_migrations!("./migrations");
-
-#[derive(serde::Deserialize, Debug)]
-pub struct AddNewRepo {
-    name: String,
-}
 
 struct State {
     db: Arc<dyn Db + Send + Sync>,

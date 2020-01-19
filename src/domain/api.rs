@@ -1,7 +1,24 @@
 use serde::Serialize;
 use std::convert::From;
 
-use crate::domain::Label;
+use crate::domain::{ItemKind, Label};
+
+#[derive(serde::Deserialize, Debug)]
+pub struct AddNewRepo {
+    pub name: String,
+}
+
+
+#[derive(serde::Deserialize, Debug)]
+pub struct ItemToTrack {
+    pub kind: ItemKind,
+    pub nr: i32,
+}
+
+#[derive(serde::Deserialize, Debug)]
+pub struct AddTrackedItemsForRepo {
+    pub items: Vec<ItemToTrack>
+}
 
 impl From<crate::db::FullStoredRepo> for Repo {
     fn from(other: crate::db::FullStoredRepo) -> Self {
