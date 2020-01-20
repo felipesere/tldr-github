@@ -17,6 +17,14 @@ export const deleteRepo = async (repoId) => {
     }
 };
 
+export const trackItems = async (repoId, items) => {
+    try {
+        return await doPost(`/repos/${repoId}/tracked`, items)
+    } catch (e) {
+        newError(`Unable to add items to repo ${repoId}: ${e}`)
+    }
+};
+
 const doPost = async (path, data) => {
     return fetch(`/api${path}`, {
         "body": JSON.stringify(data),

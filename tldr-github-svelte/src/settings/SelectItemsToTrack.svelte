@@ -1,6 +1,7 @@
 <script>
     import {fade} from 'svelte/transition'
     import {createEventDispatcher} from 'svelte';
+    import { trackItems } from '../client/api.js'
     import Label from "./Label.svelte";
     import GlowBox from "../GlowBox.svelte";
     import SearchBar from "./SearchBar.svelte";
@@ -9,7 +10,14 @@
     const dispatch = createEventDispatcher();
 
     const close = () => dispatch('close');
-    let searchResults = [...repo.activity.prs, ...repo.activity.issues]
+    let searchResults = [...repo.activity.prs, ...repo.activity.issues];
+
+    let selected = [];
+
+    async function track() {
+       await trackItems(repo.id, {items: selected.map(s => ({kind: 'pr', nr: s.nr}))});
+       close()
+    }
 </script>
 
 <div class="modal is-active">
@@ -20,7 +28,7 @@
             <button class="delete" aria-label="close" on:click={close}></button>
         </header>
         <section class="modal-card-body">
-            <SearchBar items={[...repo.activity.prs, ...repo.activity.issues]} fields={["title", "by", "labels"]} bind:searchResults/>
+            <SearchBar items={[...repo.activity.prs, ...repo.activity.issues]} bind:searchResults/>
             <table>
                 <thead>
                 <tr>
@@ -34,7 +42,7 @@
                     <tr out:fade="{{duration: 250}}">
                         <td class="w-100">
                             <div class="horizontal-flex">
-                                <input type="checkbox" name="track">
+                                <input type="checkbox" bind:group={selected} value={pr} />
                             </div>
                         </td>
                         <td>
@@ -55,7 +63,7 @@
             </table>
         </section>
         <footer class="modal-card-foot">
-            <button class="button is-success">Save changes</button>
+            <button class="button is-success" on:click={track}>Save changes</button>
             <button class="button" on:click={close}>Cancel</button>
         </footer>
     </div>
