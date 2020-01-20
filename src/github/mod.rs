@@ -6,23 +6,22 @@ use graphql_client::GraphQLQuery;
 
 type DateTime = chrono::DateTime<chrono::Utc>;
 type URI = String;
-type GitObjectID = String;
 
 #[derive(GraphQLQuery)]
 #[graphql(
     schema_path = "graphql/schema.graphql",
-    query_path = "graphql/pull-requests.graphql",
+    query_path = "graphql/pull-request.graphql",
     response_derives = "Debug"
 )]
-pub struct PullRequestsView;
+pub struct PullRequestView;
 
 #[derive(GraphQLQuery)]
 #[graphql(
     schema_path = "graphql/schema.graphql",
-    query_path = "graphql/issues.graphql",
+    query_path = "graphql/issue.graphql",
     response_derives = "Debug"
 )]
-pub struct IssuesView;
+pub struct IssueView;
 
 #[derive(GraphQLQuery)]
 #[graphql(
@@ -48,7 +47,7 @@ impl GithubClient {
         query: Q,
     ) -> Result<R> {
         task::block_on(async {
-            let mut response = match surf::post("https://api.github.com/graphql") // TODO: this will need extracting or I'll need a second client for a fake backend?
+            let mut response = match surf::post("https://api.github.com/graphql")
                 .set_header("Authorization", format!("Bearer {}", self.token))
                 .body_json(&query)
                 .unwrap()
@@ -163,80 +162,76 @@ impl domain::ClientForRepositories for GithubClient {
         return Result::Ok(items);
     }
 
-    fn issues(&self, repo: &domain::RepoName) -> Result<Vec<domain::NewIssue>> {
-        let query = IssuesView::build_query(issues_view::Variables {
+    fn issue(&self, repo: &domain::RepoName, nr: i32) -> Result<domain::NewTrackedItem> {
+        let query = IssueView::build_query(issue_view::Variables {
             owner: repo.owner.clone(),
             name: repo.name.clone(),
+            nr: nr as i64,
         });
 
-        let data: issues_view::ResponseData = self.make_request(query)?;
+        let data: issue_view::ResponseData = self.make_request(query)?;
 
-        let mut items = Vec::new();
-        for maybe_issue in data
-            .repository
-            .expect("repository not present")
-            .issues
-            .nodes
-            .expect("nodes not present")
-        {
-            let issue = maybe_issue.unwrap();
+        let issue = data.repository.possibly("no repository")?.issue.possibly("no issue")?;
 
-            let labels: Vec<domain::Label> = funky_flatten(issue.labels.unwrap().nodes)
-                .into_iter()
-                .map(|s| domain::Label::new(s.name))
-                .collect();
+        let labels = funky_flatten(issue.labels.possibly("no lables")?.nodes)
+            .into_iter()
+            .map(|s| domain::Label::new(s.name))
+            .collect();
 
-            let item = domain::NewIssue {
-                by: domain::Author::new(issue.author.unwrap().login),
-                link: issue.url,
-                title: issue.title,
-                labels,
-            };
+        let author = issue
+            .author
+            .map(|a| domain::Author::new(a.login).with_link(a.url))
+            .unwrap_or(
+                domain::Author::new("ghost".into())
+                .with_link("https://github.com/ghost".into()),
+            );
 
-            items.push(item)
-        }
-
-        log::info!("found issues {} on Github", items.len());
-
-        Result::Ok(items)
+        Result::Ok(domain::NewTrackedItem {
+            foreign_id: issue.id,
+            title: issue.title,
+            link: issue.url,
+            by: author,
+            labels: labels,
+            kind: domain::ItemKind::Issue,
+            last_updated: issue.updated_at,
+            number: issue.number as i32,
+        })
     }
 
-    fn pull_requests(&self, repo: &domain::RepoName) -> Result<Vec<domain::NewPullRequest>> {
-        let query = PullRequestsView::build_query(pull_requests_view::Variables {
+    fn pull_request(&self, repo: &domain::RepoName, nr: i32) -> Result<domain::NewTrackedItem> {
+        let query = PullRequestView::build_query(pull_request_view::Variables {
             owner: repo.owner.clone(),
             name: repo.name.clone(),
+            nr: nr as i64,
         });
 
-        let data: pull_requests_view::ResponseData = self.make_request(query)?;
+        let data: pull_request_view::ResponseData = self.make_request(query)?;
 
-        let mut items = Vec::new();
-        for maybe_pr in data
-            .repository
-            .expect("repository not present")
-            .pull_requests
-            .nodes
-            .expect("nodes not present")
-        {
-            let pr = maybe_pr.unwrap();
+        let pr = data.repository.possibly("no repository")?.pull_request.possibly("no pull request")?;
 
-            let labels: Vec<domain::Label> = funky_flatten(pr.labels.unwrap().nodes)
-                .into_iter()
-                .map(|s| domain::Label::new(s.name))
-                .collect();
+        let labels = funky_flatten(pr.labels.possibly("no lables")?.nodes)
+            .into_iter()
+            .map(|s| domain::Label::new(s.name))
+            .collect();
 
-            let author = pr.author.unwrap();
+        let author = pr
+            .author
+            .map(|a| domain::Author::new(a.login).with_link(a.url))
+            .unwrap_or(
+                domain::Author::new("ghost".into())
+                .with_link("https://github.com/ghost".into()),
+            );
 
-            let item = domain::NewPullRequest {
-                by: domain::Author::new(author.login).with_link(author.url),
-                link: pr.url,
-                title: pr.title,
-                labels,
-            };
-
-            items.push(item)
-        }
-
-        Result::Ok(items)
+        Result::Ok(domain::NewTrackedItem {
+            foreign_id: pr.id,
+            title: pr.title,
+            link: pr.url,
+            by: author,
+            labels: labels,
+            kind: domain::ItemKind::PR,
+            last_updated: pr.updated_at,
+            number: pr.number as i32,
+        })
     }
 }
 
@@ -250,16 +245,11 @@ mod tests {
         let client = GithubClient::new("<< token >>");
         let repo = domain::RepoName::from("felipesere/advisorex").unwrap();
 
-        let data = client
-            .pull_requests(&repo)
+        let pr = client
+            .pull_request(&repo, 101)
             .expect("should be able to get PRs");
-        let titles: Vec<String> = data.iter().map(|pr| pr.title.clone()).collect();
-        let expected: Vec<String> = vec![
-            "Advice notes".into(),
-            "Bump js-yaml from 3.13.0 to 3.13.1 in /assets".into(),
-        ];
 
-        assert_eq!(titles, expected)
+        assert_eq!(pr.title, "Advice notes".to_string());
     }
 
     #[test]
@@ -267,15 +257,9 @@ mod tests {
         let client = GithubClient::new("<< token >>");
         let repo = domain::RepoName::from("felipesere/advisorex").unwrap();
 
-        let data = client.issues(&repo).expect("should be able to get PRs");
-        let titles: Vec<String> = data.iter().map(|pr| pr.title.clone()).take(3).collect();
-        let expected: Vec<String> = vec![
-            "Allow external feedback ".into(),
-            "Allow the advisor to leave an unprompted note with advice".into(),
-            "Upload custom image".into(),
-        ];
+        let issue = client.issue(&repo, 117).expect("should be able to get issues");
 
-        assert_eq!(titles, expected)
+        assert_eq!(issue.title, "Try out Github Actions".to_string());
     }
 
     #[test]

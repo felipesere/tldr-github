@@ -8,8 +8,8 @@ use std::sync::Arc;
 pub mod api;
 
 pub trait ClientForRepositories {
-    fn issues(&self, repo: &RepoName) -> Result<Vec<NewIssue>>;
-    fn pull_requests(&self, repo: &RepoName) -> Result<Vec<NewPullRequest>>;
+    fn issue(&self, repo: &RepoName, nr: i32) -> Result<NewTrackedItem>;
+    fn pull_request(&self, repo: &RepoName, nr: i32) -> Result<NewTrackedItem>;
     fn entire_repo(&self, repo: &RepoName) -> Result<Vec<NewTrackedItem>>;
 }
 
@@ -197,8 +197,8 @@ mod test {
         pub Github{ }
 
         trait ClientForRepositories{
-            fn issues(&self, repo: &RepoName) -> Result<Vec<NewIssue>>;
-            fn pull_requests(&self, repo: &RepoName) -> Result<Vec<NewPullRequest>>;
+            fn issue(&self, repo: &RepoName, nr: i32) -> Result<NewTrackedItem>;
+            fn pull_request(&self, repo: &RepoName, nr: i32) -> Result<NewTrackedItem>;
             fn entire_repo(&self, repo: &RepoName) -> Result<Vec<NewTrackedItem>>;
         }
     );
