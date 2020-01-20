@@ -16,7 +16,7 @@ use tide::{Request, Response};
 use tide_naive_static_files::StaticFilesEndpoint;
 
 use config::Config;
-use domain::api::{AddNewRepo, Repo};
+use domain::api::{AddNewRepo, AddTrackedItemsForRepo, Repo};
 use domain::{ClientForRepositories};
 use github::GithubClient;
 
@@ -111,6 +111,18 @@ fn main() -> anyhow::Result<()> {
 
                 ApiResult::empty(
                     domain::add_new_repo(db, client, add_repo.name).with_context(|| "failed to add repo"),
+                )
+            }
+        });
+        r.at("/repos/:id/tracked").post(|mut req: Request<State>| {
+            async move {
+                let id: i32 = req.param("id").unwrap();
+                let client = req.state().client();
+                let db = req.state().db();
+                let body: AddTrackedItemsForRepo = req.body_json().await.unwrap();
+
+                ApiResult::empty(
+                    domain::add_items_to_track(db, client, id, body.items).with_context(|| "failed to add items to track"),
                 )
             }
         });

@@ -155,3 +155,77 @@ pub fn add_new_repo(
 
     Result::Ok(repo)
 }
+
+pub fn add_items_to_track(
+    db: Arc<dyn Db>,
+    client: Arc<dyn ClientForRepositories>,
+    id: i32,
+    items: Vec<api::ItemToTrack>,
+) -> Result<()> {
+    log::info!("We were about to add {:?} to {}", items, id);
+    if let Some(repo) = db.find_repo(id) {
+        bail!(":wave:")
+    } else {
+        bail!("Could not find repo {}", id)
+    }
+}
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use mockall::mock;
+    use crate::db::{Db, StoredRepo, FullStoredRepo};
+    use anyhow::Result;
+
+    mock!(
+        pub Database { }
+        trait Db {
+            fn find_repo(&self, id: i32) -> Option<StoredRepo>;
+            fn insert_tracked_items(
+                &self,
+                repo_name: &StoredRepo,
+                items: Vec<NewTrackedItem>,
+            ) -> Result<()>;
+            fn all(&self) -> Result<Vec<FullStoredRepo>>;
+            fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
+            fn delete(&self, r: i32) -> Result<()>;
+        }
+    );
+
+    mock!(
+        pub Github{ }
+
+        trait ClientForRepositories{
+            fn issues(&self, repo: &RepoName) -> Result<Vec<NewIssue>>;
+            fn pull_requests(&self, repo: &RepoName) -> Result<Vec<NewPullRequest>>;
+            fn entire_repo(&self, repo: &RepoName) -> Result<Vec<NewTrackedItem>>;
+        }
+    );
+
+
+    #[test]
+    fn does_not_add_items_to_a_non_existing_repo() {
+        let mut db = MockDatabase::new();
+        let github = MockGithub::new();
+
+        db.expect_find_repo().times(1).returning(|_| None);
+
+        let result = add_items_to_track(Arc::new(db), Arc::new(github), 32, Vec::new());
+
+        assert!(result.is_err(), "should have failed to to add items");
+    }
+
+    #[test]
+    #[ignore]
+    fn queries_github_for_details_on_items_and_stores_them() {
+        let mut db = MockDatabase::new();
+        let github = MockGithub::new();
+
+        db.expect_find_repo().times(1).returning(|_| Some(StoredRepo::new(1, "foo/bar")));
+
+        let result = add_items_to_track(Arc::new(db), Arc::new(github), 32, Vec::new());
+
+        assert!(result.is_err(), "should have failed to to add items");
+    }
+}

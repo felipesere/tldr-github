@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
-use chrono::NaiveDateTime;
+use chrono::{Utc, NaiveDateTime};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::sqlite::SqliteConnection;
@@ -22,6 +22,7 @@ pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
 }
 
 pub trait Db {
+    fn find_repo(&self, id: i32) -> Option<StoredRepo>;
     fn insert_tracked_items(
         &self,
         repo_name: &StoredRepo,
@@ -37,6 +38,13 @@ pub struct SqliteDB {
 }
 
 impl Db for SqliteDB {
+    fn find_repo(&self, id: i32) -> Option<StoredRepo> {
+        // TODO improve
+        let conn = self.conn.get().unwrap();
+
+        find_repo(&conn, id)
+    }
+
     fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo> {
         let conn = self.conn.get()?;
         insert_new_repo(&conn, repo_name)
@@ -65,6 +73,17 @@ pub struct StoredRepo {
     pub title: String,
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
+}
+
+impl StoredRepo {
+    pub fn new<S: Into<String>>(id: i32, title: S) -> Self {
+        StoredRepo {
+            id,
+            title: title.into(),
+            created_at: Utc::now().naive_utc(),
+            updated_at: Utc::now().naive_utc(),
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -105,6 +124,10 @@ pub struct StoredIssue {
     pub labels: Vec<Label>,
     created_at: NaiveDateTime,
     updated_at: NaiveDateTime,
+}
+pub fn find_repo(conn: &Conn, n: i32) -> Option<StoredRepo> {
+    use schema::repos::dsl::*;
+    repos.find(n).first(conn).ok()
 }
 
 // this needs to be made transactional
@@ -265,11 +288,6 @@ mod test {
     use chrono::{TimeZone, Utc};
 
     use super::*;
-
-    pub fn find_repo(conn: &Conn, n: i32) -> Option<StoredRepo> {
-        use schema::repos::dsl::*;
-        repos.find(n).first(conn).ok()
-    }
 
     fn test_pool(
     ) -> r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::SqliteConnection>> {
