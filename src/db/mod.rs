@@ -76,6 +76,12 @@ pub struct StoredRepo {
 }
 
 impl StoredRepo {
+    pub fn name(&self) -> crate::domain::RepoName {
+        crate::domain::RepoName::from(&self.title).unwrap()
+    }
+}
+
+impl StoredRepo {
     pub fn new<S: Into<String>>(id: i32, title: S) -> Self {
         StoredRepo {
             id,

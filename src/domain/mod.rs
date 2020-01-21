@@ -1,9 +1,12 @@
 use anyhow::{bail, Result};
 use chrono::{DateTime, Utc};
 use std::fmt::{Display, Formatter};
+use std::sync::Arc;
+use futures::stream::futures_unordered::FuturesUnordered;
+use async_std::task;
+use async_std::prelude::*;
 
 use crate::db::{Db, StoredRepo};
-use std::sync::Arc;
 
 pub mod api;
 
@@ -164,7 +167,27 @@ pub fn add_items_to_track(
 ) -> Result<()> {
     log::info!("We were about to add {:?} to {}", items, id);
     if let Some(repo) = db.find_repo(id) {
-        bail!(":wave:")
+        let mut tasks = FuturesUnordered::new();
+        for item in items {
+            let name = repo.name();
+            let c = client.clone();
+            tasks.push(async move {
+                match item.kind {
+                    ItemKind::Issue => c.issue(&name, item.nr),
+                    ItemKind::PR => c.pull_request(&name, item.nr),
+                }
+            })
+        };
+
+        task::block_on(async move {
+            while let Some(item) = tasks.next().await {
+                dbg!(item);
+            }
+        });
+
+
+        bail!("Could not find repo {}", id)
+
     } else {
         bail!("Could not find repo {}", id)
     }
