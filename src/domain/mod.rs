@@ -171,23 +171,24 @@ pub async fn add_items_to_track(
         for item in items {
             let name = repo.name();
             let c = client.clone();
-            tasks.push(async move {
+            tasks.push(task::spawn(async move {
                 match item.kind {
                     ItemKind::Issue => c.issue(&name, item.nr),
                     ItemKind::PR => c.pull_request(&name, item.nr),
                 }
-            })
+            }))
         };
 
-        task::block_on(async move {
-            while let Some(item) = tasks.next().await {
-                dbg!(item);
-            }
-        });
+        // I am surprised I have to do this instead of tasks.collect().await
+        let mut res = Vec::new();
+        while let Some(i) = tasks.next().await {
+            let inner = i?;
+            res.push(inner);
+        }
 
+        // db.insert_tracked_items(&repo, res)?;
 
-        bail!("Could not find repo {}", id)
-
+        Result::Ok(())
     } else {
         bail!("Could not find repo {}", id)
     }
@@ -200,6 +201,7 @@ mod test {
     use mockall::mock;
     use crate::db::{Db, StoredRepo, FullStoredRepo};
     use anyhow::Result;
+    use async_std::task;
 
     mock!(
         pub Database { }
@@ -233,8 +235,9 @@ mod test {
         let github = MockGithub::new();
 
         db.expect_find_repo().times(1).returning(|_| None);
-
-        let result = add_items_to_track(Arc::new(db), Arc::new(github), 32, Vec::new());
+        let result = task::block_on(async move {
+            add_items_to_track(Arc::new(db), Arc::new(github), 32, Vec::new()).await
+        });
 
         assert!(result.is_err(), "should have failed to to add items");
     }
@@ -247,7 +250,9 @@ mod test {
 
         db.expect_find_repo().times(1).returning(|_| Some(StoredRepo::new(1, "foo/bar")));
 
-        let result = add_items_to_track(Arc::new(db), Arc::new(github), 32, Vec::new());
+        let result = task::block_on(async move {
+            add_items_to_track(Arc::new(db), Arc::new(github), 32, Vec::new()).await
+        });
 
         assert!(result.is_err(), "should have failed to to add items");
     }
