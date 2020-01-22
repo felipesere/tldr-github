@@ -10,7 +10,7 @@ use crate::db::{Db, StoredRepo};
 
 pub mod api;
 
-pub trait ClientForRepositories {
+pub trait ClientForRepositories: Send + Sync {
     fn issue(&self, repo: &RepoName, nr: i32) -> Result<NewTrackedItem>;
     fn pull_request(&self, repo: &RepoName, nr: i32) -> Result<NewTrackedItem>;
     fn entire_repo(&self, repo: &RepoName) -> Result<Vec<NewTrackedItem>>;

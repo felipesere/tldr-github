@@ -31,16 +31,16 @@ mod github;
 embed_migrations!("./migrations");
 
 struct State {
-    db: Arc<dyn Db + Send + Sync>,
-    github: Arc<dyn ClientForRepositories + Send + Sync>,
+    db: Arc<dyn Db>,
+    github: Arc<dyn ClientForRepositories>,
 }
 
 impl State {
-    fn db(&self) -> Arc<dyn Db + Send + Sync> {
+    fn db(&self) -> Arc<dyn Db> {
         self.db.clone()
     }
 
-    fn client(&self) -> Arc<dyn ClientForRepositories + Send + Sync> {
+    fn client(&self) -> Arc<dyn ClientForRepositories> {
         self.github.clone()
     }
 }

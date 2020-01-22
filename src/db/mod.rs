@@ -21,7 +21,7 @@ pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
         .with_context(|| format!("failed to access db: {}", database_url))
 }
 
-pub trait Db {
+pub trait Db: Send + Sync {
     fn find_repo(&self, id: i32) -> Option<StoredRepo>;
     fn insert_tracked_items(
         &self,
