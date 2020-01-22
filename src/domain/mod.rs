@@ -159,7 +159,7 @@ pub fn add_new_repo(
     Result::Ok(repo)
 }
 
-pub fn add_items_to_track(
+pub async fn add_items_to_track(
     db: Arc<dyn Db>,
     client: Arc<dyn ClientForRepositories>,
     id: i32,

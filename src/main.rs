@@ -122,7 +122,7 @@ fn main() -> anyhow::Result<()> {
                 let body: AddTrackedItemsForRepo = req.body_json().await.unwrap();
 
                 ApiResult::empty(
-                    domain::add_items_to_track(db, client, id, body.items).with_context(|| "failed to add items to track"),
+                    domain::add_items_to_track(db, client, id, body.items).await.with_context(|| "failed to add items to track"),
                 )
             }
         });
