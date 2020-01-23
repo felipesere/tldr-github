@@ -68,4 +68,7 @@
   ul {
     margin-left: 0;
   }
+  .card-content {
+      height: 370px;
+  }
 </style>
