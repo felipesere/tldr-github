@@ -1,10 +1,10 @@
 use anyhow::{bail, Result};
+use async_std::prelude::*;
+use async_std::task;
 use chrono::{DateTime, Utc};
+use futures::stream::futures_unordered::FuturesUnordered;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
-use futures::stream::futures_unordered::FuturesUnordered;
-use async_std::task;
-use async_std::prelude::*;
 
 use crate::db::{Db, StoredRepo};
 
@@ -101,7 +101,11 @@ impl Label {
     }
 
     pub fn join(labels: &Vec<Label>) -> String {
-        labels.iter().map(|l| l.0.clone()).collect::<Vec<_>>().join(",")
+        labels
+            .iter()
+            .map(|l| l.0.clone())
+            .collect::<Vec<_>>()
+            .join(",")
     }
 
     pub fn split(raw: &str) -> Vec<Label> {
@@ -151,12 +155,28 @@ pub fn add_new_repo(
     maybe_name: String,
 ) -> Result<StoredRepo> {
     let name = RepoName::from(maybe_name)?;
-    let items = client.entire_repo(&name)?;
-
     let repo = db.insert_new_repo(&name.to_string())?;
-    db.insert_tracked_items(&repo, items)?;
 
     Result::Ok(repo)
+}
+
+pub async fn retrieve_live_items(
+    db: Arc<dyn Db>,
+    client: Arc<dyn ClientForRepositories>,
+    id: i32,
+) -> Result<Vec<api::Item>> {
+    if let Some(repo) = db.find_repo(id) {
+        let name = repo.name();
+        Result::Ok(
+            client
+                .entire_repo(&name)?
+                .into_iter()
+                .map(crate::domain::api::Item::from)
+                .collect::<Vec<_>>(),
+        )
+    } else {
+        bail!("did not find repo")
+    }
 }
 
 pub async fn add_items_to_track(
@@ -177,31 +197,28 @@ pub async fn add_items_to_track(
                     ItemKind::PR => c.pull_request(&name, item.nr),
                 }
             }))
-        };
+        }
 
-        // I am surprised I have to do this instead of tasks.collect().await
+        // TODO:  I am surprised I have to do this instead of tasks.collect().await
         let mut res = Vec::new();
         while let Some(i) = tasks.next().await {
             let inner = i?;
             res.push(inner);
         }
 
-        // db.insert_tracked_items(&repo, res)?;
-
-        Result::Ok(())
+        db.insert_tracked_items(&repo, res)
     } else {
         bail!("Could not find repo {}", id)
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use super::*;
-    use mockall::mock;
-    use crate::db::{Db, StoredRepo, FullStoredRepo};
+    use crate::db::{Db, FullStoredRepo, StoredRepo};
     use anyhow::Result;
     use async_std::task;
+    use mockall::mock;
 
     mock!(
         pub Database { }
@@ -228,7 +245,6 @@ mod test {
         }
     );
 
-
     #[test]
     fn does_not_add_items_to_a_non_existing_repo() {
         let mut db = MockDatabase::new();
@@ -248,7 +264,9 @@ mod test {
         let mut db = MockDatabase::new();
         let github = MockGithub::new();
 
-        db.expect_find_repo().times(1).returning(|_| Some(StoredRepo::new(1, "foo/bar")));
+        db.expect_find_repo()
+            .times(1)
+            .returning(|_| Some(StoredRepo::new(1, "foo/bar")));
 
         let result = task::block_on(async move {
             add_items_to_track(Arc::new(db), Arc::new(github), 32, Vec::new()).await

@@ -171,7 +171,11 @@ impl domain::ClientForRepositories for GithubClient {
 
         let data: issue_view::ResponseData = self.make_request(query)?;
 
-        let issue = data.repository.possibly("no repository")?.issue.possibly("no issue")?;
+        let issue = data
+            .repository
+            .possibly("no repository")?
+            .issue
+            .possibly("no issue")?;
 
         let labels = funky_flatten(issue.labels.possibly("no lables")?.nodes)
             .into_iter()
@@ -182,8 +186,7 @@ impl domain::ClientForRepositories for GithubClient {
             .author
             .map(|a| domain::Author::new(a.login).with_link(a.url))
             .unwrap_or(
-                domain::Author::new("ghost".into())
-                .with_link("https://github.com/ghost".into()),
+                domain::Author::new("ghost".into()).with_link("https://github.com/ghost".into()),
             );
 
         Result::Ok(domain::NewTrackedItem {
@@ -207,7 +210,11 @@ impl domain::ClientForRepositories for GithubClient {
 
         let data: pull_request_view::ResponseData = self.make_request(query)?;
 
-        let pr = data.repository.possibly("no repository")?.pull_request.possibly("no pull request")?;
+        let pr = data
+            .repository
+            .possibly("no repository")?
+            .pull_request
+            .possibly("no pull request")?;
 
         let labels = funky_flatten(pr.labels.possibly("no lables")?.nodes)
             .into_iter()
@@ -218,8 +225,7 @@ impl domain::ClientForRepositories for GithubClient {
             .author
             .map(|a| domain::Author::new(a.login).with_link(a.url))
             .unwrap_or(
-                domain::Author::new("ghost".into())
-                .with_link("https://github.com/ghost".into()),
+                domain::Author::new("ghost".into()).with_link("https://github.com/ghost".into()),
             );
 
         Result::Ok(domain::NewTrackedItem {
@@ -257,7 +263,9 @@ mod tests {
         let client = GithubClient::new("<< token >>");
         let repo = domain::RepoName::from("felipesere/advisorex").unwrap();
 
-        let issue = client.issue(&repo, 117).expect("should be able to get issues");
+        let issue = client
+            .issue(&repo, 117)
+            .expect("should be able to get issues");
 
         assert_eq!(issue.title, "Try out Github Actions".to_string());
     }

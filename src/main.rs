@@ -17,7 +17,7 @@ use tide_naive_static_files::StaticFilesEndpoint;
 
 use config::Config;
 use domain::api::{AddNewRepo, AddTrackedItemsForRepo, Repo};
-use domain::{ClientForRepositories};
+use domain::ClientForRepositories;
 use github::GithubClient;
 
 use db::{Db, SqliteDB};
@@ -96,43 +96,51 @@ fn main() -> anyhow::Result<()> {
             root: ui.local_files.clone().into(),
         });
     app.at("/api").nest(|r| {
-        r.at("/repos").get(|req: Request<State>| {
-            async move {
-                let db = req.state().db();
+        r.at("/repos").get(|req: Request<State>| async move {
+            let db = req.state().db();
 
-                ApiResult::from(get_all_repos(db).with_context(|| "failed to get all repos"))
-            }
+            ApiResult::from(get_all_repos(db).with_context(|| "failed to get all repos"))
         });
-        r.at("/repos").post(|mut req: Request<State>| {
-            async move {
-                let client = req.state().client();
-                let db = req.state().db();
-                let add_repo: AddNewRepo = req.body_json().await.unwrap();
+        r.at("/repos").post(|mut req: Request<State>| async move {
+            let client = req.state().client();
+            let db = req.state().db();
+            let add_repo: AddNewRepo = req.body_json().await.unwrap();
 
-                ApiResult::empty(
-                    domain::add_new_repo(db, client, add_repo.name).with_context(|| "failed to add repo"),
-                )
-            }
+            ApiResult::empty(
+                domain::add_new_repo(db, client, add_repo.name)
+                    .with_context(|| "failed to add repo"),
+            )
         });
-        r.at("/repos/:id/tracked").post(|mut req: Request<State>| {
-            async move {
+        r.at("/repos/:id/tracked")
+            .post(|mut req: Request<State>| async move {
                 let id: i32 = req.param("id").unwrap();
                 let client = req.state().client();
                 let db = req.state().db();
                 let body: AddTrackedItemsForRepo = req.body_json().await.unwrap();
 
                 ApiResult::empty(
-                    domain::add_items_to_track(db, client, id, body.items).await.with_context(|| "failed to add items to track"),
+                    domain::add_items_to_track(db, client, id, body.items)
+                        .await
+                        .with_context(|| "failed to add items to track"),
                 )
-            }
-        });
-        r.at("/repos/:id").delete(|req: Request<State>| {
-            async move {
+            });
+        r.at("/repos/:id/proxy")
+            .get(|mut req: Request<State>| async move {
+                let id: i32 = req.param("id").unwrap();
+                let client = req.state().client();
                 let db = req.state().db();
-                let id = req.param::<i32>("id").unwrap();
 
-                ApiResult::empty(db.delete(id).with_context(|| "failed to delete"))
-            }
+                ApiResult::from(
+                    domain::retrieve_live_items(db, client, id)
+                        .await
+                        .with_context(|| "failed to add items to track"),
+                )
+            });
+        r.at("/repos/:id").delete(|req: Request<State>| async move {
+            let db = req.state().db();
+            let id = req.param::<i32>("id").unwrap();
+
+            ApiResult::empty(db.delete(id).with_context(|| "failed to delete"))
         });
     });
 
