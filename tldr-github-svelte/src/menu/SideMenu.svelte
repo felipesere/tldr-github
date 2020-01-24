@@ -31,7 +31,6 @@
         align-items: center;
         background: white;
         border-radius: .5rem;
-        border: none;
         color: black;
         display: flex;
         height: 2rem;
@@ -41,6 +40,11 @@
         overflow: hidden;
         padding: 5px;
         width: 2rem;
+    }
+
+    .nav-button:hover {
+        box-shadow: 0 0 5px black;
+        opacity: 0.5;
     }
 
     .nav-button svg {
