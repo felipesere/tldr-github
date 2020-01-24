@@ -35,7 +35,7 @@
   <header class="card-header">
     <div class="card-header-title">
       <p class="grow">{repo.title}</p>
-      <a href="#" on:click|preventDefault={() => showSettings = !showSettings}>
+      <a class="subtle" href="#" on:click|preventDefault={() => showSettings = !showSettings}>
         <i class="icon ion-md-settings" data-testid="settings"></i>
       </a>
     </div>
@@ -70,5 +70,10 @@
   }
   .card-content {
       height: 370px;
+  }
+
+  .subtle {
+      color: #A0AEC0;
+
   }
 </style>
