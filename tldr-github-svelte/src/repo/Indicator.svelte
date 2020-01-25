@@ -1,49 +1,56 @@
-<script context="module">
-  export const Recency = {
-    "HIGH": 'high',
-    "MEDIUM": 'medium',
-    "LOW": 'low',
-    "NONE": 'none',
-  };
-</script>
 <script>
-  let random = () => {
-    let possibleValues = Object.values(Recency);
-    return possibleValues[Math.floor(Math.random() * possibleValues.length)];
-  };
+    import {addDays, isAfter, parse} from 'date-fns'
 
-  let activity = random();
-  let clazz = `dot ${activity}`
+    export let time;
+
+    let oneWeekAgo = addDays(new Date(), -7);
+    let twoWeeksAgo = addDays(new Date(), -14);
+    let oneMonthAgo = addDays(new Date(), 30);
+
+    let x = parse(time, "yyyy-MM-dd'T'HH:mm:ssxxx", new Date());
+
+    let activity ='none';
+    if (isAfter(x, oneMonthAgo)) {
+        activity = 'low';
+    }
+    if (isAfter(x, twoWeeksAgo)) {
+        activity = 'medium';
+    }
+    if (isAfter(x, oneWeekAgo)) {
+        activity = 'high';
+    }
+
+    let clazz = `dot ${activity}`
 </script>
 
 <span class={clazz}></span>
 
 
 <style>
-  .dot {
-    height: 10px;
-    width: 10px;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 10px;
+    .dot {
+        height: 10px;
+        width: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 10px;
 
-    align-self: center;
-    flex-shrink: 0;
-  }
+        align-self: center;
+        flex-shrink: 0;
+    }
 
-  .high {
-    background-color: #3182ce;
-  }
+    .high {
+        background-color: #3182ce;
+    }
 
-  .medium {
-    background-color: #90cdf4
-  }
+    .medium {
+        background-color: #90cdf4
+    }
 
-  .low {
-    background-color: #cbd5e0
-  }
+    .low {
+        background-color: #cbd5e0
+    }
 
-  .none {
-    visibility: hidden;
-  }
+    .none {
+        visibility: hidden;
+    }
 </style>

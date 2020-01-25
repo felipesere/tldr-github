@@ -49,6 +49,7 @@ impl From<NewTrackedItem> for Item {
             link: other.link,
             by: other.by.name,
             labels: Label::expose(&other.labels),
+            last_updated: other.last_updated.to_rfc3339(),
         }
     }
 }
@@ -60,6 +61,7 @@ pub struct Item {
     pub link: String,
     pub by: String,
     pub labels: Vec<String>,
+    pub last_updated: String,
 }
 
 #[derive(Serialize, Debug)]
@@ -128,6 +130,7 @@ mod test {
                     link: "https://example.com/1".into(),
                     by: "Someone".into(),
                     labels: vec!["foo".to_string(), "bar".to_string()],
+                    last_updated: "2019-09-18T01:24:29+00:00".to_string(),
                 }],
                 issues: vec![Item {
                     nr: 10,
@@ -135,6 +138,7 @@ mod test {
                     link: "https://example.com/1".into(),
                     by: "Someone".into(),
                     labels: vec!["foo".to_string()],
+                    last_updated: "2019-09-18T01:24:29+00:00".to_string(),
                 }],
             },
         };
@@ -153,6 +157,7 @@ mod test {
                     "title": "Fix important build failure",
                     "link": "https://example.com/1",
                     "by": "Someone",
+                    "last_updated": "2019-09-18T01:24:29+00:00",
                     "labels": [
                       "foo",
                       "bar"
@@ -165,6 +170,7 @@ mod test {
                     "title": "Important",
                     "link": "https://example.com/1",
                     "by": "Someone",
+                    "last_updated": "2019-09-18T01:24:29+00:00",
                     "labels": [
                       "foo"
                     ]
