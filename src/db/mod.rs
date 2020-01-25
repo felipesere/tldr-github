@@ -176,7 +176,7 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
 
     let ids: Vec<i32> = rs.iter().map(|r| r.id).collect();
 
-    let items: Vec<Vec<StoredTrackedItem>> = tracked_items::table
+    let items: Vec<Vec<RawTrackedItem>> = tracked_items::table
         .filter(tracked_items::columns::repo_id.eq_any(ids))
         .load(conn)
         .context("loading tracked items")?
@@ -244,7 +244,7 @@ struct InsertableTrackedItem<'a> {
 #[derive(Associations, Identifiable, Queryable, Debug)]
 #[belongs_to(StoredRepo, foreign_key = "repo_id")]
 #[table_name = "tracked_items"]
-struct StoredTrackedItem {
+struct RawTrackedItem {
     id: i32,
     repo_id: i32,
     foreign_id: String,
