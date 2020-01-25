@@ -1,6 +1,17 @@
 :root {
 }
 
+button {
+    padding: 0;
+    border: none;
+    font: inherit;
+    color: inherit;
+    background-color: transparent;
+    /* show a hand cursor on hover; some argue that we
+    should keep the default arrow cursor for buttons */
+    cursor: pointer;
+}
+
 .grid {
     display: grid;
     grid-gap: 2rem;
@@ -62,4 +73,8 @@ code {
     max-width: 60ch;
     margin-left: auto;
     margin-right: auto;
+}
+
+.text-center {
+    text-align: center;
 }

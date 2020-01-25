@@ -42,7 +42,7 @@
     <div class="modal-card">
         <header class="modal-card-head">
             <p class="modal-card-title">Add new PRs and issues to track</p>
-            <button class="delete" aria-label="close" on:click={close}></button>
+            <button class="delete" on:click={close}></button>
         </header>
         <section class="modal-card-body">
             {#await fetching}
