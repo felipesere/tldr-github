@@ -74,24 +74,6 @@ pub struct NewTrackedItem {
     pub number: i32,
 }
 
-/// used for inserting
-#[derive(Debug)]
-pub struct NewPullRequest {
-    pub title: String,
-    pub link: String,
-    pub by: Author,
-    pub labels: Vec<Label>,
-}
-
-/// used for inserting
-#[derive(Debug)]
-pub struct NewIssue {
-    pub title: String,
-    pub link: String,
-    pub by: Author,
-    pub labels: Vec<Label>,
-}
-
 #[derive(Debug, Eq, PartialEq)]
 pub struct Label(String);
 
