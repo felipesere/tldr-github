@@ -83,7 +83,7 @@ fn main() -> anyhow::Result<()> {
     let pool = Arc::new(pool);
 
     let state = State {
-        db: Arc::new(SqliteDB { conn: pool.clone() }),
+        db: Arc::new(SqliteDB { conn: pool }),
         github: Arc::new(GithubClient::new(config.github.token.clone())),
     };
 
@@ -125,7 +125,7 @@ fn main() -> anyhow::Result<()> {
                 )
             });
         r.at("/repos/:id/proxy")
-            .get(|mut req: Request<State>| async move {
+            .get(|req: Request<State>| async move {
                 let id: i32 = req.param("id").unwrap();
                 let client = req.state().client();
                 let db = req.state().db();

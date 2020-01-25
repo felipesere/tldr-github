@@ -82,7 +82,7 @@ impl Label {
         Label(name)
     }
 
-    pub fn join(labels: &Vec<Label>) -> String {
+    pub fn join(labels: &[Label]) -> String {
         labels
             .iter()
             .map(|l| l.0.clone())
@@ -94,10 +94,10 @@ impl Label {
         if raw == "" {
             return Vec::new();
         }
-        raw.split(",").map(|l| Label(l.to_owned())).collect()
+        raw.split(',').map(|l| Label(l.to_owned())).collect()
     }
 
-    pub fn expose(labels: &Vec<Label>) -> Vec<String> {
+    pub fn expose(labels: &[Label]) -> Vec<String> {
         labels.iter().map(|l| l.0.clone()).collect()
     }
 }
@@ -115,12 +115,15 @@ pub struct Author {
 }
 
 impl Author {
-    pub fn new(name: String) -> Self {
-        Author { name, link: None }
+    pub fn new<S: Into<String>>(name: S) -> Self {
+        Author {
+            name: name.into(),
+            link: None,
+        }
     }
 
-    pub fn with_link(mut self, url: String) -> Self {
-        self.link = Some(url);
+    pub fn with_link<S: Into<String>>(mut self, url: S) -> Self {
+        self.link = Some(url.into());
         self
     }
 }
@@ -133,7 +136,7 @@ impl<T: Into<String>> From<T> for Author {
 
 pub fn add_new_repo(
     db: Arc<dyn Db>,
-    client: Arc<dyn ClientForRepositories>,
+    _client: Arc<dyn ClientForRepositories>,
     maybe_name: String,
 ) -> Result<StoredRepo> {
     let name = RepoName::from(maybe_name)?;

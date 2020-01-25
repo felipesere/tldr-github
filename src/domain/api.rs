@@ -1,7 +1,8 @@
 use serde::Serialize;
 use std::convert::From;
 
-use crate::domain::{ItemKind, Label};
+use crate::db::FullStoredRepo;
+use crate::domain::{ItemKind, Label, NewTrackedItem};
 
 #[derive(serde::Deserialize, Debug)]
 pub struct AddNewRepo {
@@ -19,9 +20,9 @@ pub struct AddTrackedItemsForRepo {
     pub items: Vec<ItemToTrack>,
 }
 
-impl From<crate::db::FullStoredRepo> for Repo {
-    fn from(other: crate::db::FullStoredRepo) -> Self {
-        let crate::db::FullStoredRepo {
+impl From<FullStoredRepo> for Repo {
+    fn from(other: FullStoredRepo) -> Self {
+        let FullStoredRepo {
             id,
             title,
             issues,
@@ -40,37 +41,13 @@ impl From<crate::db::FullStoredRepo> for Repo {
     }
 }
 
-impl From<crate::db::StoredPullRequest> for Item {
-    fn from(other: crate::db::StoredPullRequest) -> Self {
-        Item {
-            nr: other.nr,
-            title: other.title,
-            link: other.link,
-            by: other.by,
-            labels: Label::expose(&other.labels),
-        }
-    }
-}
-
-impl From<crate::domain::NewTrackedItem> for Item {
-    fn from(other: crate::domain::NewTrackedItem) -> Self {
+impl From<NewTrackedItem> for Item {
+    fn from(other: NewTrackedItem) -> Self {
         Item {
             nr: other.number,
             title: other.title,
             link: other.link,
             by: other.by.name,
-            labels: Label::expose(&other.labels),
-        }
-    }
-}
-
-impl From<crate::db::StoredIssue> for Item {
-    fn from(other: crate::db::StoredIssue) -> Self {
-        Item {
-            nr: other.nr,
-            title: other.title,
-            link: other.link,
-            by: other.by,
             labels: Label::expose(&other.labels),
         }
     }

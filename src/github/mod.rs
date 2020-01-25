@@ -115,17 +115,14 @@ impl domain::ClientForRepositories for GithubClient {
             let author = pr
                 .author
                 .map(|a| domain::Author::new(a.login).with_link(a.url))
-                .unwrap_or(
-                    domain::Author::new("ghost".into())
-                        .with_link("https://github.com/ghost".into()),
-                );
+                .unwrap_or(domain::Author::new("ghost").with_link("https://github.com/ghost"));
 
             items.push(domain::NewTrackedItem {
                 foreign_id: pr.id,
                 title: pr.title,
                 link: pr.url,
                 by: author,
-                labels: labels,
+                labels,
                 kind: domain::ItemKind::PR,
                 last_updated: pr.updated_at,
                 number: pr.number as i32,
@@ -142,24 +139,21 @@ impl domain::ClientForRepositories for GithubClient {
             let author = issue
                 .author
                 .map(|a| domain::Author::new(a.login).with_link(a.url))
-                .unwrap_or(
-                    domain::Author::new("ghost".into())
-                        .with_link("https://github.com/ghost".into()),
-                );
+                .unwrap_or(domain::Author::new("ghost").with_link("https://github.com/ghost"));
 
             items.push(domain::NewTrackedItem {
                 foreign_id: issue.id,
                 title: issue.title,
                 link: issue.url,
                 by: author,
-                labels: labels,
+                labels,
                 kind: domain::ItemKind::Issue,
                 last_updated: issue.updated_at,
                 number: issue.number as i32,
             })
         }
 
-        return Result::Ok(items);
+        Result::Ok(items)
     }
 
     fn issue(&self, repo: &domain::RepoName, nr: i32) -> Result<domain::NewTrackedItem> {
@@ -185,16 +179,14 @@ impl domain::ClientForRepositories for GithubClient {
         let author = issue
             .author
             .map(|a| domain::Author::new(a.login).with_link(a.url))
-            .unwrap_or(
-                domain::Author::new("ghost".into()).with_link("https://github.com/ghost".into()),
-            );
+            .unwrap_or(domain::Author::new("ghost").with_link("https://github.com/ghost"));
 
         Result::Ok(domain::NewTrackedItem {
             foreign_id: issue.id,
             title: issue.title,
             link: issue.url,
             by: author,
-            labels: labels,
+            labels,
             kind: domain::ItemKind::Issue,
             last_updated: issue.updated_at,
             number: issue.number as i32,
@@ -224,16 +216,14 @@ impl domain::ClientForRepositories for GithubClient {
         let author = pr
             .author
             .map(|a| domain::Author::new(a.login).with_link(a.url))
-            .unwrap_or(
-                domain::Author::new("ghost".into()).with_link("https://github.com/ghost".into()),
-            );
+            .unwrap_or(domain::Author::new("ghost").with_link("https://github.com/ghost"));
 
         Result::Ok(domain::NewTrackedItem {
             foreign_id: pr.id,
             title: pr.title,
             link: pr.url,
             by: author,
-            labels: labels,
+            labels,
             kind: domain::ItemKind::PR,
             last_updated: pr.updated_at,
             number: pr.number as i32,

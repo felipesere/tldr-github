@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
-use chrono::{NaiveDateTime, Utc};
+use chrono::{DateTime, NaiveDateTime, Utc};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::sqlite::SqliteConnection;
 
 use schema::{repos, tracked_items};
 
-use crate::domain::{Label, NewTrackedItem};
+use crate::domain::{Author, ItemKind, Label, NewTrackedItem};
 
 mod schema;
 
@@ -96,8 +96,8 @@ impl StoredRepo {
 pub struct FullStoredRepo {
     pub id: i32,
     pub title: String,
-    pub issues: Vec<StoredIssue>,
-    pub prs: Vec<StoredPullRequest>,
+    pub issues: Vec<NewTrackedItem>,
+    pub prs: Vec<NewTrackedItem>,
 }
 
 #[derive(Insertable)]
@@ -106,31 +106,6 @@ pub struct NewRepo<'a> {
     pub title: &'a str,
 }
 
-#[derive(Debug)]
-pub struct StoredPullRequest {
-    id: i32,
-    repo_id: i32,
-    pub nr: i32,
-    pub title: String,
-    pub by: String,
-    pub link: String,
-    pub labels: Vec<Label>,
-    created_at: NaiveDateTime,
-    updated_at: NaiveDateTime,
-}
-
-#[derive(Debug)]
-pub struct StoredIssue {
-    id: i32,
-    repo_id: i32,
-    pub nr: i32,
-    pub title: String,
-    pub by: String,
-    pub link: String,
-    pub labels: Vec<Label>,
-    created_at: NaiveDateTime,
-    updated_at: NaiveDateTime,
-}
 pub fn find_repo(conn: &Conn, n: i32) -> Option<StoredRepo> {
     use schema::repos::dsl::*;
     repos.find(n).first(conn).ok()
@@ -189,31 +164,29 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
                 let prs = tracked
                     .iter()
                     .filter(|t| t.kind == "pr")
-                    .map(|item| StoredPullRequest {
-                        id: item.id,
-                        repo_id: item.repo_id,
+                    .map(|item| NewTrackedItem {
                         title: item.title.clone(),
-                        by: item.by.clone(),
-                        nr: item.number,
+                        by: Author::from(item.by.clone()),
+                        number: item.number,
                         link: item.link.clone(),
                         labels: Label::split(&item.labels),
-                        created_at: item.created_at,
-                        updated_at: item.updated_at,
+                        kind: ItemKind::PR,
+                        foreign_id: item.foreign_id.clone(),
+                        last_updated: DateTime::from_utc(item.last_updated, Utc),
                     })
                     .collect();
                 let issues = tracked
                     .iter()
                     .filter(|t| t.kind == "issue")
-                    .map(|item| StoredIssue {
-                        id: item.id,
-                        repo_id: item.repo_id,
+                    .map(|item| NewTrackedItem {
                         title: item.title.clone(),
-                        by: item.by.clone(),
-                        nr: item.number,
+                        by: Author::from(item.by.clone()),
+                        number: item.number,
                         link: item.link.clone(),
                         labels: Label::split(&item.labels),
-                        created_at: item.created_at,
-                        updated_at: item.updated_at,
+                        kind: ItemKind::PR,
+                        foreign_id: item.foreign_id.clone(),
+                        last_updated: DateTime::from_utc(item.last_updated, Utc),
                     })
                     .collect();
                 FullStoredRepo {
