@@ -3,6 +3,7 @@
     import Github from '../atoms/GithubIcon.svelte';
     import Settings from '../settings/Settings.svelte';
     import TrackedItems from './TrackedItems.svelte';
+    import GithubIcon from "../atoms/GithubIcon.svelte";
 
     export let repo;
     let showSettings = false;
@@ -37,7 +38,7 @@
         <div class="card-header-title">
             <p class="grow">{repo.title}</p>
             <a class="subtle" href="#" on:click|preventDefault={() => showSettings = !showSettings}>
-                <i class="icon ion-md-settings" data-testid="settings"></i>
+                <GithubIcon icon="gear" />
             </a>
         </div>
     </header>
