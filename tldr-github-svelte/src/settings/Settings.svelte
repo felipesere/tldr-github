@@ -1,7 +1,7 @@
 <script>
     import {deleteRepo} from '../client/api.js'
     import {createEventDispatcher} from 'svelte';
-    import SelectItemsToTrack from "./SelectItemsToTrack.svelte";
+    import SelectItemsToTrack from "../modals/SelectItemsToTrack.svelte";
 
     const dispatch = createEventDispatcher();
 

@@ -1,6 +1,6 @@
 <script>
     import {fade} from 'svelte/transition';
-    import Github from './Github.svelte';
+    import Github from '../atoms/GithubIcon.svelte';
     import Settings from '../settings/Settings.svelte';
     import TrackedItems from './TrackedItems.svelte';
 

@@ -2,10 +2,10 @@
     import {fade} from 'svelte/transition'
     import {createEventDispatcher, onMount} from 'svelte';
     import {trackItems} from '../client/api.js'
-    import Label from "./Label.svelte";
-    import GlowBox from "../GlowBox.svelte";
-    import SearchBar from "./SearchBar.svelte";
-    import Spinner from "./Spinner.svelte";
+    import Label from "../atoms/Label.svelte";
+    import GlowBox from "../atoms/GlowBox.svelte";
+    import SearchBar from "../settings/SearchBar.svelte";
+    import Spinner from "../settings/Spinner.svelte";
 
     export let repo;
     const dispatch = createEventDispatcher();

@@ -2,7 +2,7 @@
     import Repo from './repo/Repo.svelte';
     import {onMount} from 'svelte';
     import SideMenu from "./menu/SideMenu.svelte";
-    import AddNewRepoModal from "./AddNewRepoModal.svelte";
+    import AddNewRepo from "./modals/AddNewRepo.svelte";
     import Error from './errors/Error.svelte'
 
     let repos = [];
@@ -27,7 +27,7 @@
     <Error />
     <SideMenu onClickAdd={open}/>
     {#if showAddRepo}
-        <AddNewRepoModal on:close={close} on:new-repo-added={handleNewRepo}/>
+        <AddNewRepo on:close={close} on:new-repo-added={handleNewRepo}/>
     {/if}
 
     <div class="container my-4">

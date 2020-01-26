@@ -1,7 +1,7 @@
 <script>
     import {fly} from 'svelte/transition'
     import {createEventDispatcher} from 'svelte';
-    import AddRepo from "./AddRepo.svelte";
+    import AddRepo from "../AddRepo.svelte";
 
     const dispatch = createEventDispatcher();
     const close = () => dispatch('close');

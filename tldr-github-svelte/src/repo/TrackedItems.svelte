@@ -1,6 +1,6 @@
 <script>
-  import GlowBox from '../GlowBox.svelte';
-  import Indicator from './Indicator.svelte';
+  import GlowBox from '../atoms/GlowBox.svelte';
+  import Indicator from '../atoms/Indicator.svelte';
   export let items;
 
   $: toBeDisplayed = items.slice(0, 3);
