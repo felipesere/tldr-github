@@ -4,6 +4,7 @@ import commonjs from "rollup-plugin-commonjs";
 import livereload from "rollup-plugin-livereload";
 import {terser} from "rollup-plugin-terser";
 import json from '@rollup/plugin-json'
+import analyze from 'rollup-plugin-analyzer';
 
 const production = !process.env.ROLLUP_WATCH;
 const runServer = process.env.RUN_SERVER;
@@ -17,6 +18,7 @@ export default {
         file: "public/build/bundle.js"
     },
     plugins: [
+        analyze({summaryOnly: true}),
         json({compact: true}),
         svelte({
             // enable run-time checks when not in production
