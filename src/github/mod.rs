@@ -31,6 +31,14 @@ pub struct IssueView;
 )]
 pub struct BroadRepoView;
 
+#[derive(GraphQLQuery)]
+#[graphql(
+    schema_path = "graphql/schema.graphql",
+    query_path = "graphql/repo-exists.graphql",
+    response_derives = "Debug,Clone"
+)]
+pub struct RepoExistsView;
+
 pub struct GithubClient {
     token: String,
 }
@@ -92,6 +100,18 @@ fn funky_flatten<T>(input: Option<Vec<Option<T>>>) -> Vec<T> {
 }
 
 impl domain::ClientForRepositories for GithubClient {
+    fn repo_exists(&self, repo: &domain::RepoName) -> Result<bool> {
+        let query = RepoExistsView::build_query(repo_exists_view::Variables {
+            owner: repo.owner.clone(),
+            name: repo.name.clone(),
+        });
+
+        match self.make_request::<graphql_client::QueryBody<repo_exists_view::Variables>, repo_exists_view::ResponseData>(query) {
+            Ok(_) => Result::Ok(true),
+            Err(_) => Result::Ok(false),
+        }
+    }
+
     fn entire_repo(&self, repo: &domain::RepoName) -> Result<Vec<domain::NewTrackedItem>> {
         let query = BroadRepoView::build_query(broad_repo_view::Variables {
             owner: repo.owner.clone(),
@@ -156,6 +176,7 @@ impl domain::ClientForRepositories for GithubClient {
         Result::Ok(items)
     }
 
+    /// This will be used in the update-phase
     fn issue(&self, repo: &domain::RepoName, nr: i32) -> Result<domain::NewTrackedItem> {
         let query = IssueView::build_query(issue_view::Variables {
             owner: repo.owner.clone(),
@@ -193,6 +214,7 @@ impl domain::ClientForRepositories for GithubClient {
         })
     }
 
+    /// This will be used in the update-phase
     fn pull_request(&self, repo: &domain::RepoName, nr: i32) -> Result<domain::NewTrackedItem> {
         let query = PullRequestView::build_query(pull_request_view::Variables {
             owner: repo.owner.clone(),
@@ -234,7 +256,7 @@ impl domain::ClientForRepositories for GithubClient {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::domain::ClientForRepositories;
+    use crate::domain::{ClientForRepositories, RepoName};
 
     #[test]
     fn grabs_pull_requests() {
@@ -258,6 +280,19 @@ mod tests {
             .expect("should be able to get issues");
 
         assert_eq!(issue.title, "Try out Github Actions".to_string());
+    }
+
+    #[test]
+    fn repo_exist() {
+        let client = GithubClient::new("<< token >>");
+
+        let good_repo = RepoName::from("felipesere/advisorex").unwrap();
+        let exists = client.repo_exists(&good_repo).unwrap();
+        assert!(exists);
+
+        let bad_repo = RepoName::from("felipesere/foo").unwrap();
+        let not_exists = client.repo_exists(&bad_repo).unwrap();
+        assert!(!not_exists);
     }
 
     #[test]

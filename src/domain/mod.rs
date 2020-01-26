@@ -11,9 +11,10 @@ use crate::db::{Db, StoredRepo};
 pub mod api;
 
 pub trait ClientForRepositories: Send + Sync {
+    fn repo_exists(&self, repo: &RepoName) -> Result<bool>;
+    fn entire_repo(&self, repo: &RepoName) -> Result<Vec<NewTrackedItem>>;
     fn issue(&self, repo: &RepoName, nr: i32) -> Result<NewTrackedItem>;
     fn pull_request(&self, repo: &RepoName, nr: i32) -> Result<NewTrackedItem>;
-    fn entire_repo(&self, repo: &RepoName) -> Result<Vec<NewTrackedItem>>;
 }
 
 #[derive(Clone)]
@@ -224,9 +225,10 @@ mod test {
         pub Github{ }
 
         trait ClientForRepositories{
+            fn repo_exists(&self, repo: &RepoName) -> Result<bool>;
+            fn entire_repo(&self, repo: &RepoName) -> Result<Vec<NewTrackedItem>>;
             fn issue(&self, repo: &RepoName, nr: i32) -> Result<NewTrackedItem>;
             fn pull_request(&self, repo: &RepoName, nr: i32) -> Result<NewTrackedItem>;
-            fn entire_repo(&self, repo: &RepoName) -> Result<Vec<NewTrackedItem>>;
         }
     );
 
