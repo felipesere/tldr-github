@@ -7,16 +7,16 @@
     let twoWeeksAgo = addDays(new Date(), -14);
     let oneMonthAgo = addDays(new Date(), 30);
 
-    let x = parse(time, "yyyy-MM-dd'T'HH:mm:ssxxx", new Date());
+    let lastUpdated = parse(time, "yyyy-MM-dd'T'HH:mm:ssxxx", new Date());
 
     let activity ='none';
-    if (isAfter(x, oneMonthAgo)) {
+    if (isAfter(lastUpdated, oneMonthAgo)) {
         activity = 'low';
     }
-    if (isAfter(x, twoWeeksAgo)) {
+    if (isAfter(lastUpdated, twoWeeksAgo)) {
         activity = 'medium';
     }
-    if (isAfter(x, oneWeekAgo)) {
+    if (isAfter(lastUpdated, oneWeekAgo)) {
         activity = 'high';
     }
 
