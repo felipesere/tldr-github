@@ -6,6 +6,7 @@
     import GlowBox from "../atoms/GlowBox.svelte";
     import SearchBar from "../settings/SearchBar.svelte";
     import Spinner from "../settings/Spinner.svelte";
+    import Indicator from "../atoms/Indicator.svelte";
 
     export let repo;
     const dispatch = createEventDispatcher();
@@ -66,7 +67,9 @@
                                 </div>
                             </td>
                             <td>
-                                <GlowBox content={pr}/>
+                                <div class="horizontal-flex">
+                                    <Indicator time={pr.last_updated} /><GlowBox content={pr}/>
+                                </div>
                             </td>
                             <td class="w-200">
                                 <div class="cluster">
