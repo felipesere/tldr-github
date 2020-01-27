@@ -4,6 +4,8 @@ use anyhow::{bail, Result};
 use async_std::task;
 use graphql_client::GraphQLQuery;
 
+use tracing::{instrument};
+
 type DateTime = chrono::DateTime<chrono::Utc>;
 type URI = String;
 
@@ -100,6 +102,8 @@ fn funky_flatten<T>(input: Option<Vec<Option<T>>>) -> Vec<T> {
 }
 
 impl domain::ClientForRepositories for GithubClient {
+
+    #[instrument(skip(self))]
     fn repo_exists(&self, repo: &domain::RepoName) -> Result<bool> {
         let query = RepoExistsView::build_query(repo_exists_view::Variables {
             owner: repo.owner.clone(),

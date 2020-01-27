@@ -10,10 +10,11 @@ use std::sync::Arc;
 use anyhow::Context;
 use async_std::task;
 use serde::Serialize;
-use simplelog::{CombinedLogger, LevelFilter, SharedLogger, TermLogger, TerminalMode, WriteLogger};
 use tide::middleware::RequestLogger;
 use tide::{Request, Response};
 use tide_naive_static_files::StaticFilesEndpoint;
+use tracing::{event, span, Level, instrument};
+use tracing_subscriber;
 
 use config::Config;
 use domain::api::{AddNewRepo, AddTrackedItemsForRepo, Repo};
@@ -45,33 +46,15 @@ impl State {
     }
 }
 
-pub fn terminal() -> Box<dyn SharedLogger> {
-    TermLogger::new(
-        LevelFilter::Info,
-        simplelog::Config::default(),
-        TerminalMode::Mixed,
-    )
-    .unwrap()
-}
-
-pub fn file(name: &'static str) -> Box<dyn SharedLogger> {
-    WriteLogger::new(
-        LevelFilter::Info,
-        simplelog::Config::default(),
-        File::create(name).unwrap(),
-    )
-}
-
 fn main() -> anyhow::Result<()> {
+    env_logger::init();
+
     let mut f = std::fs::File::open("./config.json")?;
     let mut contents = String::new();
     f.read_to_string(&mut contents)?;
 
     let config: Config =
         serde_json::from_str(&contents).with_context(|| "Unable to read config")?;
-
-    CombinedLogger::init(vec![terminal(), file("tldr-github.log")])
-        .with_context(|| "failed to initialize the logging system")?;
 
     let pool = config
         .database
@@ -97,19 +80,28 @@ fn main() -> anyhow::Result<()> {
         });
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| async move {
+            let span = span!(Level::INFO, "GET /repos");
+            let guard = span.enter();
             let db = req.state().db();
 
-            ApiResult::from(get_all_repos(db).with_context(|| "failed to get all repos"))
+            let res = ApiResult::from(get_all_repos(db).with_context(|| "failed to get all repos"));
+            drop(guard);
+            res
+
         });
         r.at("/repos").post(|mut req: Request<State>| async move {
+            let span = span!(Level::INFO, "POST /repos");
+            let guard = span.enter();
+
             let client = req.state().client();
             let db = req.state().db();
             let add_repo: AddNewRepo = req.body_json().await.unwrap();
 
-            ApiResult::empty(
-                domain::add_new_repo(db, client, add_repo.name)
-                    .with_context(|| "failed to add repo"),
-            )
+            let res = ApiResult::empty(
+                domain::add_new_repo(db, client, add_repo.name) .with_context(|| "failed to add repo"),
+            );
+            drop(guard);
+            res
         });
         r.at("/repos/:id/tracked")
             .post(|mut req: Request<State>| async move {
@@ -208,12 +200,16 @@ struct ErrorJson {
     error: String,
 }
 
+#[instrument]
 fn get_all_repos(db: Arc<dyn Db>) -> anyhow::Result<Vec<domain::api::Repo>> {
+
     let repos = db.all()?;
     let mut result = Vec::new();
     for repo in repos {
         result.push(Repo::from(repo))
-    }
+    };
+
+    event!(Level::INFO, "Got {} repors to return", result.len());
     anyhow::Result::Ok(result)
 }
 

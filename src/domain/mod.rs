@@ -6,6 +6,8 @@ use futures::stream::futures_unordered::FuturesUnordered;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
+use tracing::{event, span, Level, instrument};
+
 use crate::db::{Db, StoredRepo};
 
 pub mod api;
@@ -17,7 +19,7 @@ pub trait ClientForRepositories: Send + Sync {
     fn pull_request(&self, repo: &RepoName, nr: i32) -> Result<NewTrackedItem>;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RepoName {
     pub owner: String,
     pub name: String,
@@ -135,15 +137,22 @@ impl<T: Into<String>> From<T> for Author {
     }
 }
 
+#[instrument(skip(db, client))]
 pub fn add_new_repo(
     db: Arc<dyn Db>,
-    _client: Arc<dyn ClientForRepositories>,
+    client: Arc<dyn ClientForRepositories>,
     maybe_name: String,
 ) -> Result<StoredRepo> {
     let name = RepoName::from(maybe_name)?;
-    let repo = db.insert_new_repo(&name.to_string())?;
 
-    Result::Ok(repo)
+    if client.repo_exists(&name)? {
+        event!(Level::INFO, "{} found on Github proceeding to save to DB", &name);
+        let repo = db.insert_new_repo(&name.to_string())?;
+        event!(Level::INFO, "successfully save {} to DB", &name);
+        Result::Ok(repo)
+    } else {
+        bail!("Repo {} not found on GitHub.", name.to_string())
+    }
 }
 
 pub async fn retrieve_live_items(

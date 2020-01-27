@@ -1,10 +1,12 @@
 use std::sync::Arc;
+use std::fmt;
 
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::sqlite::SqliteConnection;
+use tracing::{event, span, Level, instrument};
 
 use schema::{repos, tracked_items};
 
@@ -21,7 +23,7 @@ pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
         .with_context(|| format!("failed to access db: {}", database_url))
 }
 
-pub trait Db: Send + Sync {
+pub trait Db: fmt::Debug + Send + Sync {
     fn find_repo(&self, id: i32) -> Option<StoredRepo>;
     fn insert_tracked_items(
         &self,
@@ -35,6 +37,12 @@ pub trait Db: Send + Sync {
 
 pub struct SqliteDB {
     pub(crate) conn: Arc<SqlitePool>,
+}
+
+impl fmt::Debug for SqliteDB {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "SqliteConnection")
+    }
 }
 
 impl Db for SqliteDB {
@@ -145,9 +153,13 @@ pub fn insert_new_repo(conn: &Conn, repo_name: &str) -> Result<StoredRepo> {
     })
 }
 
+#[instrument(skip(conn))]
 pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
     use schema::repos::dsl::*;
+
     let rs: Vec<StoredRepo> = repos.load(conn).with_context(|| "getting all repos")?;
+    event!(Level::INFO, "Found {} repos", rs.len());
+
 
     let ids: Vec<i32> = rs.iter().map(|r| r.id).collect();
 
@@ -156,6 +168,7 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
         .load(conn)
         .context("loading tracked items")?
         .grouped_by(&rs[..]);
+    event!(Level::INFO, "Read tracked items from DB");
 
     Result::Ok(
         rs.into_iter()
