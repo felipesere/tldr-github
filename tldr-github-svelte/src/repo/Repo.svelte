@@ -37,7 +37,7 @@
     <header class="card-header">
         <div class="card-header-title">
             <p class="grow">{repo.title}</p>
-            <a class="subtle" href="#" on:click|preventDefault={() => showSettings = !showSettings}>
+            <a class="subtle" data-testid="settings" href="#" on:click|preventDefault={() => showSettings = !showSettings}>
                 <GithubIcon icon="gear" />
             </a>
         </div>
