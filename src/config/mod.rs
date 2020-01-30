@@ -104,11 +104,23 @@ pub struct GithubConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct UpdaterConfig {
+    pub run: bool,
+}
+
+impl std::default::Default for UpdaterConfig {
+    fn default() -> UpdaterConfig {
+        UpdaterConfig { run: true }
+    }
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub database: DatabaseConfig,
     pub server: ServerConfig,
     pub ui: UiConfig,
     pub github: GithubConfig,
+    pub updater: UpdaterConfig,
 }
 
 #[cfg(test)]

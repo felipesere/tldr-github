@@ -2,14 +2,14 @@ query IssueView($owner: String!, $name: String!, $nr: Int!) {
   repository(owner: $owner, name: $name) {
     issue(number: $nr) {
       id
-        updatedAt
-        title
-        number
-        author {
-          __typename
-            login
-            url
-        }
+      updatedAt
+      title
+      number
+      author {
+        __typename
+        login
+        url
+      }
       labels(first: 10) {
         nodes {
           name

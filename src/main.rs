@@ -3,25 +3,26 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
-use std::fs::File;
 use std::io::Read;
 use std::sync::Arc;
+use std::time::Duration;
 
 use anyhow::Context;
+use async_std::prelude::*;
+use async_std::stream;
 use async_std::task;
 use serde::Serialize;
 use tide::middleware::RequestLogger;
 use tide::{Request, Response};
 use tide_naive_static_files::StaticFilesEndpoint;
-use tracing::{event, span, Level, instrument};
-use tracing_subscriber;
+use tracing::{event, instrument, span, Level};
 
 use config::Config;
 use domain::api::{AddNewRepo, AddTrackedItemsForRepo, Repo};
 use domain::ClientForRepositories;
 use github::GithubClient;
 
-use db::{Db, SqliteDB};
+use db::{Db, FullStoredRepo, SqliteDB};
 
 mod config;
 mod db;
@@ -65,9 +66,12 @@ fn main() -> anyhow::Result<()> {
 
     let pool = Arc::new(pool);
 
+    let db_access = Arc::new(SqliteDB { conn: pool.clone() });
+    let github_access = Arc::new(GithubClient::new(config.github.token.clone()));
+
     let state = State {
-        db: Arc::new(SqliteDB { conn: pool }),
-        github: Arc::new(GithubClient::new(config.github.token.clone())),
+        db: db_access.clone(),
+        github: github_access.clone(),
     };
 
     let mut app = tide::with_state(state);
@@ -87,7 +91,6 @@ fn main() -> anyhow::Result<()> {
             let res = ApiResult::from(get_all_repos(db).with_context(|| "failed to get all repos"));
             drop(guard);
             res
-
         });
         r.at("/repos").post(|mut req: Request<State>| async move {
             let span = span!(Level::INFO, "POST /repos");
@@ -98,7 +101,8 @@ fn main() -> anyhow::Result<()> {
             let add_repo: AddNewRepo = req.body_json().await.unwrap();
 
             let res = ApiResult::empty(
-                domain::add_new_repo(db, client, add_repo.name) .with_context(|| "failed to add repo"),
+                domain::add_new_repo(db, client, add_repo.name)
+                    .with_context(|| "failed to add repo"),
             );
             drop(guard);
             res
@@ -136,8 +140,49 @@ fn main() -> anyhow::Result<()> {
         });
     });
 
+    let db = db_access.clone();
+    let github = github_access.clone();
+    if config.updater.run {
+        task::spawn(async move {
+            let mut interval =
+                stream::interval(Duration::from_millis(50)).throttle(Duration::from_millis(100));
+            while let Some(_) = interval.next().await {
+                event!(Level::INFO, "running updates");
+                let all_repos = db.all().unwrap();
+
+                let mut all_futs = futures::stream::FuturesUnordered::new();
+                for repo in all_repos {
+                    all_futs.push(update_single_repo(repo, github.clone()))
+                }
+
+                task::block_on(async move { while let Some(_) = all_futs.next().await {} })
+            }
+        });
+    }
+
     task::block_on(async move { app.listen(config.server.address()).await })
         .with_context(|| "failed launch the server")
+}
+
+async fn update_single_repo(
+    repo: FullStoredRepo,
+    client: Arc<dyn ClientForRepositories>,
+) -> impl Future<Output = ()> {
+    task::spawn(async move {
+        event!(Level::INFO, "repo {}", repo.title);
+        for item in repo.issues.iter() {
+            let r = client.issue(&repo.name(), item.number).unwrap();
+            if item.last_updated != r.last_updated {
+                event!(Level::INFO, "found an update {}", item.title)
+            }
+        }
+        for item in repo.prs.iter() {
+            let r = client.pull_request(&repo.name(), item.number).unwrap();
+            if item.last_updated != r.last_updated {
+                event!(Level::INFO, "found an update {}", item.title)
+            }
+        }
+    })
 }
 
 impl<T: Send + Sized + Serialize> tide::IntoResponse for ApiResult<T> {
@@ -202,12 +247,11 @@ struct ErrorJson {
 
 #[instrument]
 fn get_all_repos(db: Arc<dyn Db>) -> anyhow::Result<Vec<domain::api::Repo>> {
-
     let repos = db.all()?;
     let mut result = Vec::new();
     for repo in repos {
         result.push(Repo::from(repo))
-    };
+    }
 
     event!(Level::INFO, "Got {} repors to return", result.len());
     anyhow::Result::Ok(result)

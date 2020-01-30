@@ -6,7 +6,7 @@ use futures::stream::futures_unordered::FuturesUnordered;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
-use tracing::{event, span, Level, instrument};
+use tracing::{event, instrument, span, Level};
 
 use crate::db::{Db, StoredRepo};
 
@@ -146,7 +146,11 @@ pub fn add_new_repo(
     let name = RepoName::from(maybe_name)?;
 
     if client.repo_exists(&name)? {
-        event!(Level::INFO, "{} found on Github proceeding to save to DB", &name);
+        event!(
+            Level::INFO,
+            "{} found on Github proceeding to save to DB",
+            &name
+        );
         let repo = db.insert_new_repo(&name.to_string())?;
         event!(Level::INFO, "successfully save {} to DB", &name);
         Result::Ok(repo)

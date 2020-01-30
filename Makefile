@@ -10,7 +10,7 @@ run:
 	cargo run
 
 run-watch:
-	RUST_LOG=info cargo watch --no-gitignore --clear -i tldr-github-svelte -w .trigger -x run
+	RUST_LOG=tldr_github=info cargo watch --no-gitignore --clear -i tldr-github-svelte -w .trigger -x run
 
 migrate:
 	diesel migration run --database-url repos.db

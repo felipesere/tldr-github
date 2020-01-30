@@ -1,12 +1,12 @@
-use std::sync::Arc;
 use std::fmt;
+use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::sqlite::SqliteConnection;
-use tracing::{event, span, Level, instrument};
+use tracing::{event, instrument, span, Level};
 
 use schema::{repos, tracked_items};
 
@@ -108,6 +108,12 @@ pub struct FullStoredRepo {
     pub prs: Vec<NewTrackedItem>,
 }
 
+impl FullStoredRepo {
+    pub fn name(&self) -> crate::domain::RepoName {
+        crate::domain::RepoName::from(&self.title).unwrap()
+    }
+}
+
 #[derive(Insertable)]
 #[table_name = "repos"]
 pub struct NewRepo<'a> {
@@ -159,7 +165,6 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
 
     let rs: Vec<StoredRepo> = repos.load(conn).with_context(|| "getting all repos")?;
     event!(Level::INFO, "Found {} repos", rs.len());
-
 
     let ids: Vec<i32> = rs.iter().map(|r| r.id).collect();
 
