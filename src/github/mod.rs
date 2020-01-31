@@ -140,7 +140,14 @@ impl domain::ClientForRepositories for GithubClient {
                 .map(|a| domain::Author::new(a.login).with_link(a.url))
                 .unwrap_or(domain::Author::new("ghost").with_link("https://github.com/ghost"));
 
+
+            let state = match pr.state {
+                broad_repo_view::PullRequestState::OPEN => domain::State::Open,
+                _ => domain::State::Closed,
+            };
+
             items.push(domain::NewTrackedItem {
+                state,
                 foreign_id: pr.id,
                 title: pr.title,
                 link: pr.url,
@@ -164,7 +171,13 @@ impl domain::ClientForRepositories for GithubClient {
                 .map(|a| domain::Author::new(a.login).with_link(a.url))
                 .unwrap_or(domain::Author::new("ghost").with_link("https://github.com/ghost"));
 
+            let state = match issue.state {
+                broad_repo_view::IssueState::OPEN => domain::State::Open,
+                _ => domain::State::Closed,
+            };
+
             items.push(domain::NewTrackedItem {
+                state,
                 foreign_id: issue.id,
                 title: issue.title,
                 link: issue.url,
@@ -205,7 +218,13 @@ impl domain::ClientForRepositories for GithubClient {
             .map(|a| domain::Author::new(a.login).with_link(a.url))
             .unwrap_or(domain::Author::new("ghost").with_link("https://github.com/ghost"));
 
+        let state = match issue.state {
+            issue_view::IssueState::OPEN => domain::State::Open,
+            _ => domain::State::Closed,
+        };
+
         Result::Ok(domain::NewTrackedItem {
+            state,
             foreign_id: issue.id,
             title: issue.title,
             link: issue.url,
@@ -243,7 +262,13 @@ impl domain::ClientForRepositories for GithubClient {
             .map(|a| domain::Author::new(a.login).with_link(a.url))
             .unwrap_or(domain::Author::new("ghost").with_link("https://github.com/ghost"));
 
+        let state = match pr.state {
+            pull_request_view::PullRequestState::OPEN => domain::State::Open,
+            _ => domain::State::Closed,
+        };
+
         Result::Ok(domain::NewTrackedItem {
+            state,
             foreign_id: pr.id,
             title: pr.title,
             link: pr.url,

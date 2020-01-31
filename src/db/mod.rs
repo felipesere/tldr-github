@@ -10,7 +10,7 @@ use tracing::{event, instrument, span, Level};
 
 use schema::{repos, tracked_items};
 
-use crate::domain::{Author, ItemKind, Label, NewTrackedItem};
+use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
 
 mod schema;
 
@@ -23,7 +23,7 @@ pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
         .with_context(|| format!("failed to access db: {}", database_url))
 }
 
-pub trait Db: fmt::Debug + Send + Sync {
+pub trait Db: Send + Sync {
     fn find_repo(&self, id: i32) -> Option<StoredRepo>;
     fn insert_tracked_items(
         &self,
@@ -183,6 +183,7 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
                     .iter()
                     .filter(|t| t.kind == "pr")
                     .map(|item| NewTrackedItem {
+                        state: State::Open,
                         title: item.title.clone(),
                         by: Author::from(item.by.clone()),
                         number: item.number,
@@ -197,6 +198,7 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
                     .iter()
                     .filter(|t| t.kind == "issue")
                     .map(|item| NewTrackedItem {
+                        state: State::Open,
                         title: item.title.clone(),
                         by: Author::from(item.by.clone()),
                         number: item.number,
@@ -333,6 +335,7 @@ mod test {
             let repo = insert_new_repo(&conn, "felipesere/test")?;
 
             let item1 = NewTrackedItem {
+                state: State::Open,
                 title: "pr".into(),
                 link: "something".into(),
                 by: "felipe".into(),
@@ -344,6 +347,7 @@ mod test {
             };
 
             let item2 = NewTrackedItem {
+                state: State::Open,
                 title: "an issue".into(),
                 link: "something".into(),
                 by: "felipe".into(),

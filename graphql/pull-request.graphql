@@ -2,6 +2,7 @@ query PullRequestView($owner: String!, $name: String!, $nr: Int!) {
   repository(owner: $owner, name: $name) {
     pullRequest(number: $nr) {
       id
+      state
       updatedAt
       title
       number

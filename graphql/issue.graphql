@@ -2,6 +2,7 @@ query IssueView($owner: String!, $name: String!, $nr: Int!) {
   repository(owner: $owner, name: $name) {
     issue(number: $nr) {
       id
+      state
       updatedAt
       title
       number

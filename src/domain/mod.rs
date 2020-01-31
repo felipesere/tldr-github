@@ -66,8 +66,25 @@ impl ToString for ItemKind {
 }
 
 #[derive(Debug)]
+pub enum State {
+    Open,
+    Closed,
+}
+
+impl Display for State {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        let val = match self {
+            State::Open => "open",
+            State::Closed => "closed",
+        };
+        write!(f, "{}", val)
+    }
+}
+
+#[derive(Debug)]
 pub struct NewTrackedItem {
     pub title: String,
+    pub state: State,
     pub link: String,
     pub by: Author,
     pub labels: Vec<Label>,

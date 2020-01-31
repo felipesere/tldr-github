@@ -146,6 +146,9 @@ mod tests {
   },
   "github": {
     "token": "some-token"
+  },
+  "updater": {
+     "run": true
   }
 }
 "#;
@@ -171,6 +174,9 @@ mod tests {
   },
   "github": {
     "token": "some-token"
+  },
+  "updater": {
+     "run": true
   }
 }
 "#;

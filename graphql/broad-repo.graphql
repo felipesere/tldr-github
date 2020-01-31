@@ -4,6 +4,7 @@ query BroadRepoView($owner: String!, $name: String!) {
       totalCount
       nodes {
         id
+        state,
         updatedAt
         title
         number
@@ -24,6 +25,7 @@ query BroadRepoView($owner: String!, $name: String!) {
       totalCount
       nodes {
         id
+        state,
         updatedAt
         title
         number

@@ -144,8 +144,7 @@ fn main() -> anyhow::Result<()> {
     let github = github_access.clone();
     if config.updater.run {
         task::spawn(async move {
-            let mut interval =
-                stream::interval(Duration::from_millis(50)).throttle(Duration::from_millis(100));
+            let mut interval = stream::interval(Duration::from_secs(30));
             while let Some(_) = interval.next().await {
                 event!(Level::INFO, "running updates");
                 let all_repos = db.all().unwrap();
@@ -173,13 +172,13 @@ async fn update_single_repo(
         for item in repo.issues.iter() {
             let r = client.issue(&repo.name(), item.number).unwrap();
             if item.last_updated != r.last_updated {
-                event!(Level::INFO, "found an update {}", item.title)
+                event!(Level::INFO, "found an update {}: {}", r.title, r.state)
             }
         }
         for item in repo.prs.iter() {
             let r = client.pull_request(&repo.name(), item.number).unwrap();
             if item.last_updated != r.last_updated {
-                event!(Level::INFO, "found an update {}", item.title)
+                event!(Level::INFO, "found an update {}: {}", r.title, r.state)
             }
         }
     })
@@ -245,7 +244,7 @@ struct ErrorJson {
     error: String,
 }
 
-#[instrument]
+#[instrument(skip(db))]
 fn get_all_repos(db: Arc<dyn Db>) -> anyhow::Result<Vec<domain::api::Repo>> {
     let repos = db.all()?;
     let mut result = Vec::new();
