@@ -1,9 +1,9 @@
 <script>
     import Repo from './repo/Repo.svelte';
     import {onMount} from 'svelte';
-    import SideMenu from "./menu/SideMenu.svelte";
     import AddNewRepo from "./modals/AddNewRepo.svelte";
     import Error from './errors/Error.svelte'
+    import Fab from "./atoms/Fab.svelte";
 
     let repos = [];
 
@@ -24,13 +24,13 @@
 </script>
 
 <div class="main">
+    <Fab onClick={open} />
     <Error />
-    <SideMenu onClickAdd={open}/>
     {#if showAddRepo}
         <AddNewRepo on:close={close} on:new-repo-added={handleNewRepo}/>
     {/if}
 
-    <div class="container my-4">
+    <div class="my-container">
         {#if repos.length === 0}
             <p class="text-center subtle">No repos added yet</p>
         {/if}
@@ -43,12 +43,11 @@
 </div>
 
 <style>
+    .my-container {
+        margin: 2rem auto;
+        width: 90%;
+    }
     .main {
         display: flex;
-    }
-
-    .my-4 {
-        margin-top: 3rem;
-        margin-bottom: 3rem;
     }
 </style>

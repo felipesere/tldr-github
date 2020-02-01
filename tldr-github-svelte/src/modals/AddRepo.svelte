@@ -1,6 +1,6 @@
 <script>
     import {createEventDispatcher} from 'svelte';
-    import {addRepo} from './client/api.js';
+    import {addRepo} from '../client/api.js';
 
     const dispatch = createEventDispatcher();
     let newRepoName = "";
@@ -19,7 +19,7 @@
     }
 </script>
 
-<article class="vertical-flex at-most-450">
+<article class="vertical-flex">
     <div class="content">
         <form class="field has-addons">
             <div class="control has-icons-right grow">
@@ -40,9 +40,3 @@
         </form>
     </div>
 </article>
-
-<style>
-    .at-most-450 {
-        max-width: 450px;
-    }
-</style>

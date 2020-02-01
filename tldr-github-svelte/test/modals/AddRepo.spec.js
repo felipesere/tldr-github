@@ -1,5 +1,5 @@
 import {render, fireEvent, cleanup} from "@testing-library/svelte";
-import AddRepo from '../../src/AddRepo.svelte'
+import AddRepo from '../../src/modals/AddRepo.svelte'
 import {enableMocks} from 'jest-fetch-mock'
 
 enableMocks();
