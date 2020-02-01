@@ -6,11 +6,12 @@ use futures::stream::futures_unordered::FuturesUnordered;
 use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 
-use tracing::{event, instrument, span, Level};
+use tracing::{event, instrument, Level};
 
 use crate::db::{Db, StoredRepo};
 
 pub mod api;
+pub mod updater;
 
 pub trait ClientForRepositories: Send + Sync {
     fn repo_exists(&self, repo: &RepoName) -> Result<bool>;
@@ -47,7 +48,7 @@ impl Display for RepoName {
     }
 }
 
-#[derive(serde::Deserialize, Debug)]
+#[derive(serde::Deserialize, Debug, Clone)]
 pub enum ItemKind {
     #[serde(rename = "pr")]
     PR,
@@ -65,7 +66,7 @@ impl ToString for ItemKind {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum State {
     Open,
     Closed,
@@ -81,7 +82,7 @@ impl Display for State {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NewTrackedItem {
     pub title: String,
     pub state: State,
@@ -94,7 +95,7 @@ pub struct NewTrackedItem {
     pub number: i32,
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Label(String);
 
 impl Label {

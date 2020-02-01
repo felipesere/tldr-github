@@ -3,6 +3,7 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
+use std::future::Future;
 use std::io::Read;
 use std::sync::Arc;
 use std::time::Duration;
@@ -12,22 +13,20 @@ use async_std::prelude::*;
 use async_std::stream;
 use async_std::task;
 use serde::Serialize;
-use tide::middleware::RequestLogger;
 use tide::{Request, Response};
+use tide::middleware::RequestLogger;
 use tide_naive_static_files::StaticFilesEndpoint;
-use tracing::{event, instrument, span, Level};
+use tracing::{event, instrument, Level, span};
 
 use config::Config;
+use db::{Db, FullStoredRepo, SqliteDB};
 use domain::api::{AddNewRepo, AddTrackedItemsForRepo, Repo};
 use domain::ClientForRepositories;
 use github::GithubClient;
 
-use db::{Db, FullStoredRepo, SqliteDB};
-
 mod config;
 mod db;
 mod domain;
-mod filter;
 mod github;
 
 embed_migrations!("./migrations");
@@ -143,45 +142,28 @@ fn main() -> anyhow::Result<()> {
     let db = db_access.clone();
     let github = github_access.clone();
     if config.updater.run {
+        let (sender, receiver) = async_std::sync::channel(100);
         task::spawn(async move {
             let mut interval = stream::interval(Duration::from_secs(30));
             while let Some(_) = interval.next().await {
-                event!(Level::INFO, "running updates");
                 let all_repos = db.all().unwrap();
 
-                let mut all_futs = futures::stream::FuturesUnordered::new();
                 for repo in all_repos {
-                    all_futs.push(update_single_repo(repo, github.clone()))
+                    for item in repo.items() {
+                        sender.send((repo.name(), item)).await;
+                    }
                 }
-
-                task::block_on(async move { while let Some(_) = all_futs.next().await {} })
             }
+        });
+
+        domain::updater::start(domain::updater::Config {
+            channel: receiver,
+            client: github_access.clone(),
         });
     }
 
     task::block_on(async move { app.listen(config.server.address()).await })
         .with_context(|| "failed launch the server")
-}
-
-async fn update_single_repo(
-    repo: FullStoredRepo,
-    client: Arc<dyn ClientForRepositories>,
-) -> impl Future<Output = ()> {
-    task::spawn(async move {
-        event!(Level::INFO, "repo {}", repo.title);
-        for item in repo.issues.iter() {
-            let r = client.issue(&repo.name(), item.number).unwrap();
-            if item.last_updated != r.last_updated {
-                event!(Level::INFO, "found an update {}: {}", r.title, r.state)
-            }
-        }
-        for item in repo.prs.iter() {
-            let r = client.pull_request(&repo.name(), item.number).unwrap();
-            if item.last_updated != r.last_updated {
-                event!(Level::INFO, "found an update {}: {}", r.title, r.state)
-            }
-        }
-    })
 }
 
 impl<T: Send + Sized + Serialize> tide::IntoResponse for ApiResult<T> {

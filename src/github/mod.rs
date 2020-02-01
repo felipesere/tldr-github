@@ -1,3 +1,4 @@
+#![allow(proc_macro_derive_resolution_fallback)]
 use crate::domain;
 use crate::BetterOption;
 use anyhow::{bail, Result};

@@ -6,7 +6,7 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::sqlite::SqliteConnection;
-use tracing::{event, instrument, span, Level};
+use tracing::{event, instrument, Level};
 
 use schema::{repos, tracked_items};
 
@@ -111,6 +111,15 @@ pub struct FullStoredRepo {
 impl FullStoredRepo {
     pub fn name(&self) -> crate::domain::RepoName {
         crate::domain::RepoName::from(&self.title).unwrap()
+    }
+
+    pub fn items(&self) -> Vec<NewTrackedItem> {
+        let mut res = Vec::new();
+
+        res.append(&mut self.issues.clone());
+        res.append(&mut self.prs.clone());
+
+        res
     }
 }
 
