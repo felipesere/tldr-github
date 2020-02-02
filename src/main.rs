@@ -12,10 +12,10 @@ use async_std::prelude::*;
 use async_std::stream;
 use async_std::task;
 use serde::Serialize;
-use tide::{Request, Response};
 use tide::middleware::RequestLogger;
+use tide::{Request, Response};
 use tide_naive_static_files::StaticFilesEndpoint;
-use tracing::{event, instrument, Level, span};
+use tracing::{event, instrument, span, Level};
 
 use config::Config;
 use db::{Db, SqliteDB};

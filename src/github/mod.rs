@@ -141,7 +141,6 @@ impl domain::ClientForRepositories for GithubClient {
                 .map(|a| domain::Author::new(a.login).with_link(a.url))
                 .unwrap_or(domain::Author::new("ghost").with_link("https://github.com/ghost"));
 
-
             let state = match pr.state {
                 broad_repo_view::PullRequestState::OPEN => domain::State::Open,
                 _ => domain::State::Closed,

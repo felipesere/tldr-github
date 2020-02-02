@@ -28,20 +28,30 @@ pub fn start(config: Config) {
             };
 
             if let Err(e) = updated {
-                event!(Level::ERROR, "unable to get {} #{}: {}", repo_name, item.number, e);
+                event!(
+                    Level::ERROR,
+                    "unable to get {} #{}: {}",
+                    repo_name,
+                    item.number,
+                    e
+                );
                 continue;
             }
 
             let updated = updated.unwrap();
 
-            event!(Level::INFO, "Managed to update {} #{}", repo_name, updated.number);
+            event!(
+                Level::INFO,
+                "Managed to update {} #{}",
+                repo_name,
+                updated.number
+            );
 
             match update(item, updated) {
                 Outcome::Update(u) => db.update_tracked_item(u),
                 Outcome::Remove(u) => db.remove_tracked_item(u),
                 Outcome::Ignore => Result::Ok(()),
             };
-
         }
     });
 }
@@ -60,7 +70,7 @@ pub fn update(old: NewTrackedItem, new: NewTrackedItem) -> Outcome {
     }
 
     if new.last_updated != old.last_updated {
-        return Update(new)
+        return Update(new);
     }
 
     Ignore

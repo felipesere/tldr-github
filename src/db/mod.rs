@@ -30,14 +30,8 @@ pub trait Db: Send + Sync {
         repo_name: &StoredRepo,
         items: Vec<NewTrackedItem>,
     ) -> Result<()>;
-    fn update_tracked_item(
-        &self,
-        item: NewTrackedItem,
-    ) -> Result<()>;
-    fn remove_tracked_item(
-        &self,
-        item: NewTrackedItem,
-    ) -> Result<()>;
+    fn update_tracked_item(&self, item: NewTrackedItem) -> Result<()>;
+    fn remove_tracked_item(&self, item: NewTrackedItem) -> Result<()>;
     fn all(&self) -> Result<Vec<FullStoredRepo>>;
     fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
     fn delete(&self, repo: i32) -> Result<()>;
