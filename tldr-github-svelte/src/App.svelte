@@ -4,6 +4,7 @@
     import AddNewRepo from "./modals/AddNewRepo.svelte";
     import Error from './errors/Error.svelte'
     import Fab from "./atoms/Fab.svelte";
+    import Tailwind from "./Tailwind.svelte";
 
     let repos = [];
 
@@ -23,14 +24,15 @@
     }
 </script>
 
-<div class="main">
+<Tailwind />
+<div>
     <Fab onClick={open} />
     <Error />
     {#if showAddRepo}
         <AddNewRepo on:close={close} on:new-repo-added={handleNewRepo}/>
     {/if}
 
-    <div class="my-container">
+    <div class="px-20 py-10">
         {#if repos.length === 0}
             <p class="text-center subtle">No repos added yet</p>
         {/if}
@@ -42,12 +44,3 @@
     </div>
 </div>
 
-<style>
-    .my-container {
-        margin: 2rem auto;
-        width: 90%;
-    }
-    .main {
-        display: flex;
-    }
-</style>
