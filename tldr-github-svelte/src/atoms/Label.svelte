@@ -28,37 +28,30 @@
 
 <style>
     div {
-        color: white;
-        display: inline-block;
-        height: 20px;
-        padding: .15em 4px;
-        font-size: 12px;
-        font-weight: 600;
-        line-height: 15px;
-        border-radius: 2px;
+        @apply text-white inline-block p-1 rounded-sm text-xs;
     }
 
     .blue {
-        background: #3490DC;
+        @apply bg-blue-600;
     }
 
-    .purle {
-        background: #6574CD;
+    .purple {
+        @apply bg-purple-600;
     }
 
     .green {
-        background: #38C172;
+        @apply bg-green-600;
     }
 
     .yellow {
-        background: #FFED4A;
+        @apply bg-yellow-600;
     }
 
     .red {
-        background: #E3342F;
+        @apply bg-red-600;
     }
 
     .pink {
-        background: #F66D9B;
+        @apply bg-pink-600;
     }
 </style>

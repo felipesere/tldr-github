@@ -12,10 +12,6 @@
     $: searchResults = search(items, searchTerm, fields)
 </script>
 
-<div>
-    <form class="field" on:submit|preventDefault={suppressed}>
-        <div class="control">
-            <input bind:value={term} class="input" type="text" placeholder="Search..." />
-        </div>
-    </form>
-</div>
+<form class="appearance-none shadow-inline border rounded py-2 px-3 text-gray-700 leading-tight" on:submit|preventDefault={suppressed}>
+    <input bind:value={term} class="focus:border-blue-600 focus:text-black focus:outline-none" type="text" placeholder="Search..." />
+</form>

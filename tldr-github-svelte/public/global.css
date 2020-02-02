@@ -1,17 +1,6 @@
 :root {
 }
 
-button {
-    padding: 0;
-    border: none;
-    font: inherit;
-    color: inherit;
-    background-color: transparent;
-    /* show a hand cursor on hover; some argue that we
-    should keep the default arrow cursor for buttons */
-    cursor: pointer;
-}
-
 .grid {
     display: grid;
     grid-gap: 3rem;
@@ -39,28 +28,11 @@ button {
     margin: calc(var(--space) / 2 * -1);
 }
 
-code {
-    color: #605D53;
-}
-
 .stack-sm > * + * {
     margin-top: 0.5rem;
 }
 
 .stack > * + * {
     margin-top: 1.5rem;
-}
-
-.horizontal-flex {
-    display: flex;
-    flex-direction: row;
-}
-
-.w-200 {
-    width: 200px;
-}
-
-.w-100 {
-    width: 100px;
 }
 

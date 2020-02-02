@@ -9,7 +9,7 @@
 
     let lastUpdated = parse(time, "yyyy-MM-dd'T'HH:mm:ssxxx", new Date());
 
-    let activity ='none';
+    let activity = 'none';
     if (isAfter(lastUpdated, oneMonthAgo)) {
         activity = 'low';
     }
@@ -19,38 +19,29 @@
     if (isAfter(lastUpdated, oneWeekAgo)) {
         activity = 'high';
     }
-
-    let clazz = `dot ${activity}`
 </script>
 
-<span class={clazz}></span>
+<span class={activity}></span>
 
 
 <style>
-    .dot {
-        height: 10px;
-        width: 10px;
-        border-radius: 50%;
-        display: inline-block;
-        margin-right: 10px;
-
-        align-self: center;
-        flex-shrink: 0;
+    span {
+        @apply w-3 h-3 rounded-full inline-block mr-3 self-center flex-shrink-0;
     }
 
     .high {
-        background-color: #3182ce;
+        @apply bg-blue-600;
     }
 
     .medium {
-        background-color: #90cdf4
+        @apply bg-blue-300;
     }
 
     .low {
-        background-color: #cbd5e0
+        @apply bg-gray-200;
     }
 
     .none {
-        visibility: hidden;
+        @apply invisible;
     }
 </style>

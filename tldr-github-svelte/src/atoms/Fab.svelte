@@ -4,7 +4,7 @@
     export let onClick
 </script>
 
-<button class="fab text-white fill-current z-10 rounded-full bg-blue-600 shadow-xl hover:shadow-2xl hover:bg-blue-700" on:click={onClick}>
+<button class="fab text-white fill-current rounded-full bg-blue-600 shadow-xl hover:shadow-2xl hover:bg-blue-700" on:click={onClick}>
     <GithubIcon icon="plus" />
 </button>
 

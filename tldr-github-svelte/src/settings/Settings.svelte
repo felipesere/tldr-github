@@ -24,30 +24,21 @@
     const closeModal = () => isModalOpen = false;
 </script>
 
-<section class="content stack">
-    <div class="horizontal-flex">
-        <button class="button is-normal" class:is-loading={currentlyDeletingRepo}
+<section class="stack">
+    <div class="flex flex-row">
+        <button class="btn-normal" class:is-loading={currentlyDeletingRepo}
                 on:click|preventDefault={deleteThisRepo}>
             Delete
         </button>
-        <p class="flex-grow is-normal">to stop tracking this repo</p>
+        <p class="flex-grow my-auto pl-2">to stop tracking this repo</p>
     </div>
-    <div class="horizontal-flex">
-        <button class="button is-normal" class:is-loading={false} on:click|preventDefault={openModal}>
+    <div class="flex flex-row">
+        <button class="btn-normal" class:is-loading={false} on:click|preventDefault={openModal}>
             Select
         </button>
-        <p class="flex-grow is-normal">issues and pull request</p>
+        <p class="flex-grow my-auto pl-2">issues and pull request</p>
     </div>
-    {#if isModalOpen }
-        <SelectItemsToTrack repo={repo} on:close={closeModal} on:repo-updated />
-    {/if}
 </section>
-
-<style>
-
-    p {
-        margin-top: auto;
-        margin-bottom: auto !important;
-        padding-left: 5px;
-    }
-</style>
+{#if isModalOpen }
+    <SelectItemsToTrack repo={repo} on:close={closeModal} on:repo-updated />
+{/if}

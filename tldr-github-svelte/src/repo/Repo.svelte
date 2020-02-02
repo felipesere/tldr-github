@@ -34,7 +34,7 @@
 </script>
 
 <article transition:fade="{{duration: 500}}" class="border border-gray-300 shadow-md max-w-full flex flex-col">
-    <header class="shadow">
+    <header class="shadow bg-gray-200">
         <div class="py-3 px-6 flex flex-grow font-bold">
             <p class="flex-grow">{repo.title}</p>
             <a class="text-gray-600 fill-current" data-testid="settings" href="#"
@@ -71,11 +71,11 @@
 
 <style>
     .active {
-        @apply bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 text-blue-700 font-semibold -mb-px
+        @apply bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 text-blue-700 font-semibold -mb-px font-light
     }
 
     .inactive {
-        @apply bg-white inline-block py-2 px-4 text-blue-500 font-semibold
+        @apply bg-white inline-block py-2 px-4 text-blue-500 font-semibold font-light
     }
     .inactive:hover {
         @apply text-blue-800
