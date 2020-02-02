@@ -61,11 +61,25 @@ impl Db for SqliteDB {
     }
 
     fn update_tracked_item(&self, item: NewTrackedItem) -> Result<()> {
-        unimplemented!()
+        use schema::tracked_items::dsl::*;
+
+        diesel::update(tracked_items.filter(foreign_id.eq(item.foreign_id)))
+            .set((
+                last_updated.eq(item.last_updated.naive_utc()),
+                labels.eq(Label::join(&item.labels)),
+            ))
+            .execute(&self.conn.get().unwrap())
+            .map(|s| ())
+            .context(format!("failed to update item {}", item.title))
     }
 
     fn remove_tracked_item(&self, item: NewTrackedItem) -> Result<()> {
-        unimplemented!()
+        use schema::tracked_items::dsl::*;
+
+        diesel::delete(tracked_items.filter(foreign_id.eq(item.foreign_id)))
+            .execute(&self.conn.get().unwrap())
+            .map(|s| ())
+            .context(format!("failed to delete item {}", item.title))
     }
 
     fn all(&self) -> Result<Vec<FullStoredRepo>> {
