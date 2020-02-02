@@ -19,10 +19,10 @@
     }
 </script>
 
-<article class="vertical-flex">
+<article class="flex flex-col">
     <div class="content">
         <form class="field has-addons">
-            <div class="control has-icons-right grow">
+            <div class="control has-icons-right flex-grow">
                 <input bind:value={newRepoName} class="input" type="text" placeholder="Add new repo"/>
                 <span class="icon is-small is-right">
           <i class="icon ion-md-checkmark"></i>

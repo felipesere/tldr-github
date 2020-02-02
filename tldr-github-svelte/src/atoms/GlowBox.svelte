@@ -2,7 +2,7 @@
   export let content;
 </script>
 
-<div class="glow-box grow">
+<div class="glow-box flex-grow">
   <a href={content.link}>{content.title}</a>
   <p class="is-size-7">by {content.by}</p>
 </div>

@@ -6,17 +6,11 @@
   $: toBeDisplayed = items.slice(0, 3);
 </script>
 
-<ul>
+<ul class="stack-sm ml-0 list-none">
     {#each toBeDisplayed as item (item.nr)}
-        <li class="horizontal-flex">
+        <li class="flex">
             <Indicator time={item.last_updated} /><GlowBox content={item} />
         <li>
     {/each}
 </ul>
 
-<style>
-  ul {
-    list-style-type: none;
-    margin-left: 0;
-  }
-</style>

@@ -33,35 +33,34 @@
     ]
 </script>
 
-<article transition:fade="{{duration: 500}}" class="card vertical-flex">
-    <header class="card-header">
-        <div class="card-header-title">
-            <p class="grow">{repo.title}</p>
-            <a class="subtle" data-testid="settings" href="#" on:click|preventDefault={() => showSettings = !showSettings}>
-                <GithubIcon icon="gear" />
+<article transition:fade="{{duration: 500}}" class="border border-gray-300 shadow-md max-w-full flex flex-col">
+    <header class="shadow">
+        <div class="py-3 px-6 flex flex-grow font-bold">
+            <p class="flex-grow">{repo.title}</p>
+            <a class="text-gray-600 fill-current" data-testid="settings" href="#"
+               on:click|preventDefault={() => showSettings = !showSettings}>
+                <GithubIcon icon="gear"/>
             </a>
         </div>
     </header>
 
-    <div class="card-content grow">
+    <div class="p-6 flex-grow card-content">
         {#if showSettings }
             <Settings repo={repo} on:repo-deleted on:repo-updated/>
         {:else}
-            <div class="content stack">
-                <div class="tabs is-boxed">
-                    <ul>
-                        {#each tabs as tab (tab.value)}
-                            <li class:is-active={currentTab === tab.value}>
-                                <a on:click|preventDefault={() => currentTab = tab.value }>
-                                    <Github icon={tab.icon}/>
-                                    <span>{tab.text}</span>
-                                </a>
-                            </li>
-                        {/each}
-                    </ul>
-                </div>
+            <div class="stack">
+                <ul class="flex border-b list-none">
+                    {#each tabs as tab (tab.value)}
+                        <li class:active={tab.value === currentTab} class:inactive={tab.value !== currentTab}>
+                            <a on:click|preventDefault={() => currentTab = tab.value }>
+                                <Github icon={tab.icon}/>
+                                <span>{tab.text}</span>
+                            </a>
+                        </li>
+                    {/each}
+                </ul>
                 {#if (repo.activity.issues.length + repo.activity.prs.length) === 0 }
-                    <p class="text-center subtle">No items are being tracked...</p>
+                    <p class="text-center text-gray-600">No items are being tracked...</p>
                 {:else}
                     <TrackedItems items={items}/>
                 {/if}
@@ -71,16 +70,18 @@
 </article>
 
 <style>
-    ul {
-        margin-left: 0;
+    .active {
+        @apply bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 text-blue-700 font-semibold -mb-px
+    }
+
+    .inactive {
+        @apply bg-white inline-block py-2 px-4 text-blue-500 font-semibold
+    }
+    .inactive:hover {
+        @apply text-blue-800
     }
 
     .card-content {
         height: 370px;
-    }
-
-    .subtle {
-        color: #A0AEC0;
-
     }
 </style>
