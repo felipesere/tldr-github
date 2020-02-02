@@ -7,10 +7,10 @@ test-watch:
 	cargo watch --clear -i tldr-github-svelte -x check -x test -s 'touch .trigger'
 
 run:
-	cargo run
+	RUST_LOG=info cargo run
 
 run-watch:
-	RUST_LOG=tldr_github=info cargo watch --no-gitignore --clear -i tldr-github-svelte -w .trigger -x run
+	RUST_LOG=info cargo watch --no-gitignore --clear -i tldr-github-svelte -w .trigger -x run
 
 migrate:
 	diesel migration run --database-url repos.db
