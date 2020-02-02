@@ -3,7 +3,6 @@ extern crate diesel;
 #[macro_use]
 extern crate diesel_migrations;
 
-use std::future::Future;
 use std::io::Read;
 use std::sync::Arc;
 use std::time::Duration;
@@ -19,7 +18,7 @@ use tide_naive_static_files::StaticFilesEndpoint;
 use tracing::{event, instrument, Level, span};
 
 use config::Config;
-use db::{Db, FullStoredRepo, SqliteDB};
+use db::{Db, SqliteDB};
 use domain::api::{AddNewRepo, AddTrackedItemsForRepo, Repo};
 use domain::ClientForRepositories;
 use github::GithubClient;
@@ -139,9 +138,8 @@ fn main() -> anyhow::Result<()> {
         });
     });
 
-    let db = db_access.clone();
-    let github = github_access.clone();
     if config.updater.run {
+        let db = db_access.clone();
         let (sender, receiver) = async_std::sync::channel(100);
         task::spawn(async move {
             let mut interval = stream::interval(Duration::from_secs(30));
@@ -156,9 +154,11 @@ fn main() -> anyhow::Result<()> {
             }
         });
 
+        let github = github_access.clone();
         domain::updater::start(domain::updater::Config {
             channel: receiver,
-            client: github_access.clone(),
+            client: github,
+            db: db_access.clone(),
         });
     }
 

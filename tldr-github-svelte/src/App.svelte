@@ -36,7 +36,7 @@
         {/if}
         <div class="grid">
             {#each repos as repo (repo.id) }
-                <Repo repo={repo} on:repo-deleted={fetchRepos}/>
+                <Repo repo={repo} on:repo-deleted={fetchRepos} on:repo-updated={fetchRepos} />
             {/each}
         </div>
     </div>

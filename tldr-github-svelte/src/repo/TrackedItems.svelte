@@ -7,7 +7,7 @@
 </script>
 
 <ul>
-    {#each toBeDisplayed as item}
+    {#each toBeDisplayed as item (item.nr)}
         <li class="horizontal-flex">
             <Indicator time={item.last_updated} /><GlowBox content={item} />
         <li>

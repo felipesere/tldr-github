@@ -19,8 +19,9 @@
     let selected = [];
 
     async function track() {
-        await trackItems(repo.id, {items: selected.map(s => ({kind: 'pr', nr: s.nr}))});
-        close()
+        await trackItems(repo.id, {items: selected.map(s => ({kind: s.kind, nr: s.nr}))});
+        close();
+        dispatch('repo-updated')
     }
 
     const fetchItems = async () => {

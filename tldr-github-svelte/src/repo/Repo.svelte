@@ -45,12 +45,12 @@
 
     <div class="card-content grow">
         {#if showSettings }
-            <Settings repo={repo} on:repo-deleted/>
+            <Settings repo={repo} on:repo-deleted on:repo-updated/>
         {:else}
             <div class="content stack">
                 <div class="tabs is-boxed">
                     <ul>
-                        {#each tabs as tab}
+                        {#each tabs as tab (tab.value)}
                             <li class:is-active={currentTab === tab.value}>
                                 <a on:click|preventDefault={() => currentTab = tab.value }>
                                     <Github icon={tab.icon}/>

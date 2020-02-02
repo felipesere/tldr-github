@@ -253,7 +253,7 @@ impl domain::ClientForRepositories for GithubClient {
             .pull_request
             .possibly("no pull request")?;
 
-        let labels = funky_flatten(pr.labels.possibly("no lables")?.nodes)
+        let labels = funky_flatten(pr.labels.possibly("no labels")?.nodes)
             .into_iter()
             .map(|s| domain::Label::new(s.name))
             .collect();

@@ -45,6 +45,7 @@ impl From<NewTrackedItem> for Item {
     fn from(other: NewTrackedItem) -> Self {
         Item {
             nr: other.number,
+            kind: other.kind.to_string(),
             title: other.title,
             link: other.link,
             by: other.by.name,
@@ -57,6 +58,7 @@ impl From<NewTrackedItem> for Item {
 #[derive(Serialize, Debug)]
 pub struct Item {
     pub nr: i32,
+    pub kind: String,
     pub title: String,
     pub link: String,
     pub by: String,
@@ -125,6 +127,7 @@ mod test {
             title: "foo/bar".into(),
             activity: Activity {
                 prs: vec![Item {
+                    kind: ItemKind::PR.to_string(),
                     nr: 1,
                     title: "Fix important build failure".into(),
                     link: "https://example.com/1".into(),
@@ -133,6 +136,7 @@ mod test {
                     last_updated: "2019-09-18T01:24:29+00:00".to_string(),
                 }],
                 issues: vec![Item {
+                    kind: ItemKind::Issue.to_string(),
                     nr: 10,
                     title: "Important".into(),
                     link: "https://example.com/1".into(),
@@ -154,6 +158,7 @@ mod test {
                 "prs": [
                   {
                     "nr": 1,
+                    "kind": "pr",
                     "title": "Fix important build failure",
                     "link": "https://example.com/1",
                     "by": "Someone",
@@ -167,6 +172,7 @@ mod test {
                 "issues": [
                   {
                     "nr": 10,
+                    "kind": "issue",
                     "title": "Important",
                     "link": "https://example.com/1",
                     "by": "Someone",

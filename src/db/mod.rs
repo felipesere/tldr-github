@@ -30,9 +30,17 @@ pub trait Db: Send + Sync {
         repo_name: &StoredRepo,
         items: Vec<NewTrackedItem>,
     ) -> Result<()>;
+    fn update_tracked_item(
+        &self,
+        item: NewTrackedItem,
+    ) -> Result<()>;
+    fn remove_tracked_item(
+        &self,
+        item: NewTrackedItem,
+    ) -> Result<()>;
     fn all(&self) -> Result<Vec<FullStoredRepo>>;
     fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
-    fn delete(&self, r: i32) -> Result<()>;
+    fn delete(&self, repo: i32) -> Result<()>;
 }
 
 pub struct SqliteDB {
@@ -53,19 +61,27 @@ impl Db for SqliteDB {
         find_repo(&conn, id)
     }
 
-    fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo> {
-        let conn = self.conn.get()?;
-        insert_new_repo(&conn, repo_name)
-    }
-
     fn insert_tracked_items(&self, repo: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()> {
         let conn = self.conn.get()?;
         insert_tracked_items(&conn, repo, items)
     }
 
+    fn update_tracked_item(&self, item: NewTrackedItem) -> Result<()> {
+        unimplemented!()
+    }
+
+    fn remove_tracked_item(&self, item: NewTrackedItem) -> Result<()> {
+        unimplemented!()
+    }
+
     fn all(&self) -> Result<Vec<FullStoredRepo>> {
         let conn = self.conn.get()?;
         all(&conn)
+    }
+
+    fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo> {
+        let conn = self.conn.get()?;
+        insert_new_repo(&conn, repo_name)
     }
 
     fn delete(&self, r: i32) -> Result<()> {
@@ -188,36 +204,21 @@ pub fn all(conn: &Conn) -> Result<Vec<FullStoredRepo>> {
         rs.into_iter()
             .zip(items)
             .map(|(repo, tracked)| {
-                let prs = tracked
+                let (prs, issues) = tracked
                     .iter()
-                    .filter(|t| t.kind == "pr")
                     .map(|item| NewTrackedItem {
-                        state: State::Open,
+                        state: State::Open, // TODO: Need to derive this, or should it be assumed to be always open?
                         title: item.title.clone(),
                         by: Author::from(item.by.clone()),
                         number: item.number,
                         link: item.link.clone(),
                         labels: Label::split(&item.labels),
-                        kind: ItemKind::PR,
+                        kind: ItemKind::from(item.kind.clone()),
                         foreign_id: item.foreign_id.clone(),
                         last_updated: DateTime::from_utc(item.last_updated, Utc),
                     })
-                    .collect();
-                let issues = tracked
-                    .iter()
-                    .filter(|t| t.kind == "issue")
-                    .map(|item| NewTrackedItem {
-                        state: State::Open,
-                        title: item.title.clone(),
-                        by: Author::from(item.by.clone()),
-                        number: item.number,
-                        link: item.link.clone(),
-                        labels: Label::split(&item.labels),
-                        kind: ItemKind::PR,
-                        foreign_id: item.foreign_id.clone(),
-                        last_updated: DateTime::from_utc(item.last_updated, Utc),
-                    })
-                    .collect();
+                    .partition(|item| item.kind == ItemKind::PR);
+
                 FullStoredRepo {
                     id: repo.id,
                     title: repo.title,

@@ -39,7 +39,7 @@
         <p class="grow is-normal">issues and pull request</p>
     </div>
     {#if isModalOpen }
-        <SelectItemsToTrack repo={repo} on:close={closeModal}/>
+        <SelectItemsToTrack repo={repo} on:close={closeModal} on:repo-updated />
     {/if}
 </section>
 

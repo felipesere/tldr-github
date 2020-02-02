@@ -1,11 +1,11 @@
+use std::fmt::{Display, Formatter};
+use std::sync::Arc;
+
 use anyhow::{bail, Result};
 use async_std::prelude::*;
 use async_std::task;
 use chrono::{DateTime, Utc};
 use futures::stream::futures_unordered::FuturesUnordered;
-use std::fmt::{Display, Formatter};
-use std::sync::Arc;
-
 use tracing::{event, instrument, Level};
 
 use crate::db::{Db, StoredRepo};
@@ -48,12 +48,24 @@ impl Display for RepoName {
     }
 }
 
-#[derive(serde::Deserialize, Debug, Clone)]
+#[derive(serde::Deserialize, Debug, Clone, Eq, PartialEq)]
 pub enum ItemKind {
     #[serde(rename = "pr")]
     PR,
     #[serde(rename = "issue")]
     Issue,
+}
+
+impl From<String> for ItemKind {
+    fn from(s: String) -> Self {
+        if s == "pr" {
+            return ItemKind::PR;
+        }
+        if s == "issue" {
+            return ItemKind::Issue;
+        }
+        unreachable!()
+    }
 }
 
 impl ToString for ItemKind {
@@ -66,7 +78,7 @@ impl ToString for ItemKind {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub enum State {
     Open,
     Closed,
@@ -82,6 +94,7 @@ impl Display for State {
     }
 }
 
+// TODO: ths needs a better name
 #[derive(Debug, Clone)]
 pub struct NewTrackedItem {
     pub title: String,
@@ -231,11 +244,13 @@ pub async fn add_items_to_track(
 
 #[cfg(test)]
 mod test {
-    use super::*;
-    use crate::db::{Db, FullStoredRepo, StoredRepo};
     use anyhow::Result;
     use async_std::task;
     use mockall::mock;
+
+    use crate::db::{Db, FullStoredRepo, StoredRepo};
+
+    use super::*;
 
     mock!(
         pub Database { }
@@ -249,6 +264,14 @@ mod test {
             fn all(&self) -> Result<Vec<FullStoredRepo>>;
             fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
             fn delete(&self, r: i32) -> Result<()>;
+            fn update_tracked_item(
+                &self,
+                item: NewTrackedItem,
+            ) -> Result<()>;
+            fn remove_tracked_item(
+                &self,
+                item: NewTrackedItem,
+            ) -> Result<()>;
         }
     );
 
