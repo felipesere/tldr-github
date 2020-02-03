@@ -6,12 +6,10 @@
     let fields = ["title", "by", "labels"];
     let term = "";
 
-    const suppressed = () => {};
-
     $: searchTerm = new RegExp(term, "i");
     $: searchResults = search(items, searchTerm, fields)
 </script>
 
-<form class="appearance-none shadow-inline border rounded py-2 px-3 text-gray-700 leading-tight" on:submit|preventDefault={suppressed}>
-    <input bind:value={term} class="focus:border-blue-600 focus:text-black focus:outline-none" type="text" placeholder="Search..." />
-</form>
+<input bind:value={term}
+       class="w-full rounded p-2 bg-gray-200 border-gray-300 hover:border-gray-300 focus:outline-none focus:bg-white focus:shadow-outline focus:border-blue-300"
+       type="text" placeholder="Search..."/>

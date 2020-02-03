@@ -5,6 +5,8 @@
     import Error from './errors/Error.svelte'
     import Fab from "./atoms/Fab.svelte";
     import Tailwind from "./Tailwind.svelte";
+    import AddRepo from "./modals/AddRepo.svelte";
+    import {onInterval} from "./support/interval";
 
     let repos = [];
 
@@ -14,6 +16,7 @@
     };
 
     onMount(fetchRepos);
+    onInterval(() => fetchRepos(), 30*1000);
 
     let showAddRepo = false;
     const close = () => showAddRepo = false;
@@ -26,7 +29,7 @@
 
 <Tailwind />
 <div>
-    <Fab onClick={open} />
+   <Fab onClick={open} />
     <Error />
     {#if showAddRepo}
         <AddNewRepo on:close={close} on:new-repo-added={handleNewRepo}/>

@@ -1,7 +1,7 @@
 <script>
-    import {fly, fade} from 'svelte/transition'
     import {createEventDispatcher} from 'svelte';
     import AddRepo from "./AddRepo.svelte";
+    import Modal from "../atoms/Modal.svelte";
 
     const dispatch = createEventDispatcher();
     const close = () => dispatch('close');
@@ -14,26 +14,16 @@
     }
 </script>
 
-<svelte:window on:keydown={keydown} />
+<svelte:window on:keydown={keydown}/>
 
-<div class="modal is-active">
-    <div class="modal-background" transition:fade></div>
-    <div in:fly={{ y: 50, duration: 300}} out:fly={{ y: -50, duration: 300}} class="modal-card">
-        <header class="modal-card-head">
-            <p class="modal-card-title">Add a new repo</p>
-            <button class="delete" aria-label="close" on:click={close}></button>
-        </header>
-        <section class="modal-card-body">
-            <AddRepo on:new-repo-added />
-        </section>
-        <footer class="modal-card-foot">
-            <button class="button" on:click={close}>Done</button>
-        </footer>
-    </div>
-</div>
+<Modal>
+    <p slot="title" class="modal-card-title">Add a new repo</p>
+    <button slot="title" class="delete" aria-label="close" on:click={close}></button>
 
-<style>
-    .modal-background {
-        opacity: 0.5;
-    }
-</style>
+    <span slot="body">
+        <AddRepo on:new-repo-added/>
+    </span>
+
+    <button slot="footer" class="btn-normal" on:click={close}>Done</button>
+</Modal>
+
