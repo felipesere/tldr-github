@@ -77,13 +77,17 @@
                             </div>
                         </td>
                     </tr>
+                {:else}
+                    <p class="text-center text-gray-500">No items match.</p>
                 {/each}
                 </tbody>
             </table>
         {/await}
     </section>
 
-    <button slot="footer" class="btn bg-blue-600 text-white mr-2" on:click={track}>Save changes</button>
+    <button slot="footer" class="bg-blue-500 hover:bg-blue-700 text-white font-light py-2 px-4 border border-blue-700 rounded mr-2"
+            on:click={track}>Save changes
+    </button>
     <button slot="footer" class="btn-normal" on:click={close}>Cancel</button>
 </Modal>
 

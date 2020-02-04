@@ -34,9 +34,9 @@
 </script>
 
 <article transition:fade="{{duration: 500}}" class="border border-gray-300 shadow-md max-w-full flex flex-col">
-    <header class="shadow bg-gray-200">
+    <header class="shadow bg-gray-200 border-gray-400 border-b-2">
         <div class="py-3 px-6 flex flex-grow font-bold">
-            <p class="flex-grow">{repo.title}</p>
+            <p class="flex-grow text-gray-700 leading-loose">{repo.title}</p>
             <a class="text-gray-600 fill-current" data-testid="settings" href="#"
                on:click|preventDefault={() => showSettings = !showSettings}>
                 <GithubIcon icon="gear"/>
@@ -52,7 +52,7 @@
                 <ul class="flex border-b list-none">
                     {#each tabs as tab (tab.value)}
                         <li class:active={tab.value === currentTab} class:inactive={tab.value !== currentTab}>
-                            <a on:click|preventDefault={() => currentTab = tab.value }>
+                            <a class="cursor-pointer" on:click|preventDefault={() => currentTab = tab.value }>
                                 <Github icon={tab.icon}/>
                                 <span>{tab.text}</span>
                             </a>

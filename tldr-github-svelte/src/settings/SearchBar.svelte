@@ -1,5 +1,6 @@
 <script>
     import {search} from './search'
+    import GithubIcon from "../atoms/GithubIcon.svelte";
 
     export let items;
     export let searchResults = items;
@@ -10,6 +11,11 @@
     $: searchResults = search(items, searchTerm, fields)
 </script>
 
-<input bind:value={term}
-       class="w-full rounded p-2 bg-gray-200 border-gray-300 hover:border-gray-300 focus:outline-none focus:bg-white focus:shadow-outline focus:border-blue-300"
-       type="text" placeholder="Search..."/>
+<div class="flex flex-row">
+    <span class="w-auto flex justify-end items-center text-gray-500 p-2 fill-current">
+        <GithubIcon icon="search"/>
+    </span>
+    <input bind:value={term}
+           class="w-full rounded p-2 bg-gray-200 hover:border-gray-300 focus:outline-none focus:bg-white focus:shadow-outline focus:border-blue-300"
+           type="text" placeholder="Search..."/>
+</div>
