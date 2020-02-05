@@ -16,7 +16,7 @@
     };
 
     onMount(fetchRepos);
-    onInterval(() => fetchRepos(), 30*1000);
+    onInterval(() => fetchRepos(), 30 * 1000);
 
     let showAddRepo = false;
     const close = () => showAddRepo = false;
@@ -27,10 +27,10 @@
     }
 </script>
 
-<Tailwind />
+<Tailwind/>
 <div>
-   <Fab onClick={open} />
-    <Error />
+    <Fab onClick={open}/>
+    <Error/>
     {#if showAddRepo}
         <AddNewRepo on:close={close} on:new-repo-added={handleNewRepo}/>
     {/if}
@@ -41,7 +41,7 @@
         {/if}
         <div class="grid">
             {#each repos as repo (repo.id) }
-                <Repo repo={repo} on:repo-deleted={fetchRepos} on:repo-updated={fetchRepos} />
+                <Repo repo={repo} on:repo-deleted={fetchRepos} on:repo-updated={fetchRepos}/>
             {/each}
         </div>
     </div>

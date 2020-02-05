@@ -85,7 +85,7 @@
         {/await}
     </section>
 
-    <button slot="footer" class="bg-blue-500 hover:bg-blue-700 text-white font-light py-2 px-4 border border-blue-700 rounded mr-2"
+    <button slot="footer" class="btn-primary"
             on:click={track}>Save changes
     </button>
     <button slot="footer" class="btn-normal" on:click={close}>Cancel</button>

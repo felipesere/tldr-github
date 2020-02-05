@@ -7,8 +7,6 @@
     error.subscribe(value => {
         message = value.msg
     });
-
-    $: console.log($error)
 </script>
 
 <div class="toast-container">
