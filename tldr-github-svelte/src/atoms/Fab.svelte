@@ -1,14 +1,16 @@
 <script>
     import AddRepo2 from "../modals/AddRepo2.svelte";
+    import OnEscape from "../support/OnEscape.svelte";
 
     let modalOpen = false
+
 
     const close = () => {
         modalOpen = false
     }
 </script>
 
-<svelte:window on:keydown={close}/>
+<OnEscape action={close} />
 
 <div class="container">
     <input type="checkbox" id="the-fab"
