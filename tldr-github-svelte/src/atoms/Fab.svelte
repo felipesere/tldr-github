@@ -1,5 +1,5 @@
 <script>
-    import AddRepo2 from "../modals/AddRepo2.svelte";
+    import AddRepo from "../modals/AddRepo.svelte";
     import OnEscape from "../support/OnEscape.svelte";
 
     let modalOpen = false
@@ -19,7 +19,7 @@
     <label class="icon bg-blue-600" for="the-fab">
     </label>
     <nav class="nav">
-        <AddRepo2 on:new-repo-added on:close={close} />
+        <AddRepo on:new-repo-added on:close={close} />
     </nav>
 </div>
 

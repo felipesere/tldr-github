@@ -8,6 +8,7 @@
     import Spinner from "../settings/Spinner.svelte";
     import Indicator from "../atoms/Indicator.svelte";
     import Modal from "../atoms/Modal.svelte";
+    import OnEscape from "../support/OnEscape.svelte";
 
     export let repo;
     const dispatch = createEventDispatcher();
@@ -40,6 +41,7 @@
 
 </script>
 
+<OnEscape action={close} />
 <Modal>
     <p slot="title" class="modal-card-title">Add new PRs and issues to track</p>
     <section slot="body" class="bg-white overflow-auto p-5 flex-grow">
