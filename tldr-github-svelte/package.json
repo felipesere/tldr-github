@@ -6,36 +6,10 @@
     "dev": "rollup -c -w",
     "serve": "RUN_SERVER=true rollup -c -w",
     "start": "sirv public",
-    "test": "jest test",
-    "test:watch": "npm run test -- --watch"
-  },
-  "jest": {
-    "transform": {
-      "^.+\\.js$": "babel-jest",
-      "^.+\\.svelte$": "svelte-jest"
-    },
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "svelte"
-    ],
-    "moduleDirectories": [
-      "node_modules"
-    ],
-    "setupFilesAfterEnv": [
-      "@testing-library/jest-dom/extend-expect"
-    ]
+    "test": "echo 'no tests yet'"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.8.4",
     "@fullhuman/postcss-purgecss": "^2.0.5",
-    "@rollup/plugin-json": "^4.0.1",
-    "@testing-library/jest-dom": "^5.1.0",
-    "@testing-library/svelte": "^1.11.0",
-    "@types/jest": "^25.1.1",
-    "babel-jest": "^25.0.0",
-    "jest": "^25.0.0",
-    "jest-fetch-mock": "^3.0.1",
     "postcss": "^7.0.26",
     "postcss-load-config": "^2.1.0",
     "rollup": "^1.31.0",
@@ -47,7 +21,6 @@
     "rollup-plugin-terser": "^5.2.0",
     "sirv-cli": "^0.4.4",
     "svelte": "^3.18.1",
-    "svelte-jest": "^0.3.1",
     "svelte-preprocess": "^3.3.1",
     "tailwindcss": "^1.1.4",
     "tailwindcss-font-inter": "^1.0.8"
