@@ -286,9 +286,19 @@ mod tests {
     use super::*;
     use crate::domain::{ClientForRepositories, RepoName};
 
+    fn token() -> Option<String> {
+        std::env::var("GITHUB_TOKEN").ok()
+    }
+
     #[test]
     fn grabs_pull_requests() {
-        let client = GithubClient::new("<< token >>");
+        let maybe_token = token();
+        if maybe_token.is_none() {
+            return
+        }
+        let token = maybe_token.unwrap();
+
+        let client = GithubClient::new(token);
         let repo = domain::RepoName::from("felipesere/advisorex").unwrap();
 
         let pr = client
@@ -300,7 +310,13 @@ mod tests {
 
     #[test]
     fn issues_requests() {
-        let client = GithubClient::new("<< token >>");
+        let maybe_token = token();
+        if maybe_token.is_none() {
+            return
+        }
+        let token = maybe_token.unwrap();
+        let client = GithubClient::new(token);
+
         let repo = domain::RepoName::from("felipesere/advisorex").unwrap();
 
         let issue = client
@@ -312,7 +328,12 @@ mod tests {
 
     #[test]
     fn repo_exist() {
-        let client = GithubClient::new("<< token >>");
+        let maybe_token = token();
+        if maybe_token.is_none() {
+            return
+        }
+        let token = maybe_token.unwrap();
+        let client = GithubClient::new(token);
 
         let good_repo = RepoName::from("felipesere/advisorex").unwrap();
         let exists = client.repo_exists(&good_repo).unwrap();
@@ -325,7 +346,13 @@ mod tests {
 
     #[test]
     fn broad_repo_view() {
-        let client = GithubClient::new("<< token >>");
+        let maybe_token = token();
+        if maybe_token.is_none() {
+            return
+        }
+        let token = maybe_token.unwrap();
+        let client = GithubClient::new(token);
+
         let repo = domain::RepoName::from("felipesere/advisorex").unwrap();
 
         let entire_repo = client
