@@ -12,6 +12,7 @@ use schema::{repos, tracked_items};
 
 use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
 
+pub mod in_memory;
 mod schema;
 
 pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
@@ -98,7 +99,7 @@ impl Db for SqliteDB {
     }
 }
 
-#[derive(Identifiable, Queryable, Debug)]
+#[derive(Identifiable, Queryable, Debug, Clone)]
 #[table_name = "repos"]
 pub struct StoredRepo {
     pub id: i32,

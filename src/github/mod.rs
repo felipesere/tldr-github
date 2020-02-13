@@ -294,7 +294,7 @@ mod tests {
     fn grabs_pull_requests() {
         let maybe_token = token();
         if maybe_token.is_none() {
-            return
+            return;
         }
         let token = maybe_token.unwrap();
 
@@ -312,7 +312,7 @@ mod tests {
     fn issues_requests() {
         let maybe_token = token();
         if maybe_token.is_none() {
-            return
+            return;
         }
         let token = maybe_token.unwrap();
         let client = GithubClient::new(token);
@@ -330,7 +330,7 @@ mod tests {
     fn repo_exist() {
         let maybe_token = token();
         if maybe_token.is_none() {
-            return
+            return;
         }
         let token = maybe_token.unwrap();
         let client = GithubClient::new(token);
@@ -348,7 +348,7 @@ mod tests {
     fn broad_repo_view() {
         let maybe_token = token();
         if maybe_token.is_none() {
-            return
+            return;
         }
         let token = maybe_token.unwrap();
         let client = GithubClient::new(token);
