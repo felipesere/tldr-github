@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use anyhow::{Error, Result};
+use anyhow::{bail, Error, Result};
 
 use crate::db::{Db, FullStoredRepo, StoredRepo};
 use crate::domain::{ItemKind, NewTrackedItem};
@@ -52,7 +52,25 @@ impl Db for InMemory {
     }
 
     fn update_tracked_item(&self, item: NewTrackedItem) -> Result<(), Error> {
-        Ok(())
+        for (idx, v) in self
+            .repos
+            .lock()
+            .unwrap()
+            .get_mut()
+            .values_mut()
+            .enumerate()
+        {
+            let found = v.items.iter().find(|i| i.foreign_id == item.foreign_id);
+
+            if found.is_some() {
+                v.items.remove(idx);
+                v.items.push(item);
+
+                return Ok(())
+            }
+        }
+
+        bail!("original with foreign id {} not found when updating", item.foreign_id)
     }
 
     fn remove_tracked_item(&self, item: NewTrackedItem) -> Result<(), Error> {
@@ -68,10 +86,11 @@ impl Db for InMemory {
 
             if found.is_some() {
                 v.items.remove(idx);
+                return Ok(())
             }
         }
 
-        Ok(())
+        bail!("original with foreign id {} not found when removing", item.foreign_id)
     }
 
     fn all(&self) -> Result<Vec<FullStoredRepo>, Error> {
