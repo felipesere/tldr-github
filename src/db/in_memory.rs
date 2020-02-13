@@ -1,13 +1,11 @@
-use std::borrow::BorrowMut;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use anyhow::{bail, Error, Result, Context};
+use anyhow::{Error, Result};
 
 use crate::db::{Db, FullStoredRepo, StoredRepo};
-use crate::domain::{NewTrackedItem, ItemKind};
-use std::sync::mpsc::TrySendError::Full;
+use crate::domain::{ItemKind, NewTrackedItem};
 
 struct Thing {
     repo: StoredRepo,
@@ -58,11 +56,18 @@ impl Db for InMemory {
     }
 
     fn remove_tracked_item(&self, item: NewTrackedItem) -> Result<(), Error> {
-        for (k, (idx, v)) in self.repos.lock().unwrap().get_mut().into_iter().enumerate() {
+        for (idx, v) in self
+            .repos
+            .lock()
+            .unwrap()
+            .get_mut()
+            .values_mut()
+            .enumerate()
+        {
             let found = v.items.iter().find(|i| i.foreign_id == item.foreign_id);
 
             if found.is_some() {
-                v.items.remove((*idx) as usize);
+                v.items.remove(idx);
             }
         }
 
@@ -71,9 +76,18 @@ impl Db for InMemory {
 
     fn all(&self) -> Result<Vec<FullStoredRepo>, Error> {
         let mut result = Vec::new();
-        for (id, thing) in self.repos.lock().expect("unable to lock repos").get_mut() {
-
-            let (issues, prs) = thing.items.clone().into_iter().partition(|i| i.kind == ItemKind::Issue);
+        for thing in self
+            .repos
+            .lock()
+            .expect("unable to lock repos")
+            .get_mut()
+            .values()
+        {
+            let (issues, prs) = thing
+                .items
+                .clone()
+                .into_iter()
+                .partition(|i| i.kind == ItemKind::Issue);
 
             let r = FullStoredRepo {
                 id: thing.repo.id,

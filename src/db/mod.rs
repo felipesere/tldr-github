@@ -70,7 +70,7 @@ impl Db for SqliteDB {
                 labels.eq(Label::join(&item.labels)),
             ))
             .execute(&self.conn.get().unwrap())
-            .map(|s| ())
+            .map(|_affected| ())
             .context(format!("failed to update item {}", item.title))
     }
 
@@ -79,7 +79,7 @@ impl Db for SqliteDB {
 
         diesel::delete(tracked_items.filter(foreign_id.eq(item.foreign_id)))
             .execute(&self.conn.get().unwrap())
-            .map(|s| ())
+            .map(|_affected| ())
             .context(format!("failed to delete item {}", item.title))
     }
 

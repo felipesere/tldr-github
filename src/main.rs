@@ -65,6 +65,7 @@ fn main() -> anyhow::Result<()> {
     let pool = Arc::new(pool);
 
     let db_access = Arc::new(SqliteDB { conn: pool.clone() });
+    // let db_access = Arc::new(crate::db::in_memory::new());
     let github_access = Arc::new(GithubClient::new(config.github.token.clone()));
 
     let state = State {
@@ -239,7 +240,7 @@ fn get_all_repos(db: Arc<dyn Db>) -> anyhow::Result<Vec<domain::api::Repo>> {
 }
 
 pub trait BetterOption<T> {
-    fn possibly(self, messge: &'static str) -> anyhow::Result<T>;
+    fn possibly(self, message: &'static str) -> anyhow::Result<T>;
 }
 
 impl<T> BetterOption<T> for Option<T> {
