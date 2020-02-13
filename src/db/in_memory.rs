@@ -7,13 +7,13 @@ use anyhow::{bail, Error, Result};
 use crate::db::{Db, FullStoredRepo, StoredRepo};
 use crate::domain::{ItemKind, NewTrackedItem};
 
-struct Thing {
+struct RepoAndItems {
     repo: StoredRepo,
     items: Vec<NewTrackedItem>,
 }
 
 struct InMemory {
-    repos: Mutex<RefCell<HashMap<i32, Thing>>>,
+    repos: Mutex<RefCell<HashMap<i32, RepoAndItems>>>,
     id: Mutex<i32>,
 }
 
@@ -57,6 +57,7 @@ impl Db for InMemory {
             .lock()
             .unwrap()
             .get_mut()
+            // Hashmap from here downwards
             .values_mut()
             .enumerate()
         {
@@ -79,6 +80,7 @@ impl Db for InMemory {
             .lock()
             .unwrap()
             .get_mut()
+            // Hashmap from here downwards
             .values_mut()
             .enumerate()
         {
@@ -100,6 +102,7 @@ impl Db for InMemory {
             .lock()
             .expect("unable to lock repos")
             .get_mut()
+            // Hashmap from here downwards
             .values()
         {
             let (issues, prs) = thing
@@ -128,7 +131,7 @@ impl Db for InMemory {
 
         self.repos.lock().unwrap().get_mut().insert(
             repo.id,
-            Thing {
+            RepoAndItems {
                 repo: repo.clone(),
                 items: Vec::new(),
             },
