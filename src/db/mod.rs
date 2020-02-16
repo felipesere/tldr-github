@@ -12,7 +12,9 @@ use schema::{repos, tracked_items};
 
 use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
 
+// TODO: could possibly just re-export some simple types and functions here
 pub mod in_memory;
+pub mod json_storage;
 mod schema;
 
 pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;

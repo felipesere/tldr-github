@@ -25,6 +25,7 @@ tracing = { version = "0.1.12", features = ["log", "log-always"] }
 tracing-subscriber = "0.1.6"
 env_logger = "0.7.1"
 tracing-futures = "0.2.1"
+tempfile = "3.1.0"
 
 [dev-dependencies]
 assert-json-diff = "1.0.0"
