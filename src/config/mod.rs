@@ -86,19 +86,6 @@ impl ServerConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
-pub struct UiConfig {
-    pub local_files: String,
-    pub hosted_on: String,
-    pub entry_point: String,
-}
-
-impl UiConfig {
-    pub fn entry(&self) -> String {
-        format!("{}/{}", self.hosted_on, self.entry_point)
-    }
-}
-
-#[derive(Deserialize, Clone, Debug)]
 pub struct GithubConfig {
     pub token: String,
 }
@@ -118,7 +105,6 @@ impl std::default::Default for UpdaterConfig {
 pub struct Config {
     pub database: DatabaseConfig,
     pub server: ServerConfig,
-    pub ui: UiConfig,
     pub github: GithubConfig,
     pub updater: UpdaterConfig,
 }
@@ -138,11 +124,6 @@ mod tests {
   },
   "server": {
     "port": "auto"
-  },
-  "ui": {
-    "local_files": "./tldr-github-svelte/public",
-    "hosted_on": "/files",
-    "entry_point": "index.html"
   },
   "github": {
     "token": "some-token"
@@ -166,11 +147,6 @@ mod tests {
   },
   "server": {
     "port": 8080
-  },
-  "ui": {
-    "local_files": "./tldr-github-svelte/public",
-    "hosted_on": "/files",
-    "entry_point": "index.html"
   },
   "github": {
     "token": "some-token"

@@ -6,11 +6,6 @@
   "server": {
     "port": 8080
   },
-  "ui": {
-    "local_files": "./tldr-github-svelte/public",
-    "hosted_on": "/files",
-    "entry_point": "index.html"
-  },
   "github": {
     "token": "<< token >>"
   },

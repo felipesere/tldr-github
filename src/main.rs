@@ -60,8 +60,6 @@ fn main() -> anyhow::Result<()> {
         .setup()
         .with_context(|| "failed to setup DB")?;
 
-    let ui = config.ui.clone();
-
     let pool = Arc::new(pool);
 
     let db_access = Arc::new(SqliteDB { conn: pool.clone() });
@@ -75,11 +73,10 @@ fn main() -> anyhow::Result<()> {
 
     let mut app = tide::with_state(state);
     app.middleware(RequestLogger::new());
-    app.at("/").get(tide::redirect(ui.entry()));
-    app.at(&ui.hosted_on)
+    app.at("/")
         .strip_prefix()
         .get(StaticFilesEndpoint {
-            root: ui.local_files.clone().into(),
+            root: "./tldr-github-svelte/public".into(),
         });
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| async move {
