@@ -3,7 +3,8 @@ use core::fmt;
 use serde::de::{Unexpected, Visitor};
 use serde::{de, Deserialize, Deserializer};
 
-use crate::db;
+// TODO: this need sto be done better, not pointing directly at sqlite
+use crate::db::sqlite;
 
 embed_migrations!("./migrations");
 
@@ -14,8 +15,8 @@ pub struct DatabaseConfig {
 }
 
 impl DatabaseConfig {
-    pub fn setup(&self) -> Result<db::SqlitePool> {
-        let pool = db::establish_connection(&self.file)?;
+    pub fn setup(&self) -> Result<sqlite::SqlitePool> {
+        let pool = sqlite::establish_connection(&self.file)?;
         match self.run_migrations {
             Some(true) | None => {
                 embedded_migrations::run_with_output(&pool.get().unwrap(), &mut std::io::stdout())?;

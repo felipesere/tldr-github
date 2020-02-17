@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{Read, Seek};
+use std::io::{Seek};
 use std::sync::Mutex;
 
 use anyhow::Error;
@@ -116,7 +116,7 @@ impl Db for JsonStore {
 
 #[cfg(test)]
 mod tests {
-    use std::io::{Read, Write};
+    use std::io::{Write};
 
     use anyhow::Result;
 

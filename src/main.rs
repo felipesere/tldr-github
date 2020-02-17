@@ -18,7 +18,7 @@ use tide_naive_static_files::StaticFilesEndpoint;
 use tracing::{event, instrument, span, Level};
 
 use config::Config;
-use db::{Db, SqliteDB};
+use db::Db;
 use domain::api::{AddNewRepo, AddTrackedItemsForRepo, Repo};
 use domain::ClientForRepositories;
 use github::GithubClient;
@@ -60,9 +60,8 @@ fn main() -> anyhow::Result<()> {
         .setup()
         .with_context(|| "failed to setup DB")?;
 
-    let pool = Arc::new(pool);
+    let db_access = db::sqlite(pool);
 
-    let db_access = Arc::new(SqliteDB { conn: pool.clone() });
     // let db_access = Arc::new(crate::db::in_memory::new());
     let github_access = Arc::new(GithubClient::new(config.github.token.clone()));
 
