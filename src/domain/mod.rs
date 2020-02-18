@@ -248,23 +248,17 @@ mod test {
     mock!(
         pub Database { }
         trait Db {
-            fn find_repo(&self, id: i32) -> Option<StoredRepo>;
+            fn find_repo(&self, repo_name: &str) -> Option<StoredRepo>;
             fn insert_tracked_items(
                 &self,
-                repo_name: &StoredRepo,
+                repo: &StoredRepo,
                 items: Vec<NewTrackedItem>,
             ) -> Result<()>;
+            fn update_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()>;
+            fn remove_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()>;
             fn all(&self) -> Result<Vec<FullStoredRepo>>;
             fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
-            fn delete(&self, r: i32) -> Result<()>;
-            fn update_tracked_item(
-                &self,
-                item: NewTrackedItem,
-            ) -> Result<()>;
-            fn remove_tracked_item(
-                &self,
-                item: NewTrackedItem,
-            ) -> Result<()>;
+            fn delete(&self, repo: StoredRepo) -> Result<()>;
         }
     );
 
@@ -280,13 +274,15 @@ mod test {
     );
 
     #[test]
+    #[ignore]
     fn does_not_add_items_to_a_non_existing_repo() {
         let mut db = MockDatabase::new();
         let github = MockGithub::new();
 
-        db.expect_find_repo().times(1).returning(|_| None);
+        let repo = StoredRepo::new(32, "foo/bar");
+
         let result = task::block_on(async move {
-            add_items_to_track(Arc::new(db), Arc::new(github), 32, Vec::new()).await
+            add_items_to_track(Arc::new(db), Arc::new(github), repo, Vec::new()).await
         });
 
         assert!(result.is_err(), "should have failed to to add items");
@@ -298,12 +294,10 @@ mod test {
         let mut db = MockDatabase::new();
         let github = MockGithub::new();
 
-        db.expect_find_repo()
-            .times(1)
-            .returning(|_| Some(StoredRepo::new(1, "foo/bar")));
+        let repo = StoredRepo::new(32, "foo/bar");
 
         let result = task::block_on(async move {
-            add_items_to_track(Arc::new(db), Arc::new(github), 32, Vec::new()).await
+            add_items_to_track(Arc::new(db), Arc::new(github), repo, Vec::new()).await
         });
 
         assert!(result.is_err(), "should have failed to to add items");

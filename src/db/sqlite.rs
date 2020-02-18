@@ -9,7 +9,8 @@ use diesel::sqlite::SqliteConnection;
 use tracing::{event, Level};
 
 use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
-use super::{Db, StoredRepo, FullStoredRepo, NewRepo};
+
+use super::{Db, FullStoredRepo, NewRepo, StoredRepo};
 use super::schema::{repos, tracked_items};
 
 pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
@@ -23,6 +24,12 @@ pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
 
 pub struct SqliteDB {
     pub(crate) conn: Arc<SqlitePool>,
+}
+
+pub fn new(conn: SqlitePool) -> impl Db {
+    SqliteDB {
+        conn: Arc::new(conn)
+    }
 }
 
 impl fmt::Debug for SqliteDB {
@@ -206,21 +213,22 @@ struct RawTrackedItem {
 
 #[cfg(test)]
 mod test {
+    use chrono::{TimeZone, Utc};
+
     use crate::config::DatabaseConfig;
     use crate::domain::*;
-    use chrono::{TimeZone, Utc};
 
     use super::*;
 
-    fn test_pool(
-    ) -> r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::SqliteConnection>> {
+    fn test_db() -> impl Db {
         let config = DatabaseConfig {
             file: ":memory:".into(),
             run_migrations: Some(true),
         };
         let pool = config.setup().expect("was not able to create test pool");
 
-        pool.get().unwrap()
+
+        new(pool)
     }
 
     fn in_test_transaction<T, F>(conn: &Conn, f: F) -> T
@@ -238,63 +246,53 @@ mod test {
 
     #[test]
     fn can_find_repos_it_just_stored() {
-        let conn = test_pool();
-        in_test_transaction(&conn, || {
-            let repo = insert_new_repo(&conn, "felipesere/test")?;
+        let db = test_db();
 
-            assert!(
-                find_repo(&conn, repo.id).is_some(),
-                "did not find stored repo"
-            );
+        let repo = db.insert_new_repo("felipesere/test").unwrap();
 
-            Result::<StoredRepo, anyhow::Error>::Ok(repo)
-        })
-            .unwrap();
+        assert!(
+            db.find_repo(&repo.title).is_some(),
+            "did not find stored repo"
+        );
     }
 
     #[test]
     fn can_insert_tracked_items() {
-        let conn = test_pool();
-        in_test_transaction(&conn, || {
-            let repo = insert_new_repo(&conn, "felipesere/test")?;
+        let db = test_db();
 
-            let item1 = NewTrackedItem {
-                state: State::Open,
-                title: "pr".into(),
-                link: "something".into(),
-                by: "felipe".into(),
-                labels: vec!["foo".into(), "bar".into()],
-                kind: ItemKind::PR,
-                foreign_id: "abc123".into(),
-                last_updated: Utc.ymd(2019, 4, 22).and_hms(15, 37, 18),
-                number: 7,
-            };
+        let repo = db.insert_new_repo("felipesere/test").unwrap();
 
-            let item2 = NewTrackedItem {
-                state: State::Open,
-                title: "an issue".into(),
-                link: "something".into(),
-                by: "felipe".into(),
-                labels: vec!["foo".into(), "bar".into()],
-                kind: ItemKind::Issue,
-                foreign_id: "abc123".into(),
-                last_updated: Utc.ymd(2019, 4, 22).and_hms(15, 37, 18),
-                number: 1,
-            };
+        let item1 = NewTrackedItem {
+            state: State::Open,
+            title: "pr".into(),
+            link: "something".into(),
+            by: "felipe".into(),
+            labels: vec!["foo".into(), "bar".into()],
+            kind: ItemKind::PR,
+            foreign_id: "abc123".into(),
+            last_updated: Utc.ymd(2019, 4, 22).and_hms(15, 37, 18),
+            number: 7,
+        };
 
-            insert_tracked_items(&conn, &repo, vec![item1, item2])?;
+        let item2 = NewTrackedItem {
+            state: State::Open,
+            title: "an issue".into(),
+            link: "something".into(),
+            by: "felipe".into(),
+            labels: vec!["foo".into(), "bar".into()],
+            kind: ItemKind::Issue,
+            foreign_id: "abc123".into(),
+            last_updated: Utc.ymd(2019, 4, 22).and_hms(15, 37, 18),
+            number: 1,
+        };
 
-            let repos: Vec<FullStoredRepo> = all(&conn)?;
+        db.insert_tracked_items(&repo, vec![item1, item2]);
 
-            let repos = dbg!(repos);
+        let repos: Vec<FullStoredRepo> = db.all().unwrap();
 
-            assert_eq!(repos.len(), 1);
-            assert_eq!(repos[0].issues.len(), 1);
-            assert_eq!(repos[0].prs.len(), 1);
-
-            Result::<StoredRepo, anyhow::Error>::Ok(repo)
-        })
-            .unwrap();
+        assert_eq!(repos.len(), 1);
+        assert_eq!(repos[0].issues.len(), 1);
+        assert_eq!(repos[0].prs.len(), 1);
     }
 }
 
