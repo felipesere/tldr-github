@@ -13,7 +13,7 @@ struct RepoAndItems {
 }
 
 struct InMemory {
-    repos: Mutex<RefCell<HashMap<i32, RepoAndItems>>>,
+    repos: Mutex<RefCell<HashMap<String, RepoAndItems>>>,
     id: Mutex<i32>,
 }
 
@@ -31,7 +31,7 @@ impl Db for InMemory {
             .expect("unable to lock in find_repo")
             .get_mut()
             // Hashmap from here downwards
-            .get(&id)
+            .get(repo_name)
             .map(|t| t.repo.clone())
     }
 
@@ -45,7 +45,7 @@ impl Db for InMemory {
             .expect("unable to lock in find_repo")
             .get_mut()
             // Hashmap from here downwards
-            .entry(repo.id)
+            .entry(repo.title.clone())
             .and_modify(|t| t.items.append(&mut items.clone()));
 
         Ok(())
@@ -132,7 +132,7 @@ impl Db for InMemory {
         let repo = StoredRepo::new(next, repo_name);
 
         self.repos.lock().unwrap().get_mut().insert(
-            repo.id,
+            repo.title.clone(),
             RepoAndItems {
                 repo: repo.clone(),
                 items: Vec::new(),
@@ -143,7 +143,7 @@ impl Db for InMemory {
     }
 
     fn delete(&self, repo: StoredRepo) -> Result<()> {
-        self.repos.lock().unwrap().get_mut().remove(&repo);
+        self.repos.lock().unwrap().get_mut().remove(&repo.title);
 
         Ok(())
     }

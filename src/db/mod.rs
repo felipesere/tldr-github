@@ -7,7 +7,7 @@ use std::sync::Arc;
 // TODO: this needs to move away
 use schema::{repos};
 
-// pub mod in_memory;
+pub mod in_memory;
 // pub mod json_storage;
 pub mod sqlite;
 mod schema;
