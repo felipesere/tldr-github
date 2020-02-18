@@ -25,7 +25,7 @@ pub fn new() -> impl Db {
 }
 
 impl Db for InMemory {
-    fn find_repo(&self, id: i32) -> Option<StoredRepo> {
+    fn find_repo(&self, repo_name: &str) -> Option<StoredRepo> {
         self.repos
             .lock()
             .expect("unable to lock in find_repo")
@@ -39,7 +39,7 @@ impl Db for InMemory {
         &self,
         repo: &StoredRepo,
         items: Vec<NewTrackedItem>,
-    ) -> Result<(), Error> {
+    ) -> Result<()> {
         self.repos
             .lock()
             .expect("unable to lock in find_repo")
@@ -51,7 +51,7 @@ impl Db for InMemory {
         Ok(())
     }
 
-    fn update_tracked_item(&self, item: NewTrackedItem) -> Result<(), Error> {
+    fn update_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
         for (idx, v) in self
             .repos
             .lock()
@@ -67,14 +67,14 @@ impl Db for InMemory {
                 v.items.remove(idx);
                 v.items.push(item);
 
-                return Ok(())
+                return Ok(());
             }
         }
 
         bail!("original with foreign id {} not found when updating", item.foreign_id)
     }
 
-    fn remove_tracked_item(&self, item: NewTrackedItem) -> Result<(), Error> {
+    fn remove_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
         for (idx, v) in self
             .repos
             .lock()
@@ -88,14 +88,15 @@ impl Db for InMemory {
 
             if found.is_some() {
                 v.items.remove(idx);
-                return Ok(())
+                return Ok(());
             }
         }
 
         bail!("original with foreign id {} not found when removing", item.foreign_id)
     }
 
-    fn all(&self) -> Result<Vec<FullStoredRepo>, Error> {
+
+    fn all(&self) -> Result<Vec<FullStoredRepo>> {
         let mut result = Vec::new();
         for thing in self
             .repos
@@ -122,7 +123,8 @@ impl Db for InMemory {
         Ok(result)
     }
 
-    fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo, Error> {
+
+    fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo> {
         let mut id = self.id.lock().unwrap();
 
         let next = *id + 1;
@@ -140,7 +142,7 @@ impl Db for InMemory {
         Ok(repo)
     }
 
-    fn delete(&self, repo: i32) -> Result<(), Error> {
+    fn delete(&self, repo: StoredRepo) -> Result<()> {
         self.repos.lock().unwrap().get_mut().remove(&repo);
 
         Ok(())

@@ -102,36 +102,59 @@ fn main() -> anyhow::Result<()> {
             drop(guard);
             res
         });
-        r.at("/repos/:id/tracked")
+        r.at("/repos/:name/tracked")
             .post(|mut req: Request<State>| async move {
-                let id: i32 = req.param("id").unwrap();
+                let name: String = req.param("name").unwrap();
                 let client = req.state().client();
                 let db = req.state().db();
                 let body: AddTrackedItemsForRepo = req.body_json().await.unwrap();
 
+                let maybe_repo = db.find_repo(&name);
+
+                if maybe_repo.is_none() {
+                    return ApiResult::not_found()
+                }
+
+                let repo = maybe_repo.unwrap();
+
                 ApiResult::empty(
-                    domain::add_items_to_track(db, client, id, body.items)
+                    domain::add_items_to_track(db, client, repo, body.items)
                         .await
                         .with_context(|| "failed to add items to track"),
                 )
             });
-        r.at("/repos/:id/proxy")
+        r.at("/repos/:name/proxy")
             .get(|req: Request<State>| async move {
-                let id: i32 = req.param("id").unwrap();
+                let name: String = req.param("name").unwrap();
                 let client = req.state().client();
                 let db = req.state().db();
 
+                let maybe_repo = db.find_repo(&name);
+
+                if maybe_repo.is_none() {
+                    return ApiResult::not_found()
+                }
+
+                let repo = maybe_repo.unwrap();
+
                 ApiResult::from(
-                    domain::retrieve_live_items(db, client, id)
+                    domain::retrieve_live_items(db, client, repo)
                         .await
                         .with_context(|| "failed to add items to track"),
                 )
             });
-        r.at("/repos/:id").delete(|req: Request<State>| async move {
+        r.at("/repos/:name").delete(|req: Request<State>| async move {
             let db = req.state().db();
-            let id = req.param::<i32>("id").unwrap();
+            let name = req.param::<String>("name").unwrap();
 
-            ApiResult::empty(db.delete(id).with_context(|| "failed to delete"))
+            let maybe_repo = db.find_repo(&name);
+
+            if maybe_repo.is_none() {
+                return ApiResult::not_found()
+            }
+
+            let repo = maybe_repo.unwrap();
+            ApiResult::empty(db.delete(repo).with_context(|| "failed to delete"))
         });
     });
 
@@ -145,7 +168,7 @@ fn main() -> anyhow::Result<()> {
 
                 for repo in all_repos {
                     for item in repo.items() {
-                        sender.send((repo.name(), item)).await;
+                        sender.send((repo.stored(), item)).await;
                     }
                 }
             }
@@ -200,6 +223,13 @@ enum ApiResult<T> {
 }
 
 impl<T> ApiResult<T> {
+    fn not_found() -> ApiResult<T> {
+        ApiResult::Failure(ApiError{
+            status: 404,
+            error: anyhow::anyhow!("Not found")
+        })
+    }
+
     fn empty(result: anyhow::Result<T>) -> ApiResult<()> {
         use ApiResult::*;
 

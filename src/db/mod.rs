@@ -7,8 +7,8 @@ use std::sync::Arc;
 // TODO: this needs to move away
 use schema::{repos};
 
-pub mod in_memory;
-pub mod json_storage;
+// pub mod in_memory;
+// pub mod json_storage;
 pub mod sqlite;
 mod schema;
 
@@ -19,17 +19,17 @@ pub fn sqlite(pool: sqlite::SqlitePool) -> Arc<impl Db> {
 }
 
 pub trait Db: Send + Sync {
-    fn find_repo(&self, id: i32) -> Option<StoredRepo>;
+    fn find_repo(&self, repo_name: &str) -> Option<StoredRepo>;
     fn insert_tracked_items(
         &self,
-        repo_name: &StoredRepo,
+        repo: &StoredRepo,
         items: Vec<NewTrackedItem>,
     ) -> Result<()>;
-    fn update_tracked_item(&self, item: NewTrackedItem) -> Result<()>;
-    fn remove_tracked_item(&self, item: NewTrackedItem) -> Result<()>;
+    fn update_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()>;
+    fn remove_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()>;
     fn all(&self) -> Result<Vec<FullStoredRepo>>;
     fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
-    fn delete(&self, repo: i32) -> Result<()>;
+    fn delete(&self, repo: StoredRepo) -> Result<()>;
 }
 
 #[derive(Identifiable, Queryable, Debug, Clone)]
@@ -67,6 +67,16 @@ pub struct FullStoredRepo {
 }
 
 impl FullStoredRepo {
+    pub fn stored(&self) -> StoredRepo {
+        StoredRepo {
+            id: self.id,
+            title: self.title.clone(),
+            // TODO: get rid of some of these...
+            created_at: Utc::now().naive_utc(),
+            updated_at: Utc::now().naive_utc(),
+        }
+    }
+
     pub fn name(&self) -> crate::domain::RepoName {
         crate::domain::RepoName::from(&self.title).unwrap()
     }

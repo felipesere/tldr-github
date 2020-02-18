@@ -6,11 +6,11 @@ use async_std::sync::Receiver;
 use async_std::task;
 use tracing::{event, Level};
 
-use crate::db::Db;
-use crate::domain::{ClientForRepositories, ItemKind, NewTrackedItem, RepoName, State};
+use crate::db::{Db, StoredRepo};
+use crate::domain::{ClientForRepositories, ItemKind, NewTrackedItem, State};
 
 pub struct Config {
-    pub channel: Receiver<(RepoName, NewTrackedItem)>,
+    pub channel: Receiver<(StoredRepo, NewTrackedItem)>,
     pub client: Arc<dyn ClientForRepositories>,
     pub db: Arc<dyn Db>,
 }
@@ -21,35 +21,21 @@ pub fn start(config: Config) {
         let db = config.db;
         let client = config.client;
         let mut inbound = config.channel.throttle(Duration::from_secs(1));
-        while let Some((repo_name, item)) = inbound.next().await {
+        while let Some((repo, item)) = inbound.next().await {
             let updated = match item.kind {
-                ItemKind::PR => client.pull_request(&repo_name, item.number),
-                ItemKind::Issue => client.issue(&repo_name, item.number),
+                ItemKind::PR => client.pull_request(&repo.name(), item.number),
+                ItemKind::Issue => client.issue(&repo.name(), item.number),
             };
 
             if let Err(e) = updated {
-                event!(
-                    Level::ERROR,
-                    "unable to get {} #{}: {}",
-                    repo_name,
-                    item.number,
-                    e
-                );
                 continue;
             }
 
             let updated = updated.unwrap();
 
-            event!(
-                Level::INFO,
-                "Managed to update {} #{}",
-                repo_name,
-                updated.number
-            );
-
             match update(item, updated) {
-                Outcome::Update(u) => db.update_tracked_item(u),
-                Outcome::Remove(u) => db.remove_tracked_item(u),
+                Outcome::Update(u) => db.update_tracked_item(&repo, u),
+                Outcome::Remove(u) => db.remove_tracked_item(&repo, u),
                 Outcome::Ignore => Result::Ok(()),
             };
         }

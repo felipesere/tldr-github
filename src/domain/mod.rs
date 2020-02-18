@@ -193,41 +193,34 @@ pub fn add_new_repo(
 pub async fn retrieve_live_items(
     db: Arc<dyn Db>,
     client: Arc<dyn ClientForRepositories>,
-    id: i32,
+    repo: StoredRepo,
 ) -> Result<Vec<api::Item>> {
-    if let Some(repo) = db.find_repo(id) {
-        let name = repo.name();
-        Result::Ok(
-            client
-                .entire_repo(&name)?
-                .into_iter()
-                .map(crate::domain::api::Item::from)
-                .collect::<Vec<_>>(),
-        )
-    } else {
-        bail!("did not find repo")
-    }
+    let name = repo.name();
+    Result::Ok(
+        client
+            .entire_repo(&name)?
+            .into_iter()
+            .map(crate::domain::api::Item::from)
+            .collect::<Vec<_>>(),
+    )
 }
 
 pub async fn add_items_to_track(
     db: Arc<dyn Db>,
     client: Arc<dyn ClientForRepositories>,
-    id: i32,
+    repo: StoredRepo,
     items: Vec<api::ItemToTrack>,
 ) -> Result<()> {
-    log::info!("We were about to add {:?} to {}", items, id);
-    if let Some(repo) = db.find_repo(id) {
-        let mut tasks = FuturesUnordered::new();
-        for item in items {
-            let name = repo.name();
-            let c = client.clone();
-            tasks.push(task::spawn(async move {
-                match item.kind {
-                    ItemKind::Issue => c.issue(&name, item.nr),
-                    ItemKind::PR => c.pull_request(&name, item.nr),
-                }
-            }))
-        }
+    let mut tasks = FuturesUnordered::new();
+    for item in items {
+        let name = repo.name();
+        let c = client.clone();
+        tasks.push(task::spawn(async move {
+            match item.kind {
+                ItemKind::Issue => c.issue(&name, item.nr),
+                ItemKind::PR => c.pull_request(&name, item.nr),
+            }
+        }));
 
         // TODO:  I am surprised I have to do this instead of tasks.collect().await
         let mut res = Vec::new();
@@ -236,10 +229,10 @@ pub async fn add_items_to_track(
             res.push(inner);
         }
 
-        db.insert_tracked_items(&repo, res)
-    } else {
-        bail!("Could not find repo {}", id)
+        db.insert_tracked_items(&repo, res);
     }
+
+    Ok(())
 }
 
 #[cfg(test)]
