@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::convert::From;
 
 use crate::db::FullStoredRepo;
@@ -55,7 +55,8 @@ impl From<NewTrackedItem> for Item {
     }
 }
 
-#[derive(Serialize, Debug)]
+// Used in the JSON store
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Item {
     pub nr: i32,
     pub kind: String,

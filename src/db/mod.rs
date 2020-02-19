@@ -1,14 +1,15 @@
-use crate::domain::NewTrackedItem;
-use anyhow::{Result};
-use chrono::{NaiveDateTime, Utc};
-
 use std::sync::Arc;
 
+use anyhow::Result;
+use chrono::{NaiveDateTime, Utc};
+
 // TODO: this needs to move away
-use schema::{repos};
+use schema::repos;
+
+use crate::domain::NewTrackedItem;
 
 pub mod in_memory;
-// pub mod json_storage;
+pub mod json_storage;
 pub mod sqlite;
 mod schema;
 

@@ -131,6 +131,10 @@ impl Label {
         raw.split(',').map(|l| Label(l.to_owned())).collect()
     }
 
+    pub fn map(raw: &[String]) -> Vec<Label> {
+        raw.iter().map(|r| Label::new(r.to_owned())).collect()
+    }
+
     pub fn expose(labels: &[Label]) -> Vec<String> {
         labels.iter().map(|l| l.0.clone()).collect()
     }
