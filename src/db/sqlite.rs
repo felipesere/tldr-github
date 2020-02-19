@@ -10,8 +10,8 @@ use tracing::{event, Level};
 
 use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
 
-use super::{Db, FullStoredRepo, NewRepo, StoredRepo};
 use super::schema::{repos, tracked_items};
+use super::{Db, FullStoredRepo, NewRepo, StoredRepo};
 
 pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -28,7 +28,7 @@ pub struct SqliteDB {
 
 pub fn new(conn: SqlitePool) -> impl Db {
     SqliteDB {
-        conn: Arc::new(conn)
+        conn: Arc::new(conn),
     }
 }
 
@@ -170,7 +170,9 @@ impl Db for SqliteDB {
             Err(m) => bail!("could not delete repo: {}", m),
         };
 
-        match diesel::delete(tracked_items::table.filter(tracked_items::repo_id.eq(repo.id))).execute(&conn) {
+        match diesel::delete(tracked_items::table.filter(tracked_items::repo_id.eq(repo.id)))
+            .execute(&conn)
+        {
             Ok(_) => {}
             Err(m) => bail!("could not delete tracked for repo repo: {}", m),
         };
@@ -227,13 +229,12 @@ mod test {
         };
         let pool = config.setup().expect("was not able to create test pool");
 
-
         new(pool)
     }
 
     fn in_test_transaction<T, F>(conn: &Conn, f: F) -> T
-        where
-            F: FnOnce() -> T,
+    where
+        F: FnOnce() -> T,
     {
         let mut user_result = None;
 
@@ -295,4 +296,3 @@ mod test {
         assert_eq!(repos[0].prs.len(), 1);
     }
 }
-

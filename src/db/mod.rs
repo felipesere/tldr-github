@@ -10,22 +10,18 @@ use crate::domain::NewTrackedItem;
 
 pub mod in_memory;
 pub mod json_storage;
-pub mod sqlite;
 mod schema;
+pub mod sqlite;
 
 pub fn sqlite(pool: sqlite::SqlitePool) -> Arc<impl Db> {
     Arc::new(sqlite::SqliteDB {
-        conn: Arc::new(pool)
+        conn: Arc::new(pool),
     })
 }
 
 pub trait Db: Send + Sync {
     fn find_repo(&self, repo_name: &str) -> Option<StoredRepo>;
-    fn insert_tracked_items(
-        &self,
-        repo: &StoredRepo,
-        items: Vec<NewTrackedItem>,
-    ) -> Result<()>;
+    fn insert_tracked_items(&self, repo: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()>;
     fn update_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()>;
     fn remove_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()>;
     fn all(&self) -> Result<Vec<FullStoredRepo>>;

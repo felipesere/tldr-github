@@ -35,11 +35,7 @@ impl Db for InMemory {
             .map(|t| t.repo.clone())
     }
 
-    fn insert_tracked_items(
-        &self,
-        repo: &StoredRepo,
-        items: Vec<NewTrackedItem>,
-    ) -> Result<()> {
+    fn insert_tracked_items(&self, repo: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()> {
         self.repos
             .lock()
             .expect("unable to lock in find_repo")
@@ -71,7 +67,10 @@ impl Db for InMemory {
             }
         }
 
-        bail!("original with foreign id {} not found when updating", item.foreign_id)
+        bail!(
+            "original with foreign id {} not found when updating",
+            item.foreign_id
+        )
     }
 
     fn remove_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
@@ -92,9 +91,11 @@ impl Db for InMemory {
             }
         }
 
-        bail!("original with foreign id {} not found when removing", item.foreign_id)
+        bail!(
+            "original with foreign id {} not found when removing",
+            item.foreign_id
+        )
     }
-
 
     fn all(&self) -> Result<Vec<FullStoredRepo>> {
         let mut result = Vec::new();
@@ -122,7 +123,6 @@ impl Db for InMemory {
         }
         Ok(result)
     }
-
 
     fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo> {
         let mut id = self.id.lock().unwrap();

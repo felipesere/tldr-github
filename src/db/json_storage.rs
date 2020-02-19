@@ -7,8 +7,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::db::{Db, FullStoredRepo, StoredRepo};
-use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
 use crate::domain::api::Item;
+use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
 
 pub struct JsonStore {
     backing_store: jfs::Store,
@@ -26,14 +26,12 @@ fn new<P: AsRef<Path>>(path: P) -> impl Db {
     }
 }
 
-
 #[derive(Debug, Serialize, Deserialize)]
 struct Repo {
     id: i32,
     title: String,
     items: Vec<Item>,
 }
-
 
 impl Db for JsonStore {
     fn find_repo(&self, repo_name: &str) -> Option<StoredRepo> {
@@ -44,15 +42,21 @@ impl Db for JsonStore {
             title: repo.title,
             created_at: Utc::now().naive_utc(),
             updated_at: Utc::now().naive_utc(),
-        }).ok()
+        })
+        .ok()
     }
 
-    fn insert_tracked_items(&self, repo_name: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<(), Error> {
+    fn insert_tracked_items(
+        &self,
+        repo_name: &StoredRepo,
+        items: Vec<NewTrackedItem>,
+    ) -> Result<(), Error> {
         let repo = self.backing_store.get::<Repo>(&repo_name.title);
 
         if repo.is_ok() {
             let mut repo = repo.unwrap();
-            repo.items.append(&mut items.into_iter().map(Item::from).collect());
+            repo.items
+                .append(&mut items.into_iter().map(Item::from).collect());
             self.backing_store.save_with_id(&repo, &repo_name.title);
         };
 
@@ -74,7 +78,11 @@ impl Db for JsonStore {
 
             repo.items.retain(|i| i.nr != target_nr);
 
-            return self.backing_store.save_with_id(&repo, &repo.title).map(|_f| ()).context("removing");
+            return self
+                .backing_store
+                .save_with_id(&repo, &repo.title)
+                .map(|_f| ())
+                .context("removing");
         }
 
         Ok(())
@@ -83,28 +91,38 @@ impl Db for JsonStore {
     fn all(&self) -> Result<Vec<FullStoredRepo>, Error> {
         let tree = self.backing_store.all::<Repo>();
 
-        tree.map(|all| all.into_iter().map(|(title, repo)| {
-            let (issues, prs) = repo.items.clone().into_iter()
-                .map(|item| NewTrackedItem {
-                    title: item.title.clone(),
-                    state: State::Open, // TODO: Odd
-                    link: item.link.clone(),
-                    by: Author::new(item.by),
-                    labels: Label::map(&item.labels[..]),
-                    kind: item.kind.into(),
-                    foreign_id: "1234".into(), // TOOD Odd...
-                    last_updated: DateTime::parse_from_rfc3339(&item.last_updated).unwrap().with_timezone(&Utc),
-                    number: item.nr,
-                })
-                .partition(|i| i.kind == ItemKind::Issue);
+        tree.map(|all| {
+            all.into_iter()
+                .map(|(title, repo)| {
+                    let (issues, prs) = repo
+                        .items
+                        .clone()
+                        .into_iter()
+                        .map(|item| NewTrackedItem {
+                            title: item.title.clone(),
+                            state: State::Open, // TODO: Odd
+                            link: item.link.clone(),
+                            by: Author::new(item.by),
+                            labels: Label::map(&item.labels[..]),
+                            kind: item.kind.into(),
+                            foreign_id: "1234".into(), // TOOD Odd...
+                            last_updated: DateTime::parse_from_rfc3339(&item.last_updated)
+                                .unwrap()
+                                .with_timezone(&Utc),
+                            number: item.nr,
+                        })
+                        .partition(|i| i.kind == ItemKind::Issue);
 
-            FullStoredRepo {
-                id: repo.id,
-                title,
-                issues,
-                prs,
-            }
-        }).collect()).context("getting all repos")
+                    FullStoredRepo {
+                        id: repo.id,
+                        title,
+                        issues,
+                        prs,
+                    }
+                })
+                .collect()
+        })
+        .context("getting all repos")
     }
 
     fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo, Error> {
@@ -113,11 +131,14 @@ impl Db for JsonStore {
         let id = *next + 1;
         *next = id;
 
-        self.backing_store.save_with_id(&Repo {
-            id,
-            title: repo_name.to_owned(),
-            items: Vec::new(),
-        }, repo_name);
+        self.backing_store.save_with_id(
+            &Repo {
+                id,
+                title: repo_name.to_owned(),
+                items: Vec::new(),
+            },
+            repo_name,
+        );
 
         let repo = StoredRepo {
             id,
@@ -130,7 +151,9 @@ impl Db for JsonStore {
     }
 
     fn delete(&self, repo: StoredRepo) -> Result<(), Error> {
-        self.backing_store.delete(&repo.title).context("deleting a repo")
+        self.backing_store
+            .delete(&repo.title)
+            .context("deleting a repo")
     }
 }
 
@@ -190,22 +213,27 @@ mod tests {
 
         let repo = db.insert_new_repo("foo/bar").unwrap();
 
-        db.insert_tracked_items(&repo, vec!(NewTrackedItem {
-            title: "some PR".to_string(),
-            state: State::Open,
-            link: "http://foo.bar".to_string(),
-            by: Author::new("Steve Hawking"),
-            labels: vec![],
-            kind: ItemKind::PR,
-            foreign_id: "sflhjsfklhjsd".to_string(),
-            last_updated: Utc::now(),
-            number: 1,
-        }));
-
+        db.insert_tracked_items(
+            &repo,
+            vec![NewTrackedItem {
+                title: "some PR".to_string(),
+                state: State::Open,
+                link: "http://foo.bar".to_string(),
+                by: Author::new("Steve Hawking"),
+                labels: vec![],
+                kind: ItemKind::PR,
+                foreign_id: "sflhjsfklhjsd".to_string(),
+                last_updated: Utc::now(),
+                number: 1,
+            }],
+        );
 
         let all = db.all().unwrap();
 
-        let found = all.iter().find(|item| item.title == "foo/bar".to_string()).unwrap();
+        let found = all
+            .iter()
+            .find(|item| item.title == "foo/bar".to_string())
+            .unwrap();
 
         assert_eq!(found.items().len(), 1);
     }
@@ -219,38 +247,50 @@ mod tests {
 
         let repo = db.insert_new_repo("totally/madeup").unwrap();
 
-        db.insert_tracked_items(&repo, vec!(NewTrackedItem {
-            title: "some PR".to_string(),
-            state: State::Open,
-            link: "http://foo.bar".to_string(),
-            by: Author::new("Steve Hawking"),
-            labels: vec![],
-            kind: ItemKind::PR,
-            foreign_id: "sflhjsfklhjsd".to_string(),
-            last_updated: Utc::now(),
-            number: 1,
-        })).unwrap();
+        db.insert_tracked_items(
+            &repo,
+            vec![NewTrackedItem {
+                title: "some PR".to_string(),
+                state: State::Open,
+                link: "http://foo.bar".to_string(),
+                by: Author::new("Steve Hawking"),
+                labels: vec![],
+                kind: ItemKind::PR,
+                foreign_id: "sflhjsfklhjsd".to_string(),
+                last_updated: Utc::now(),
+                number: 1,
+            }],
+        )
+        .unwrap();
 
-        db.update_tracked_item(&repo, NewTrackedItem {
-            title: "changed-the-title".to_string(),
-            state: State::Open,
-            link: "http://foo.bar".to_string(),
-            by: Author::new("Steve Hawking"),
-            labels: vec![],
-            kind: ItemKind::PR,
-            foreign_id: "sflhjsfklhjsd".to_string(),
-            last_updated: Utc::now(),
-            number: 1,
-        }).unwrap();
-
+        db.update_tracked_item(
+            &repo,
+            NewTrackedItem {
+                title: "changed-the-title".to_string(),
+                state: State::Open,
+                link: "http://foo.bar".to_string(),
+                by: Author::new("Steve Hawking"),
+                labels: vec![],
+                kind: ItemKind::PR,
+                foreign_id: "sflhjsfklhjsd".to_string(),
+                last_updated: Utc::now(),
+                number: 1,
+            },
+        )
+        .unwrap();
 
         let all = db.all().unwrap();
 
-        let matching_repo = all.iter().find(|r| r.title == "totally/madeup".to_string()).unwrap();
-
+        let matching_repo = all
+            .iter()
+            .find(|r| r.title == "totally/madeup".to_string())
+            .unwrap();
 
         assert_eq!(matching_repo.items().len(), 1);
-        assert_eq!(matching_repo.items()[0].title, "changed-the-title".to_string())
+        assert_eq!(
+            matching_repo.items()[0].title,
+            "changed-the-title".to_string()
+        )
     }
 
     #[test]
@@ -273,7 +313,8 @@ mod tests {
             number: 1,
         };
 
-        db.insert_tracked_items(&repo, vec!(tracked_item.clone())).unwrap();
+        db.insert_tracked_items(&repo, vec![tracked_item.clone()])
+            .unwrap();
 
         let all = db.all().unwrap();
         let matching_repo = all.iter().find(|r| r.title == repo.title).unwrap();

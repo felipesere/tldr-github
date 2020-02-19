@@ -72,11 +72,9 @@ fn main() -> anyhow::Result<()> {
 
     let mut app = tide::with_state(state);
     app.middleware(RequestLogger::new());
-    app.at("/")
-        .strip_prefix()
-        .get(StaticFilesEndpoint {
-            root: "./tldr-github-svelte/public".into(),
-        });
+    app.at("/").strip_prefix().get(StaticFilesEndpoint {
+        root: "./tldr-github-svelte/public".into(),
+    });
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| async move {
             let span = span!(Level::INFO, "GET /repos");
@@ -112,7 +110,7 @@ fn main() -> anyhow::Result<()> {
                 let maybe_repo = db.find_repo(&name);
 
                 if maybe_repo.is_none() {
-                    return ApiResult::not_found()
+                    return ApiResult::not_found();
                 }
 
                 let repo = maybe_repo.unwrap();
@@ -132,7 +130,7 @@ fn main() -> anyhow::Result<()> {
                 let maybe_repo = db.find_repo(&name);
 
                 if maybe_repo.is_none() {
-                    return ApiResult::not_found()
+                    return ApiResult::not_found();
                 }
 
                 let repo = maybe_repo.unwrap();
@@ -143,19 +141,20 @@ fn main() -> anyhow::Result<()> {
                         .with_context(|| "failed to add items to track"),
                 )
             });
-        r.at("/repos/:name").delete(|req: Request<State>| async move {
-            let db = req.state().db();
-            let name = req.param::<String>("name").unwrap();
+        r.at("/repos/:name")
+            .delete(|req: Request<State>| async move {
+                let db = req.state().db();
+                let name = req.param::<String>("name").unwrap();
 
-            let maybe_repo = db.find_repo(&name);
+                let maybe_repo = db.find_repo(&name);
 
-            if maybe_repo.is_none() {
-                return ApiResult::not_found()
-            }
+                if maybe_repo.is_none() {
+                    return ApiResult::not_found();
+                }
 
-            let repo = maybe_repo.unwrap();
-            ApiResult::empty(db.delete(repo).with_context(|| "failed to delete"))
-        });
+                let repo = maybe_repo.unwrap();
+                ApiResult::empty(db.delete(repo).with_context(|| "failed to delete"))
+            });
     });
 
     if config.updater.run {
@@ -224,9 +223,9 @@ enum ApiResult<T> {
 
 impl<T> ApiResult<T> {
     fn not_found() -> ApiResult<T> {
-        ApiResult::Failure(ApiError{
+        ApiResult::Failure(ApiError {
             status: 404,
-            error: anyhow::anyhow!("Not found")
+            error: anyhow::anyhow!("Not found"),
         })
     }
 
