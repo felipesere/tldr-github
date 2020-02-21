@@ -170,10 +170,21 @@ mod tests {
 
     use super::*;
 
+    fn file_name() -> String {
+        use rand::{thread_rng, Rng};
+        use rand::distributions::Alphanumeric;
+
+        let rand_string: String = thread_rng()
+            .sample_iter(&Alphanumeric)
+            .take(10)
+            .collect();
+        format!("{}.json", rand_string)
+    }
+
     #[test]
     fn it_finds_a_repo_that_was_added() {
         let mut f = std::env::temp_dir();
-        f.push("somewhere.json");
+        f.push(file_name());
 
         let db = new(f);
 
@@ -190,7 +201,7 @@ mod tests {
     #[test]
     fn a_deleted_item_can_not_be_found() {
         let mut f = std::env::temp_dir();
-        f.push("somewhere.json");
+        f.push(file_name());
 
         let db = new(f);
 
@@ -207,7 +218,7 @@ mod tests {
     #[test]
     fn can_add_an_item_to_a_repo() {
         let mut f = std::env::temp_dir();
-        f.push("somewhere.json");
+        f.push(file_name());
 
         let db = new(f);
 
@@ -241,7 +252,7 @@ mod tests {
     #[test]
     fn can_update_an_added_item() {
         let mut f = std::env::temp_dir();
-        f.push("somewhere.json");
+        f.push(file_name());
 
         let db = new(f);
 
@@ -296,7 +307,7 @@ mod tests {
     #[test]
     fn an_added_tracked_item_can_be_removed() {
         let mut f = std::env::temp_dir();
-        f.push("somewhere.json");
+        f.push(file_name());
 
         let db = new(f);
 
