@@ -1,6 +1,8 @@
 import {newError} from '../errors/errorStore.js';
 
-const to_url = (name) => name.replace("/", "---");
+const to_url = (name) => {
+    return encodeURIComponent(name);
+};
 
 export const proxy = async (name) => {
     try {

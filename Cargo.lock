@@ -2021,6 +2021,7 @@ dependencies = [
  "jfs",
  "log",
  "mockall",
+ "percent-encoding 2.1.0",
  "r2d2",
  "rand 0.7.3",
  "serde",

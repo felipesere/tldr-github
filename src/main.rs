@@ -22,6 +22,7 @@ use db::Db;
 use domain::api::{AddNewRepo, AddTrackedItemsForRepo, Repo};
 use domain::ClientForRepositories;
 use github::GithubClient;
+use percent_encoding::percent_decode_str;
 
 mod config;
 mod db;
@@ -45,8 +46,8 @@ impl State {
     }
 }
 
-fn from_url(x: String) -> String {
-    x.replace("---", "/")
+fn from_url(val: String) -> String {
+    percent_decode_str(&val).decode_utf8().expect("expected to decode value from URL").to_string()
 }
 
 fn main() -> anyhow::Result<()> {
