@@ -9,6 +9,7 @@
     import Indicator from "../atoms/Indicator.svelte";
     import Modal from "../atoms/Modal.svelte";
     import OnEscape from "../support/OnEscape.svelte";
+    import {proxy} from "../client/api";
 
     export let repo;
     const dispatch = createEventDispatcher();
@@ -28,7 +29,7 @@
 
     const fetchItems = async () => {
         // TODO: move this to api.js
-        const response = await fetch(`/api/repos/${repo.title}/proxy`);
+        const response = await proxy(repo.title);
         items = await response.json();
     };
 

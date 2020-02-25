@@ -45,6 +45,10 @@ impl State {
     }
 }
 
+fn from_url(x: String) -> String {
+    x.replace("---", "/")
+}
+
 fn main() -> anyhow::Result<()> {
     env_logger::init();
 
@@ -106,7 +110,7 @@ fn main() -> anyhow::Result<()> {
         });
         r.at("/repos/:name/tracked")
             .post(|mut req: Request<State>| async move {
-                let name: String = req.param("name").unwrap();
+                let name = from_url(req.param("name").unwrap());
                 let client = req.state().client();
                 let db = req.state().db();
                 let body: AddTrackedItemsForRepo = req.body_json().await.unwrap();
@@ -127,7 +131,7 @@ fn main() -> anyhow::Result<()> {
             });
         r.at("/repos/:name/proxy")
             .get(|req: Request<State>| async move {
-                let name: String = req.param("name").unwrap();
+                let name = from_url(req.param("name").unwrap());
                 let client = req.state().client();
                 let db = req.state().db();
 
@@ -148,7 +152,7 @@ fn main() -> anyhow::Result<()> {
         r.at("/repos/:name")
             .delete(|req: Request<State>| async move {
                 let db = req.state().db();
-                let name = req.param::<String>("name").unwrap();
+                let name = from_url(req.param("name").unwrap());
 
                 let maybe_repo = db.find_repo(&name);
 

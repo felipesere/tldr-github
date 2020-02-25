@@ -1,5 +1,16 @@
 import {newError} from '../errors/errorStore.js';
 
+const to_url = (name) => name.replace("/", "---");
+
+export const proxy = async (name) => {
+    try {
+        return await fetch(`/api/repos/${to_url(name)}/proxy`);
+    } catch (e) {
+        newError(`Could not proxy to repo ${name}`);
+        return Promise.reject(e)
+    }
+};
+
 export const addRepo = async (name) => {
     try {
         return await doPost("/repos", {name});
@@ -19,7 +30,7 @@ export const deleteRepo = async (name) => {
 
 export const trackItems = async (name, items) => {
     try {
-        return await doPost(`/repos/${name}/tracked`, items)
+        return await doPost(`/repos/${to_url(name)}/tracked`, items)
     } catch (e) {
         newError(`Unable to add items to repo ${repoId}: ${e}`)
     }
