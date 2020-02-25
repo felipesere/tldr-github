@@ -15,7 +15,7 @@ pub struct JsonStore {
     next_id: Mutex<RefCell<i32>>,
 }
 
-fn new<P: AsRef<Path>>(path: P) -> impl Db {
+pub fn new<P: AsRef<Path>>(path: P) -> impl Db {
     let mut config = jfs::Config::default();
     config.pretty = true;
     config.single = true;
@@ -159,13 +159,6 @@ impl Db for JsonStore {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Write;
-
-    use anyhow::Result;
-    use chrono::DateTime;
-
-    use tempfile::tempfile;
-
     use crate::domain::{Author, ItemKind, State};
 
     use super::*;

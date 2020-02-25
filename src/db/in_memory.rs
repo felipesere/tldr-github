@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::sync::Mutex;
 
-use anyhow::{bail, Error, Result};
+use anyhow::{bail, Result};
 
 use crate::db::{Db, FullStoredRepo, StoredRepo};
 use crate::domain::{ItemKind, NewTrackedItem};
@@ -47,7 +47,7 @@ impl Db for InMemory {
         Ok(())
     }
 
-    fn update_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
+    fn update_tracked_item(&self, _repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
         for (idx, v) in self
             .repos
             .lock()
@@ -73,7 +73,7 @@ impl Db for InMemory {
         )
     }
 
-    fn remove_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
+    fn remove_tracked_item(&self, _repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
         for (idx, v) in self
             .repos
             .lock()

@@ -27,7 +27,7 @@ pub fn start(config: Config) {
                 ItemKind::Issue => client.issue(&repo.name(), item.number),
             };
 
-            if let Err(e) = updated {
+            if updated.is_err() {
                 continue;
             }
 

@@ -60,7 +60,8 @@ fn main() -> anyhow::Result<()> {
         .setup()
         .with_context(|| "failed to setup DB")?;
 
-    let db_access = db::sqlite(pool);
+    // let db_access = db::sqlite(pool);
+    let db_access = db::in_memory();
 
     // let db_access = Arc::new(crate::db::in_memory::new());
     let github_access = Arc::new(GithubClient::new(config.github.token.clone()));
@@ -72,9 +73,6 @@ fn main() -> anyhow::Result<()> {
 
     let mut app = tide::with_state(state);
     app.middleware(RequestLogger::new());
-    app.at("/").strip_prefix().get(StaticFilesEndpoint {
-        root: "./tldr-github-svelte/public".into(),
-    });
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| async move {
             let span = span!(Level::INFO, "GET /repos");
@@ -155,6 +153,10 @@ fn main() -> anyhow::Result<()> {
                 let repo = maybe_repo.unwrap();
                 ApiResult::empty(db.delete(repo).with_context(|| "failed to delete"))
             });
+    });
+    // this doesn't work because every GET request gets redirected here
+    app.at("/*").get(StaticFilesEndpoint {
+        root: "./tldr-github-svelte/public".into(),
     });
 
     if config.updater.run {

@@ -9,17 +9,17 @@ export const addRepo = async (name) => {
     }
 };
 
-export const deleteRepo = async (repoId) => {
+export const deleteRepo = async (name) => {
     try {
-        return await doDelete(`/repos/${repoId}`)
+        return await doDelete(`/repos/${name}`)
     } catch (e) {
         newError(`Unable to delete repo: ${e}`)
     }
 };
 
-export const trackItems = async (repoId, items) => {
+export const trackItems = async (name, items) => {
     try {
-        return await doPost(`/repos/${repoId}/tracked`, items)
+        return await doPost(`/repos/${name}/tracked`, items)
     } catch (e) {
         newError(`Unable to add items to repo ${repoId}: ${e}`)
     }

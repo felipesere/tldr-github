@@ -8,8 +8,8 @@ use schema::repos;
 
 use crate::domain::NewTrackedItem;
 
-pub mod in_memory;
-pub mod json_storage;
+mod in_memory;
+mod json_storage;
 mod schema;
 pub mod sqlite;
 
@@ -17,6 +17,15 @@ pub fn sqlite(pool: sqlite::SqlitePool) -> Arc<impl Db> {
     Arc::new(sqlite::SqliteDB {
         conn: Arc::new(pool),
     })
+}
+
+pub fn in_memory() -> Arc<impl Db> {
+    Arc::new(in_memory::new())
+}
+
+pub fn json_backend() -> Arc<impl Db> {
+    let path = std::env::current_dir().unwrap();
+    Arc::new(json_storage::new(path))
 }
 
 pub trait Db: Send + Sync {

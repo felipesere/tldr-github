@@ -21,13 +21,14 @@
     let selected = [];
 
     async function track() {
-        await trackItems(repo.id, {items: selected.map(s => ({kind: s.kind, nr: s.nr}))});
+        await trackItems(repo.title, {items: selected.map(s => ({kind: s.kind, nr: s.nr}))});
         close();
         dispatch('repo-updated')
     }
 
     const fetchItems = async () => {
-        const response = await fetch(`/api/repos/${repo.id}/proxy`);
+        // TODO: move this to api.js
+        const response = await fetch(`/api/repos/${repo.title}/proxy`);
         items = await response.json();
     };
 

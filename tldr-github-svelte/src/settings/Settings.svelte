@@ -11,7 +11,7 @@
     function deleteThisRepo() {
         (currentlyDeletingRepo = async () => {
             try {
-                await deleteRepo(repo.id);
+                await deleteRepo(repo.title);
                 dispatch('repo-deleted');
             } catch (e) {
             }
