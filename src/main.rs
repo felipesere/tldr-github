@@ -12,10 +12,10 @@ use async_std::prelude::*;
 use async_std::stream;
 use async_std::task;
 use serde::Serialize;
-use tide::middleware::RequestLogger;
 use tide::{Request, Response};
+use tide::middleware::RequestLogger;
 use tide_naive_static_files::StaticFilesEndpoint;
-use tracing::{event, instrument, span, Level};
+use tracing::{event, instrument, Level, span};
 
 use config::Config;
 use db::Db;
@@ -73,6 +73,12 @@ fn main() -> anyhow::Result<()> {
 
     let mut app = tide::with_state(state);
     app.middleware(RequestLogger::new());
+    app.at("/").get(tide::redirect("/files/index.html"));
+    app.at("/files")
+        .strip_prefix()
+        .get(StaticFilesEndpoint {
+            root: "./tldr-github-svelte/public".into(),
+        });
     app.at("/api").nest(|r| {
         r.at("/repos").get(|req: Request<State>| async move {
             let span = span!(Level::INFO, "GET /repos");
@@ -155,9 +161,6 @@ fn main() -> anyhow::Result<()> {
             });
     });
     // this doesn't work because every GET request gets redirected here
-    app.at("/*").get(StaticFilesEndpoint {
-        root: "./tldr-github-svelte/public".into(),
-    });
 
     if config.updater.run {
         let db = db_access.clone();
