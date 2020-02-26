@@ -1,0 +1,10 @@
+version: "3.7"
+services:
+    github:
+        image: "apisguru/graphql-faker"
+        ports: ["9002:9002"]
+        command: ["/workdir/schema.graphql"]
+        volumes: 
+            - "./graphql:/workdir"
+
+
