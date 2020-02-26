@@ -14,3 +14,8 @@ run-watch:
 
 migrate:
 	diesel migration run --database-url repos.db
+
+setup:
+	cargo build
+	cd tldr-github-svelte && npm install
+
