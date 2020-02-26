@@ -15,8 +15,13 @@ You can see what I am up to [here](https://github.com/felipesere/tldr-github/pro
 
 ## Setup
 
-TBD
+You will need:
+ * make
+ * latest stable Rust
+ * NodeJS (v13) and npm
+ * sqlite3, on Mac via `brew install sqlite3`
 
+If all programs are availabel you should be able to run `make setup` to install any dependencies.
 
 ## Thanks
 
