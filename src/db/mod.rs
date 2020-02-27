@@ -13,13 +13,13 @@ mod in_memory;
 mod json_storage;
 mod sqlite;
 
-pub fn in_memory() -> Arc<dyn Db> {
-    Arc::new(in_memory::new())
+pub fn in_memory() -> Result<Arc<dyn Db>> {
+    Ok(Arc::new(in_memory::new()))
 }
 
-pub fn json_backend() -> Arc<dyn Db> {
+pub fn json_backend() -> Result<Arc<dyn Db>> {
     let path = std::env::current_dir().unwrap();
-    Arc::new(json_storage::new(path))
+    Ok(Arc::new(json_storage::new(path)))
 }
 
 pub fn sqlite(database_url: &str, run_migrations: bool) -> Result<Arc<dyn Db>> {

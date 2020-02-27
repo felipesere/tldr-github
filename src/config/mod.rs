@@ -29,8 +29,8 @@ impl DatabaseConfig {
         let run_migrations = self.run_migrations.unwrap_or(true);
         match self.backing {
             Backing::Sqlite => db::sqlite(&self.file, run_migrations),
-            Backing::InMemory => Ok(db::in_memory()),
-            Backing::Json => Ok(db::json_backend()),
+            Backing::InMemory => db::in_memory(),
+            Backing::Json => db::json_backend(),
         }
     }
 }
