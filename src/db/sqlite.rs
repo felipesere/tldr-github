@@ -24,7 +24,7 @@ pub struct SqliteDB {
     pub(crate) conn: Arc<SqlitePool>,
 }
 
-pub fn new(conn: SqlitePool) -> impl Db {
+pub fn with_pool(conn: SqlitePool) -> impl Db {
     SqliteDB {
         conn: Arc::new(conn),
     }

@@ -38,7 +38,7 @@ impl DatabaseConfig {
         }
 
         match self.backing {
-            Backing::Sqlite => Ok(Arc::new(sqlite::new(pool))),
+            Backing::Sqlite => Ok(Arc::new(sqlite::with_pool(pool))),
             Backing::InMemory => Ok(db::in_memory()),
             Backing::Json => Ok(db::json_backend()),
         }
