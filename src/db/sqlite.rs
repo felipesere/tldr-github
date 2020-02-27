@@ -10,36 +10,28 @@ use tracing::{event, Level};
 
 use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
 
-use super::schema::{repos, tracked_items};
 use super::{Db, FullStoredRepo, NewRepo, StoredRepo};
+use super::schema::{repos, tracked_items};
 
-pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
+type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
 
-pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
-    Pool::new(ConnectionManager::new(database_url))
-        .with_context(|| format!("failed to access db: {}", database_url))
-}
-
-pub struct SqliteDB {
-    pub(crate) conn: Arc<SqlitePool>,
+struct SqliteDB {
+    conn: Arc<SqlitePool>,
 }
 
 embed_migrations!("./migrations");
 
 pub fn new(database_url: &str, run_migrations: bool) -> Result<Arc<dyn Db>> {
-    let pool = establish_connection(database_url)?;
+    let pool = Pool::new(ConnectionManager::new(database_url))
+        .with_context(|| format!("failed to access db: {}", database_url))?;
 
     if run_migrations {
         embedded_migrations::run_with_output(&pool.get().unwrap(), &mut std::io::stdout())?;
     }
 
-    Ok(Arc::new(with_pool(pool)))
-}
-
-pub fn with_pool(conn: SqlitePool) -> impl Db {
-    SqliteDB {
-        conn: Arc::new(conn),
-    }
+    Ok(Arc::new(SqliteDB {
+        conn: Arc::new(pool),
+    }))
 }
 
 impl fmt::Debug for SqliteDB {
@@ -227,7 +219,7 @@ struct RawTrackedItem {
 mod test {
     use chrono::{TimeZone, Utc};
 
-    use crate::config::{DatabaseConfig, Backing};
+    use crate::config::{Backing, DatabaseConfig};
     use crate::domain::*;
 
     use super::*;

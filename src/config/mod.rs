@@ -4,7 +4,6 @@ use serde::de::{Unexpected, Visitor};
 use serde::{de, Deserialize, Deserializer};
 
 // TODO: this need sto be done better, not pointing directly at sqlite
-use crate::db::sqlite;
 use crate::db::{self, Db};
 use std::sync::Arc;
 
@@ -27,8 +26,9 @@ pub struct DatabaseConfig {
 
 impl DatabaseConfig {
     pub fn get(&self) -> Result<Arc<dyn Db>> {
+        let run_migrations = self.run_migrations.unwrap_or(true);
         match self.backing {
-            Backing::Sqlite => sqlite::new(&self.file, self.run_migrations.unwrap_or(true)),
+            Backing::Sqlite => db::sqlite(&self.file, run_migrations),
             Backing::InMemory => Ok(db::in_memory()),
             Backing::Json => Ok(db::json_backend()),
         }

@@ -11,15 +11,19 @@ use crate::domain::NewTrackedItem;
 mod schema;
 mod in_memory;
 mod json_storage;
-pub mod sqlite;
+mod sqlite;
 
-pub fn in_memory() -> Arc<impl Db> {
+pub fn in_memory() -> Arc<dyn Db> {
     Arc::new(in_memory::new())
 }
 
-pub fn json_backend() -> Arc<impl Db> {
+pub fn json_backend() -> Arc<dyn Db> {
     let path = std::env::current_dir().unwrap();
     Arc::new(json_storage::new(path))
+}
+
+pub fn sqlite(database_url: &str, run_migrations: bool) -> Result<Arc<dyn Db>> {
+    sqlite::new(database_url, run_migrations)
 }
 
 pub trait Db: Send + Sync {
