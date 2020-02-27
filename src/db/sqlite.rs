@@ -217,13 +217,14 @@ struct RawTrackedItem {
 mod test {
     use chrono::{TimeZone, Utc};
 
-    use crate::config::DatabaseConfig;
+    use crate::config::{DatabaseConfig, Backing};
     use crate::domain::*;
 
     use super::*;
 
     fn test_db() -> impl Db {
         let config = DatabaseConfig {
+            backing: Backing::Sqlite,
             file: ":memory:".into(),
             run_migrations: Some(true),
         };

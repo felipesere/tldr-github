@@ -8,8 +8,19 @@ use crate::db::sqlite;
 
 embed_migrations!("./migrations");
 
+#[derive(Deserialize, Clone, Debug, Eq, PartialEq)]
+pub enum Backing {
+    #[serde(rename = "sqlite")]
+    Sqlite,
+    #[serde(rename = "inmemory")]
+    InMemory,
+    #[serde(rename = "json")]
+    Json,
+}
+
 #[derive(Deserialize, Clone, Debug)]
 pub struct DatabaseConfig {
+    pub backing: Backing,
     pub file: String,
     pub run_migrations: Option<bool>,
 }
@@ -120,6 +131,7 @@ mod tests {
         let sample_config = r#"
 {
   "database": {
+    "backing": "sqlite",
     "file": "./repos.db",
     "run_migrations": true
   },
@@ -143,6 +155,7 @@ mod tests {
         let sample_config = r#"
 {
   "database": {
+    "backing": "sqlite",
     "file": "./repos.db",
     "run_migrations": true
   },
@@ -153,12 +166,40 @@ mod tests {
     "token": "some-token"
   },
   "updater": {
-     "run": true
-  }
+      "run": true
+    }
 }
 "#;
 
         let result = serde_json::from_str::<Config>(sample_config);
         assert!(result.is_ok())
+    }
+    
+    #[test]
+    fn it_can_pick_a_backing_for_the_db() {
+        let sample_config = r#"
+{
+  "database": {
+    "backing": "sqlite",
+    "file": "./repos.db",
+    "run_migrations": true
+  },
+  "server": {
+    "port": 8080
+  },
+  "github": {
+    "token": "some-token"
+  },
+  "updater": {
+      "run": true
+    }
+}
+"#;
+
+        let result = serde_json::from_str::<Config>(sample_config);
+        assert!(result.is_ok());
+        let config = result.unwrap();
+
+        assert_eq!(config.database.backing, Backing::Sqlite )
     }
 }
