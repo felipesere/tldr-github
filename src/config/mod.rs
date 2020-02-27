@@ -8,8 +8,6 @@ use crate::db::sqlite;
 use crate::db::{self, Db};
 use std::sync::Arc;
 
-embed_migrations!("./migrations");
-
 #[derive(Deserialize, Clone, Debug, Eq, PartialEq)]
 pub enum Backing {
     #[serde(rename = "sqlite")]
@@ -29,16 +27,8 @@ pub struct DatabaseConfig {
 
 impl DatabaseConfig {
     pub fn get(&self) -> Result<Arc<dyn Db>> {
-        let pool = sqlite::establish_connection(&self.file)?;
-        match self.run_migrations {
-            Some(true) | None => {
-                embedded_migrations::run_with_output(&pool.get().unwrap(), &mut std::io::stdout())?;
-            }
-            _ => {}
-        }
-
         match self.backing {
-            Backing::Sqlite => Ok(Arc::new(sqlite::with_pool(pool))),
+            Backing::Sqlite => sqlite::new(&self.file, self.run_migrations.unwrap_or(true)),
             Backing::InMemory => Ok(db::in_memory()),
             Backing::Json => Ok(db::json_backend()),
         }

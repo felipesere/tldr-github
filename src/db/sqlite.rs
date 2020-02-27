@@ -24,6 +24,18 @@ pub struct SqliteDB {
     pub(crate) conn: Arc<SqlitePool>,
 }
 
+embed_migrations!("./migrations");
+
+pub fn new(database_url: &str, run_migrations: bool) -> Result<Arc<dyn Db>> {
+    let pool = establish_connection(database_url)?;
+
+    if run_migrations {
+        embedded_migrations::run_with_output(&pool.get().unwrap(), &mut std::io::stdout())?;
+    }
+
+    Ok(Arc::new(with_pool(pool)))
+}
+
 pub fn with_pool(conn: SqlitePool) -> impl Db {
     SqliteDB {
         conn: Arc::new(conn),
