@@ -57,10 +57,11 @@ impl Db for JsonStore {
             let mut repo = repo.unwrap();
             repo.items
                 .append(&mut items.into_iter().map(Item::from).collect());
-            self.backing_store.save_with_id(&repo, &repo_name.title);
-        };
+            self.backing_store.save_with_id(&repo, &repo_name.title).map(|_arg|()).context("inserting tracked item")
+        } else {
+            Ok(())
+        }
 
-        Ok(())
     }
 
     fn update_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<(), Error> {
@@ -138,7 +139,7 @@ impl Db for JsonStore {
                 items: Vec::new(),
             },
             repo_name,
-        );
+        )?;
 
         let repo = StoredRepo {
             id,
@@ -230,7 +231,7 @@ mod tests {
                 last_updated: Utc::now(),
                 number: 1,
             }],
-        );
+        ).expect("should have been able to insert tracked items");
 
         let all = db.all().unwrap();
 

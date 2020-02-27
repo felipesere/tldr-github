@@ -13,12 +13,6 @@ mod in_memory;
 mod json_storage;
 pub mod sqlite;
 
-pub fn sqlite(pool: sqlite::SqlitePool) -> Arc<impl Db> {
-    Arc::new(sqlite::SqliteDB {
-        conn: Arc::new(pool),
-    })
-}
-
 pub fn in_memory() -> Arc<impl Db> {
     Arc::new(in_memory::new())
 }
@@ -81,10 +75,6 @@ impl FullStoredRepo {
             created_at: Utc::now().naive_utc(),
             updated_at: Utc::now().naive_utc(),
         }
-    }
-
-    pub fn name(&self) -> crate::domain::RepoName {
-        crate::domain::RepoName::from(&self.title).unwrap()
     }
 
     pub fn items(&self) -> Vec<NewTrackedItem> {

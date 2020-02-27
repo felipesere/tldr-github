@@ -232,7 +232,7 @@ pub async fn add_items_to_track(
             res.push(inner);
         }
 
-        db.insert_tracked_items(&repo, res);
+        db.insert_tracked_items(&repo, res)?;
     }
 
     Ok(())
@@ -279,7 +279,7 @@ mod test {
     #[test]
     #[ignore]
     fn does_not_add_items_to_a_non_existing_repo() {
-        let mut db = MockDatabase::new();
+        let db = MockDatabase::new();
         let github = MockGithub::new();
 
         let repo = StoredRepo::new(32, "foo/bar");
@@ -294,7 +294,7 @@ mod test {
     #[test]
     #[ignore]
     fn queries_github_for_details_on_items_and_stores_them() {
-        let mut db = MockDatabase::new();
+        let db = MockDatabase::new();
         let github = MockGithub::new();
 
         let repo = StoredRepo::new(32, "foo/bar");

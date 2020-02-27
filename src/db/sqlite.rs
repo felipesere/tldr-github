@@ -272,7 +272,7 @@ mod test {
             number: 1,
         };
 
-        db.insert_tracked_items(&repo, vec![item1, item2]);
+        db.insert_tracked_items(&repo, vec![item1, item2]).expect("should have inserted items");
 
         let repos: Vec<FullStoredRepo> = db.all().unwrap();
 
