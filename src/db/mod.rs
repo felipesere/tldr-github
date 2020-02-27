@@ -8,9 +8,9 @@ use schema::repos;
 
 use crate::domain::NewTrackedItem;
 
+mod schema;
 mod in_memory;
 mod json_storage;
-mod schema;
 pub mod sqlite;
 
 pub fn sqlite(pool: sqlite::SqlitePool) -> Arc<impl Db> {

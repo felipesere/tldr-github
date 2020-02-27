@@ -15,8 +15,6 @@ use super::{Db, FullStoredRepo, NewRepo, StoredRepo};
 
 pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
 
-pub type Conn = r2d2::PooledConnection<ConnectionManager<SqliteConnection>>;
-
 pub fn establish_connection(database_url: &str) -> Result<SqlitePool> {
     Pool::new(ConnectionManager::new(database_url))
         .with_context(|| format!("failed to access db: {}", database_url))
@@ -222,28 +220,14 @@ mod test {
 
     use super::*;
 
-    fn test_db() -> impl Db {
+    fn test_db() -> Arc<dyn Db> {
         let config = DatabaseConfig {
             backing: Backing::Sqlite,
             file: ":memory:".into(),
             run_migrations: Some(true),
         };
-        let pool = config.setup().expect("was not able to create test pool");
 
-        new(pool)
-    }
-
-    fn in_test_transaction<T, F>(conn: &Conn, f: F) -> T
-    where
-        F: FnOnce() -> T,
-    {
-        let mut user_result = None;
-
-        let _ = conn.transaction::<(), _, _>(|| {
-            user_result = Some(f());
-            Err(diesel::result::Error::RollbackTransaction)
-        });
-        user_result.expect("this didn't work")
+        config.get().unwrap()
     }
 
     #[test]

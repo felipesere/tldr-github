@@ -60,13 +60,7 @@ fn main() -> anyhow::Result<()> {
     let config: Config =
         serde_json::from_str(&contents).with_context(|| "Unable to read config")?;
 
-    let pool = config
-        .database
-        .setup()
-        .with_context(|| "failed to setup DB")?;
-
-    // let db_access = db::sqlite(pool);
-    let db_access = db::in_memory();
+    let db_access = config.database.get().unwrap();
 
     // let db_access = Arc::new(crate::db::in_memory::new());
     let github_access = Arc::new(GithubClient::new(config.github.token.clone()));
@@ -145,7 +139,7 @@ fn main() -> anyhow::Result<()> {
                 let repo = maybe_repo.unwrap();
 
                 ApiResult::from(
-                    domain::retrieve_live_items(db, client, repo)
+                    domain::retrieve_live_items(client, repo)
                         .await
                         .with_context(|| "failed to add items to track"),
                 )

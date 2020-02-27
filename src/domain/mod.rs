@@ -195,7 +195,6 @@ pub fn add_new_repo(
 }
 
 pub async fn retrieve_live_items(
-    db: Arc<dyn Db>,
     client: Arc<dyn ClientForRepositories>,
     repo: StoredRepo,
 ) -> Result<Vec<api::Item>> {

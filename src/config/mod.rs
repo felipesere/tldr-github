@@ -5,6 +5,8 @@ use serde::{de, Deserialize, Deserializer};
 
 // TODO: this need sto be done better, not pointing directly at sqlite
 use crate::db::sqlite;
+use crate::db::{self, Db};
+use std::sync::Arc;
 
 embed_migrations!("./migrations");
 
@@ -26,7 +28,7 @@ pub struct DatabaseConfig {
 }
 
 impl DatabaseConfig {
-    pub fn setup(&self) -> Result<sqlite::SqlitePool> {
+    pub fn get(&self) -> Result<Arc<dyn Db>> {
         let pool = sqlite::establish_connection(&self.file)?;
         match self.run_migrations {
             Some(true) | None => {
@@ -35,7 +37,11 @@ impl DatabaseConfig {
             _ => {}
         }
 
-        Ok(pool)
+        match self.backing {
+            Backing::Sqlite => Ok(Arc::new(sqlite::new(pool))),
+            Backing::InMemory => Ok(db::in_memory()),
+            Backing::Json => Ok(db::json_backend()),
+        }
     }
 }
 
