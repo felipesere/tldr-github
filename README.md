@@ -17,11 +17,16 @@ You can see what I am up to [here](https://github.com/felipesere/tldr-github/pro
 
 You will need:
  * make
- * latest stable Rust
- * NodeJS (v13) and npm
- * sqlite3, on Mac via `brew install sqlite3`
+ * Rust v1.14.1+
+ * Node v13.2.0+
+ * sqlite3
+   - install on Mac via `brew install sqlite3`
 
-If all programs are availabel you should be able to run `make setup` to install any dependencies.
+We use `make` as the default tool to build, start or test the application.
+By executing just `make` (without arguments) you will get a list of all available tasks.
+
+With all requirements above met, you should be able to run `make setup` to install any dependencies.
+Further, you can run the application via `make run` or run the tests with `make test`.
 
 ## Thanks
 

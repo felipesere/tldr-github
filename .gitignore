@@ -15,3 +15,5 @@ Cargo.lock
 /bin
 **/*.db
 .vscode
+.idea
+

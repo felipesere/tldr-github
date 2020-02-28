@@ -29,5 +29,8 @@
     "@primer/octicons": "^9.4.0",
     "@rollup/plugin-json": "^4.0.2",
     "date-fns": "^2.9.0"
+  },
+  "engines": {
+    "node": ">=13.2.0"
   }
 }
