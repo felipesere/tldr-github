@@ -81,6 +81,7 @@ impl Db for SqliteDB {
             .set((
                 last_updated.eq(item.last_updated.naive_utc()),
                 labels.eq(Label::join(&item.labels)),
+                title.eq(item.title.clone()),
             ))
             .execute(&self.conn.get().unwrap())
             .map(|_affected| ())
@@ -233,6 +234,8 @@ mod test {
 
         config.get().unwrap()
     }
+
+    crate::behaves_like_a_db!(test_db); 
 
     #[test]
     fn can_find_repos_it_just_stored() {
