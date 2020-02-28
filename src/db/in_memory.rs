@@ -149,10 +149,9 @@ impl Db for InMemory {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    crate::behaves_like_a_db!(new);  
+    crate::behaves_like_a_db!(new);
 }

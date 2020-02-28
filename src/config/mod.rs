@@ -170,7 +170,7 @@ mod tests {
         let result = serde_json::from_str::<Config>(sample_config);
         assert!(result.is_ok())
     }
-    
+
     #[test]
     fn it_can_pick_a_backing_for_the_db() {
         let sample_config = r#"
@@ -196,6 +196,6 @@ mod tests {
         assert!(result.is_ok());
         let config = result.unwrap();
 
-        assert_eq!(config.database.backing, Backing::Sqlite )
+        assert_eq!(config.database.backing, Backing::Sqlite)
     }
 }

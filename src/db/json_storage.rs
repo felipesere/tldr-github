@@ -7,8 +7,8 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::db::{Db, FullStoredRepo, StoredRepo};
-use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
 use crate::domain::api::Item;
+use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
 
 pub struct JsonStore {
     backing_store: jfs::Store,
@@ -43,7 +43,7 @@ impl Db for JsonStore {
             created_at: Utc::now().naive_utc(),
             updated_at: Utc::now().naive_utc(),
         })
-            .ok()
+        .ok()
     }
 
     fn insert_tracked_items(
@@ -57,7 +57,10 @@ impl Db for JsonStore {
             let mut repo = repo.unwrap();
             repo.items
                 .append(&mut items.into_iter().map(Item::from).collect());
-            self.backing_store.save_with_id(&repo, &repo_name.title).map(|_arg| ()).context("inserting tracked item")
+            self.backing_store
+                .save_with_id(&repo, &repo_name.title)
+                .map(|_arg| ())
+                .context("inserting tracked item")
         } else {
             Ok(())
         }
@@ -122,7 +125,7 @@ impl Db for JsonStore {
                 })
                 .collect()
         })
-            .context("getting all repos")
+        .context("getting all repos")
     }
 
     fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo, Error> {
@@ -151,7 +154,7 @@ impl Db for JsonStore {
     }
 
     fn delete(&self, repo: StoredRepo) -> Result<(), Error> {
-       self.backing_store
+        self.backing_store
             .delete(&repo.title)
             .context("deleting a repo")
     }
@@ -162,13 +165,10 @@ mod tests {
     use super::*;
 
     fn file_name() -> String {
-        use rand::{thread_rng, Rng};
         use rand::distributions::Alphanumeric;
+        use rand::{thread_rng, Rng};
 
-        let rand_string: String = thread_rng()
-            .sample_iter(&Alphanumeric)
-            .take(10)
-            .collect();
+        let rand_string: String = thread_rng().sample_iter(&Alphanumeric).take(10).collect();
         format!("{}.json", rand_string)
     }
 
@@ -179,5 +179,5 @@ mod tests {
         new(file_path)
     }
 
-    crate::behaves_like_a_db!(setup);  
+    crate::behaves_like_a_db!(setup);
 }

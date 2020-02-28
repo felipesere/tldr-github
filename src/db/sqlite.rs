@@ -10,8 +10,8 @@ use tracing::{event, Level};
 
 use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
 
-use super::{Db, FullStoredRepo, NewRepo, StoredRepo};
 use super::schema::{repos, tracked_items};
+use super::{Db, FullStoredRepo, NewRepo, StoredRepo};
 
 type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -235,7 +235,7 @@ mod test {
         config.get().unwrap()
     }
 
-    crate::behaves_like_a_db!(test_db); 
+    crate::behaves_like_a_db!(test_db);
 
     #[test]
     fn can_find_repos_it_just_stored() {
@@ -279,7 +279,8 @@ mod test {
             number: 1,
         };
 
-        db.insert_tracked_items(&repo, vec![item1, item2]).expect("should have inserted items");
+        db.insert_tracked_items(&repo, vec![item1, item2])
+            .expect("should have inserted items");
 
         let repos: Vec<FullStoredRepo> = db.all().unwrap();
 

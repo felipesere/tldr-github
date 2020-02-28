@@ -41,7 +41,13 @@ pub fn start(config: Config) {
             };
 
             if let Err(e) = result {
-                event!(Level::ERROR, "failed when updating {} for {}: {}", title, repo.name(), e)
+                event!(
+                    Level::ERROR,
+                    "failed when updating {} for {}: {}",
+                    title,
+                    repo.name(),
+                    e
+                )
             }
         }
     });
