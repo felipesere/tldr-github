@@ -16,4 +16,5 @@ Cargo.lock
 **/*.db
 .vscode
 .idea
+tldr-github.iml
 
