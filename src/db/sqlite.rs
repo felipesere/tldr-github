@@ -218,10 +218,7 @@ struct RawTrackedItem {
 
 #[cfg(test)]
 mod test {
-    use chrono::{TimeZone, Utc};
-
     use crate::config::{Backing, DatabaseConfig};
-    use crate::domain::*;
 
     use super::*;
 
@@ -236,56 +233,4 @@ mod test {
     }
 
     crate::behaves_like_a_db!(test_db);
-
-    #[test]
-    fn can_find_repos_it_just_stored() {
-        let db = test_db();
-
-        let repo = db.insert_new_repo("felipesere/test").unwrap();
-
-        assert!(
-            db.find_repo(&repo.title).is_some(),
-            "did not find stored repo"
-        );
-    }
-
-    #[test]
-    fn can_insert_tracked_items() {
-        let db = test_db();
-
-        let repo = db.insert_new_repo("felipesere/test").unwrap();
-
-        let item1 = NewTrackedItem {
-            state: State::Open,
-            title: "pr".into(),
-            link: "something".into(),
-            by: "felipe".into(),
-            labels: vec!["foo".into(), "bar".into()],
-            kind: ItemKind::PR,
-            foreign_id: "abc123".into(),
-            last_updated: Utc.ymd(2019, 4, 22).and_hms(15, 37, 18),
-            number: 7,
-        };
-
-        let item2 = NewTrackedItem {
-            state: State::Open,
-            title: "an issue".into(),
-            link: "something".into(),
-            by: "felipe".into(),
-            labels: vec!["foo".into(), "bar".into()],
-            kind: ItemKind::Issue,
-            foreign_id: "abc123".into(),
-            last_updated: Utc.ymd(2019, 4, 22).and_hms(15, 37, 18),
-            number: 1,
-        };
-
-        db.insert_tracked_items(&repo, vec![item1, item2])
-            .expect("should have inserted items");
-
-        let repos: Vec<FullStoredRepo> = db.all().unwrap();
-
-        assert_eq!(repos.len(), 1);
-        assert_eq!(repos[0].issues.len(), 1);
-        assert_eq!(repos[0].prs.len(), 1);
-    }
 }
