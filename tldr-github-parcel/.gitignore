@@ -1,0 +1,8 @@
+.DS_*
+
+.idea
+dist
+
+node_modules
+.cache
+build

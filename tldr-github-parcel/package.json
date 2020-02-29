@@ -1,0 +1,24 @@
+{
+  "name": "tldr-github-parcel",
+  "version": "0.1.0",
+  "description": "The dashboard UI to keep track of PRs/Issues on Github.",
+  "scripts": {
+    "dev": "parcel src/index.html",
+    "release": "parcel build src/index.html",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "react": "^16.12.0",
+    "react-dom": "^16.12.0"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.12.4",
+    "axios": "^0.19.1",
+    "typescript": "^3.7",
+    "@types/react": "^16.9.17",
+    "@types/react-dom": "^16.9.5"
+  }
+}
