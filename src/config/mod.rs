@@ -1,11 +1,15 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
 use core::fmt;
 use serde::de::{Unexpected, Visitor};
 use serde::{de, Deserialize, Deserializer};
 
-// TODO: this need sto be done better, not pointing directly at sqlite
 use crate::db::{self, Db};
 use std::sync::Arc;
+
+
+pub fn from_str(content: &str) -> Result<Config> {
+    serde_json::from_str(content).with_context(|| "Unable to read config")
+}
 
 #[derive(Deserialize, Clone, Debug, Eq, PartialEq)]
 pub enum Backing {

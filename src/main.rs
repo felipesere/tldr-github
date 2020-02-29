@@ -14,13 +14,12 @@ use serde::Serialize;
 use tide::middleware::RequestLogger;
 use tide::{Request, Response};
 use tide_naive_static_files::StaticFilesEndpoint;
+use percent_encoding::percent_decode_str;
 
-use config::Config;
 use db::Db;
 use domain::api::{AddNewRepo, AddTrackedItemsForRepo};
 use domain::ClientForRepositories;
 use github::GithubClient;
-use percent_encoding::percent_decode_str;
 
 mod config;
 mod db;
@@ -57,8 +56,7 @@ fn main() -> anyhow::Result<()> {
     let mut contents = String::new();
     f.read_to_string(&mut contents)?;
 
-    let config: Config =
-        serde_json::from_str(&contents).with_context(|| "Unable to read config")?;
+    let config = config::from_str(&contents)?;
 
     let db_access = config.database.get().unwrap();
 
