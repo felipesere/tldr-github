@@ -1,7 +1,7 @@
 use anyhow::{Context, Result};
 use core::fmt;
-use serde::de::{Unexpected, Visitor};
-use serde::{de, Deserialize, Deserializer};
+use serde::de::{self, Unexpected, Visitor};
+use serde::{Deserialize, Deserializer};
 
 use crate::db::{self, Db};
 use std::sync::Arc;
