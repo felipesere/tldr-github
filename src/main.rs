@@ -29,8 +29,6 @@ mod db;
 mod domain;
 mod github;
 
-embed_migrations!("./migrations");
-
 struct State {
     db: Arc<dyn Db>,
     github: Arc<dyn ClientForRepositories>,
