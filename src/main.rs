@@ -14,11 +14,11 @@ use serde::Serialize;
 use tide::middleware::RequestLogger;
 use tide::{Request, Response};
 use tide_naive_static_files::StaticFilesEndpoint;
-use tracing::{event, instrument, span, Level};
+use tracing::{span, Level};
 
 use config::Config;
 use db::Db;
-use domain::api::{AddNewRepo, AddTrackedItemsForRepo, Repo};
+use domain::api::{AddNewRepo, AddTrackedItemsForRepo};
 use domain::ClientForRepositories;
 use github::GithubClient;
 use percent_encoding::percent_decode_str;
@@ -82,7 +82,7 @@ fn main() -> anyhow::Result<()> {
             let guard = span.enter();
             let db = req.state().db();
 
-            let res = ApiResult::from(get_all_repos(db).with_context(|| "failed to get all repos"));
+            let res = ApiResult::from(domain::get_all_repos(db).with_context(|| "failed to get all repos"));
             drop(guard);
             res
         });
@@ -252,18 +252,6 @@ struct ApiError {
 #[derive(Serialize)]
 struct ErrorJson {
     error: String,
-}
-
-#[instrument(skip(db))]
-fn get_all_repos(db: Arc<dyn Db>) -> anyhow::Result<Vec<domain::api::Repo>> {
-    let repos = db.all()?;
-    let mut result = Vec::new();
-    for repo in repos {
-        result.push(Repo::from(repo))
-    }
-
-    event!(Level::INFO, "Got {} repors to return", result.len());
-    anyhow::Result::Ok(result)
 }
 
 pub trait BetterOption<T> {

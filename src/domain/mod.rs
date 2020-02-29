@@ -172,6 +172,18 @@ impl<T: Into<String>> From<T> for Author {
     }
 }
 
+#[instrument(skip(db))]
+pub fn get_all_repos(db: Arc<dyn Db>) -> anyhow::Result<Vec<api::Repo>> {
+    let repos = db.all()?;
+    let mut result = Vec::new();
+    for repo in repos {
+        result.push(api::Repo::from(repo))
+    }
+
+    event!(Level::INFO, "Got {} repors to return", result.len());
+    Ok(result)
+}
+
 #[instrument(skip(db, client))]
 pub fn add_new_repo(
     db: Arc<dyn Db>,
