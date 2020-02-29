@@ -9,8 +9,7 @@ use std::time::Duration;
 
 use anyhow::Context;
 use async_std::prelude::*;
-use async_std::stream;
-use async_std::task;
+use async_std::{stream, task};
 use serde::Serialize;
 use tide::middleware::RequestLogger;
 use tide::{Request, Response};
@@ -93,10 +92,10 @@ fn main() -> anyhow::Result<()> {
 
             let client = req.state().client();
             let db = req.state().db();
-            let add_repo: AddNewRepo = req.body_json().await.unwrap();
+            let AddNewRepo{ name } = req.body_json().await.unwrap();
 
             let res = ApiResult::empty(
-                domain::add_new_repo(db, client, add_repo.name)
+                domain::add_new_repo(db, client, name)
                     .with_context(|| "failed to add repo"),
             );
             drop(guard);
@@ -107,7 +106,7 @@ fn main() -> anyhow::Result<()> {
                 let name = from_url(req.param("name").unwrap());
                 let client = req.state().client();
                 let db = req.state().db();
-                let body: AddTrackedItemsForRepo = req.body_json().await.unwrap();
+                let AddTrackedItemsForRepo {items} = req.body_json().await.unwrap();
 
                 let maybe_repo = db.find_repo(&name);
 
@@ -118,7 +117,7 @@ fn main() -> anyhow::Result<()> {
                 let repo = maybe_repo.unwrap();
 
                 ApiResult::empty(
-                    domain::add_items_to_track(db, client, repo, body.items)
+                    domain::add_items_to_track(db, client, repo, items)
                         .await
                         .with_context(|| "failed to add items to track"),
                 )
