@@ -28,6 +28,7 @@ mod db;
 mod domain;
 mod github;
 
+#[derive(Clone)]
 struct State {
     db: Arc<dyn Db>,
     github: Arc<dyn ClientForRepositories>,
@@ -70,93 +71,102 @@ fn main() -> anyhow::Result<()> {
         github: github_access.clone(),
     };
 
-    let mut app = tide::with_state(state);
+    let mut app = tide::with_state(state.clone());
     app.middleware(RequestLogger::new());
     app.at("/").get(tide::redirect("/files/index.html"));
     app.at("/files").strip_prefix().get(StaticFilesEndpoint {
         root: "./tldr-github-svelte/public".into(),
     });
-    app.at("/api").nest(|r| {
-        r.at("/repos").get(|req: Request<State>| async move {
+
+    let mut api_routes = tide::with_state(state);
+    api_routes
+        .at("/repos")
+        .get(|req: Request<State>| async move {
             let span = span!(Level::INFO, "GET /repos");
             let guard = span.enter();
             let db = req.state().db();
 
-            let res = ApiResult::from(domain::get_all_repos(db).with_context(|| "failed to get all repos"));
+            let res = ApiResult::from(
+                domain::get_all_repos(db).with_context(|| "failed to get all repos"),
+            );
             drop(guard);
             res
         });
-        r.at("/repos").post(|mut req: Request<State>| async move {
+    api_routes
+        .at("/repos")
+        .post(|mut req: Request<State>| async move {
             let span = span!(Level::INFO, "POST /repos");
             let guard = span.enter();
 
             let client = req.state().client();
             let db = req.state().db();
-            let AddNewRepo{ name } = req.body_json().await.unwrap();
+            let AddNewRepo { name } = req.body_json().await.unwrap();
 
             let res = ApiResult::empty(
-                domain::add_new_repo(db, client, name)
-                    .with_context(|| "failed to add repo"),
+                domain::add_new_repo(db, client, name).with_context(|| "failed to add repo"),
             );
             drop(guard);
             res
         });
-        r.at("/repos/:name/tracked")
-            .post(|mut req: Request<State>| async move {
-                let name = from_url(req.param("name").unwrap());
-                let client = req.state().client();
-                let db = req.state().db();
-                let AddTrackedItemsForRepo {items} = req.body_json().await.unwrap();
+    api_routes
+        .at("/repos/:name/tracked")
+        .post(|mut req: Request<State>| async move {
+            let name = from_url(req.param("name").unwrap());
+            let client = req.state().client();
+            let db = req.state().db();
+            let AddTrackedItemsForRepo { items } = req.body_json().await.unwrap();
 
-                let maybe_repo = db.find_repo(&name);
+            let maybe_repo = db.find_repo(&name);
 
-                if maybe_repo.is_none() {
-                    return ApiResult::not_found();
-                }
+            if maybe_repo.is_none() {
+                return ApiResult::not_found();
+            }
 
-                let repo = maybe_repo.unwrap();
+            let repo = maybe_repo.unwrap();
 
-                ApiResult::empty(
-                    domain::add_items_to_track(db, client, repo, items)
-                        .await
-                        .with_context(|| "failed to add items to track"),
-                )
-            });
-        r.at("/repos/:name/proxy")
-            .get(|req: Request<State>| async move {
-                let name = from_url(req.param("name").unwrap());
-                let client = req.state().client();
-                let db = req.state().db();
+            ApiResult::empty(
+                domain::add_items_to_track(db, client, repo, items)
+                    .await
+                    .with_context(|| "failed to add items to track"),
+            )
+        });
+    api_routes
+        .at("/repos/:name/proxy")
+        .get(|req: Request<State>| async move {
+            let name = from_url(req.param("name").unwrap());
+            let client = req.state().client();
+            let db = req.state().db();
 
-                let maybe_repo = db.find_repo(&name);
+            let maybe_repo = db.find_repo(&name);
 
-                if maybe_repo.is_none() {
-                    return ApiResult::not_found();
-                }
+            if maybe_repo.is_none() {
+                return ApiResult::not_found();
+            }
 
-                let repo = maybe_repo.unwrap();
+            let repo = maybe_repo.unwrap();
 
-                ApiResult::from(
-                    domain::retrieve_live_items(client, repo)
-                        .await
-                        .with_context(|| "failed to add items to track"),
-                )
-            });
-        r.at("/repos/:name")
-            .delete(|req: Request<State>| async move {
-                let db = req.state().db();
-                let name = from_url(req.param("name").unwrap());
+            ApiResult::from(
+                domain::retrieve_live_items(client, repo)
+                    .await
+                    .with_context(|| "failed to add items to track"),
+            )
+        });
+    api_routes
+        .at("/repos/:name")
+        .delete(|req: Request<State>| async move {
+            let db = req.state().db();
+            let name = from_url(req.param("name").unwrap());
 
-                let maybe_repo = db.find_repo(&name);
+            let maybe_repo = db.find_repo(&name);
 
-                if maybe_repo.is_none() {
-                    return ApiResult::not_found();
-                }
+            if maybe_repo.is_none() {
+                return ApiResult::not_found();
+            }
 
-                let repo = maybe_repo.unwrap();
-                ApiResult::empty(db.delete(repo).with_context(|| "failed to delete"))
-            });
-    });
+            let repo = maybe_repo.unwrap();
+            ApiResult::empty(db.delete(repo).with_context(|| "failed to delete"))
+        });
+    app.at("/api").nest(api_routes);
     // this doesn't work because every GET request gets redirected here
 
     if config.updater.run {

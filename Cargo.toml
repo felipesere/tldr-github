@@ -7,29 +7,29 @@ publish = false
 
 [dependencies]
 anyhow = "1.0"
-async-std = { version = "1.4.0", features = ["unstable"] }
+async-std = { version = "1.5.0", features = ["unstable"] }
 chrono = { version = "0.4.10", features = ["serde"] }
 diesel = { version = "1.4.3", features = ["sqlite", "r2d2", "chrono"] }
 diesel_migrations = { version = "1.4.0", features = ["sqlite"] }
-futures = "0.3.1"
+futures = "0.3.4"
 log = "0.4"
-r2d2 = "0.8.7"
-serde = { version = "1.0.0", features = ["derive"] }
-serde_json = "1.0.0"
+r2d2 = "0.8.8"
+serde = { version = "1.0.104", features = ["derive"] }
+serde_json = "1.0.48"
 surf = "1.0.3"
-tide = "0.5.1"
-tide-naive-static-files = "2.1.0"
+tide = { version = "0.6.0", features = ["unstable"] }
+tide-naive-static-files = "2.2.0"
 graphql_client = "0.8.0"
 chrono-humanize = "0.0.11"
-tracing = { version = "0.1.12", features = ["log", "log-always"] }
-tracing-subscriber = "0.1.6"
+tracing = { version = "0.1.13", features = ["log", "log-always"] }
+tracing-subscriber = "0.2.2"
 env_logger = "0.7.1"
-tracing-futures = "0.2.1"
+tracing-futures = "0.2.3"
 tempfile = "3.1.0"
 jfs = "0.6.2"
 rand = "0.7.3"
 percent-encoding = "2.1.0"
 
 [dev-dependencies]
-assert-json-diff = "1.0.0"
+assert-json-diff = "1.0.3"
 mockall = "0.6.0"
