@@ -14,7 +14,6 @@ use serde::Serialize;
 use tide::middleware::RequestLogger;
 use tide::{Request, Response};
 use tide_naive_static_files::StaticFilesEndpoint;
-use tracing::{span, Level};
 
 use config::Config;
 use db::Db;
@@ -82,31 +81,19 @@ fn main() -> anyhow::Result<()> {
     api_routes
         .at("/repos")
         .get(|req: Request<State>| async move {
-            let span = span!(Level::INFO, "GET /repos");
-            let guard = span.enter();
             let db = req.state().db();
-
-            let res = ApiResult::from(
+            ApiResult::from(
                 domain::get_all_repos(db).with_context(|| "failed to get all repos"),
-            );
-            drop(guard);
-            res
-        });
-    api_routes
-        .at("/repos")
+            )
+        })
         .post(|mut req: Request<State>| async move {
-            let span = span!(Level::INFO, "POST /repos");
-            let guard = span.enter();
-
             let client = req.state().client();
             let db = req.state().db();
             let AddNewRepo { name } = req.body_json().await.unwrap();
 
-            let res = ApiResult::empty(
+            ApiResult::empty(
                 domain::add_new_repo(db, client, name).with_context(|| "failed to add repo"),
-            );
-            drop(guard);
-            res
+            )
         });
     api_routes
         .at("/repos/:name/tracked")
