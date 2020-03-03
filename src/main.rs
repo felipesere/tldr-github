@@ -70,9 +70,14 @@ fn main() -> anyhow::Result<()> {
 
     let mut app = tide::with_state(state.clone());
     app.middleware(RequestLogger::new());
-    app.at("/").get(tide::redirect("/files/index.html"));
-    app.at("/files").strip_prefix().get(StaticFilesEndpoint {
-        root: "./tldr-github-svelte/public".into(),
+
+    app.at("/").get(|_req: Request<State>| async move {
+        let content = async_std::fs::read_to_string("./tldr-github-parcel/dist/index.html").await.expect("Could not read index.html");
+        Response::new(200).body_string(content).set_header("Content-Type", "text/html")
+    });
+
+    app.at("/:").get(StaticFilesEndpoint {
+        root: "./tldr-github-parcel/dist".into(),
     });
 
     let mut api_routes = tide::with_state(state);

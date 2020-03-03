@@ -26,5 +26,8 @@
     "prettier": "1.19.1",
     "sass": "^1.26.2",
     "typescript": "^3.7"
-  }
+  },
+  "browserslist": [
+    "last 2 Chrome versions"
+  ]
 }
