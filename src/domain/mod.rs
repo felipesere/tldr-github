@@ -6,7 +6,6 @@ use async_std::prelude::*;
 use async_std::task;
 use chrono::{DateTime, Utc};
 use futures::stream::futures_unordered::FuturesUnordered;
-use tracing::{event, instrument, Level};
 
 use crate::db::{Db, StoredRepo};
 
@@ -172,7 +171,6 @@ impl<T: Into<String>> From<T> for Author {
     }
 }
 
-#[instrument(skip(db))]
 pub fn get_all_repos(db: Arc<dyn Db>) -> anyhow::Result<Vec<api::Repo>> {
     let repos = db.all()?;
     let mut result = Vec::new();
@@ -180,11 +178,9 @@ pub fn get_all_repos(db: Arc<dyn Db>) -> anyhow::Result<Vec<api::Repo>> {
         result.push(api::Repo::from(repo))
     }
 
-    event!(Level::INFO, "Got {} repors to return", result.len());
     Ok(result)
 }
 
-#[instrument(skip(db, client))]
 pub fn add_new_repo(
     db: Arc<dyn Db>,
     client: Arc<dyn ClientForRepositories>,
@@ -193,13 +189,7 @@ pub fn add_new_repo(
     let name = RepoName::from(maybe_name)?;
 
     if client.repo_exists(&name)? {
-        event!(
-            Level::INFO,
-            "{} found on Github proceeding to save to DB",
-            &name
-        );
         let repo = db.insert_new_repo(&name.to_string())?;
-        event!(Level::INFO, "successfully save {} to DB", &name);
         Result::Ok(repo)
     } else {
         bail!("Repo {} not found on GitHub.", name.to_string())

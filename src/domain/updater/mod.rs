@@ -4,7 +4,6 @@ use std::time::Duration;
 use async_std::prelude::*;
 use async_std::sync::Receiver;
 use async_std::task;
-use tracing::{event, Level};
 
 use crate::db::{Db, StoredRepo};
 use crate::domain::{ClientForRepositories, ItemKind, NewTrackedItem, State};
@@ -17,7 +16,6 @@ pub struct Config {
 
 pub fn start(config: Config) {
     task::spawn(async move {
-        event!(Level::INFO, "starting to work on updates");
         let db = config.db;
         let client = config.client;
         let mut inbound = config.channel.throttle(Duration::from_secs(1));
@@ -40,15 +38,7 @@ pub fn start(config: Config) {
                 Outcome::Ignore => Result::Ok(()),
             };
 
-            if let Err(e) = result {
-                event!(
-                    Level::ERROR,
-                    "failed when updating {} for {}: {}",
-                    title,
-                    repo.name(),
-                    e
-                )
-            }
+            result.expect("it should have worked!")
         }
     });
 }

@@ -6,7 +6,6 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use diesel::sqlite::SqliteConnection;
-use tracing::{event, Level};
 
 use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
 
@@ -103,7 +102,6 @@ impl Db for SqliteDB {
         use super::schema::repos::dsl::*;
 
         let rs: Vec<StoredRepo> = repos.load(&conn).with_context(|| "getting all repos")?;
-        event!(Level::INFO, "Found {} repos", rs.len());
 
         let ids: Vec<i32> = rs.iter().map(|r| r.id).collect();
 
@@ -112,7 +110,6 @@ impl Db for SqliteDB {
             .load(&conn)
             .context("loading tracked items")?
             .grouped_by(&rs[..]);
-        event!(Level::INFO, "Read tracked items from DB");
 
         Result::Ok(
             rs.into_iter()

@@ -10,11 +10,11 @@ use std::time::Duration;
 use anyhow::Context;
 use async_std::prelude::*;
 use async_std::{stream, task};
+use percent_encoding::percent_decode_str;
 use serde::Serialize;
 use tide::middleware::RequestLogger;
 use tide::{Request, Response};
 use tide_naive_static_files::StaticFilesEndpoint;
-use percent_encoding::percent_decode_str;
 
 use db::Db;
 use domain::api::{AddNewRepo, AddTrackedItemsForRepo};
@@ -50,8 +50,6 @@ fn from_url(val: String) -> String {
 }
 
 fn main() -> anyhow::Result<()> {
-    env_logger::init();
-
     let mut f = std::fs::File::open("./config.json")?;
     let mut contents = String::new();
     f.read_to_string(&mut contents)?;
@@ -72,8 +70,12 @@ fn main() -> anyhow::Result<()> {
     app.middleware(RequestLogger::new());
 
     app.at("/").get(|_req: Request<State>| async move {
-        let content = async_std::fs::read_to_string("./tldr-github-parcel/dist/index.html").await.expect("Could not read index.html");
-        Response::new(200).body_string(content).set_header("Content-Type", "text/html")
+        let content = async_std::fs::read_to_string("./tldr-github-parcel/dist/index.html")
+            .await
+            .expect("Could not read index.html");
+        Response::new(200)
+            .body_string(content)
+            .set_header("Content-Type", "text/html")
     });
 
     app.at("/:").get(StaticFilesEndpoint {
@@ -85,9 +87,7 @@ fn main() -> anyhow::Result<()> {
         .at("/repos")
         .get(|req: Request<State>| async move {
             let db = req.state().db();
-            ApiResult::from(
-                domain::get_all_repos(db).with_context(|| "failed to get all repos"),
-            )
+            ApiResult::from(domain::get_all_repos(db).with_context(|| "failed to get all repos"))
         })
         .post(|mut req: Request<State>| async move {
             let client = req.state().client();
