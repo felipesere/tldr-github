@@ -19,6 +19,7 @@ use tide_naive_static_files::StaticFilesEndpoint;
 use db::Db;
 use domain::api::{AddNewRepo, AddTrackedItemsForRepo};
 use domain::ClientForRepositories;
+use femme;
 use github::GithubClient;
 
 mod config;
@@ -50,6 +51,7 @@ fn from_url(val: String) -> String {
 }
 
 fn main() -> anyhow::Result<()> {
+    femme::start(log::LevelFilter::Info).unwrap();
     let mut f = std::fs::File::open("./config.json")?;
     let mut contents = String::new();
     f.read_to_string(&mut contents)?;
