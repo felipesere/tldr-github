@@ -71,17 +71,21 @@ fn main() -> anyhow::Result<()> {
     let mut app = tide::with_state(state.clone());
     app.middleware(RequestLogger::new());
 
-    app.at("/").get(|_req: Request<State>| async move {
-        let content = async_std::fs::read_to_string("./tldr-github-parcel/dist/index.html")
+    let mut svelte = tide::new();
+    svelte.at("/:").get(StaticFilesEndpoint {
+        root: "./tldr-github-svelte/public".into(),
+    });
+    svelte.at("/build/:").get(StaticFilesEndpoint {
+        root: "./tldr-github-svelte/public".into(),
+    });
+    app.at("/svelte/").nest(svelte);
+    app.at("/svelte").get(|_req: Request<State>| async move {
+        let content = async_std::fs::read_to_string("./tldr-github-svelte/public/index.html")
             .await
             .expect("Could not read index.html");
         Response::new(200)
             .body_string(content)
             .set_header("Content-Type", "text/html")
-    });
-
-    app.at("/:").get(StaticFilesEndpoint {
-        root: "./tldr-github-parcel/dist".into(),
     });
 
     let mut api_routes = tide::with_state(state);
