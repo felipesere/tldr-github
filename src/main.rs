@@ -50,6 +50,36 @@ fn from_url(val: String) -> String {
         .to_string()
 }
 
+struct HostedFile {
+    name: &'static str,
+}
+
+impl<S> tide::Endpoint<S> for HostedFile {
+    type Fut = std::pin::Pin<Box<dyn async_std::future::Future<Output = Response> + Send>>;
+
+    fn call(&self, _: Request<S>) -> Self::Fut {
+        let file_name = self.name.to_string();
+        Box::pin(async move {
+            let content = async_std::fs::read_to_string(file_name)
+                .await
+                .expect("Could not read index.html");
+            Response::new(200)
+                .body_string(content)
+                .set_header("Content-Type", "text/html")
+        })
+    }
+}
+
+fn file<STATE>(name: &'static str) -> impl tide::Endpoint<STATE> {
+    HostedFile { name }
+}
+
+fn dir<STATE>(root: &'static str) -> impl tide::Endpoint<STATE> {
+    StaticFilesEndpoint {
+        root: std::path::PathBuf::from(root),
+    }
+}
+
 fn main() -> anyhow::Result<()> {
     femme::start(log::LevelFilter::Info).unwrap();
     let mut f = std::fs::File::open("./config.json")?;
@@ -72,36 +102,20 @@ fn main() -> anyhow::Result<()> {
     app.middleware(RequestLogger::new());
 
     let mut svelte = tide::new();
-    svelte.at("/:").get(StaticFilesEndpoint {
-        root: "./tldr-github-svelte/public".into(),
-    });
-    svelte.at("/build/:").get(StaticFilesEndpoint {
-        root: "./tldr-github-svelte/public".into(),
-    });
+    svelte.at("/:").get(dir("./tldr-github-svelte/public"));
+    svelte
+        .at("/build/:")
+        .get(dir("./tldr-github-svelte/public"));
 
     app.at("/svelte/").nest(svelte);
-    app.at("/svelte").get(|_req: Request<State>| async move {
-        let content = async_std::fs::read_to_string("./tldr-github-svelte/public/index.html")
-            .await
-            .expect("Could not read index.html");
-        Response::new(200)
-            .body_string(content)
-            .set_header("Content-Type", "text/html")
-    });
+    app.at("/svelte")
+        .get(file("./tldr-github-svelte/public/index.html"));
 
     let mut parcel = tide::new();
-    parcel.at("/:").get(StaticFilesEndpoint {
-        root: "./tldr-github-parcel/dist".into(),
-    });
+    parcel.at("/:").get(dir("./tldr-github-parcel/dist"));
     app.at("/parcel/").nest(parcel);
-    app.at("/parcel").get(|_req: Request<State>| async move {
-        let content = async_std::fs::read_to_string("./tldr-github-parcel/dist/index.html")
-            .await
-            .expect("Could not read index.html");
-        Response::new(200)
-            .body_string(content)
-            .set_header("Content-Type", "text/html")
-    });
+    app.at("/parcel")
+        .get(file("./tldr-github-parcel/dist/index.html"));
 
     let mut api_routes = tide::with_state(state);
     api_routes
