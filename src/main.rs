@@ -78,9 +78,24 @@ fn main() -> anyhow::Result<()> {
     svelte.at("/build/:").get(StaticFilesEndpoint {
         root: "./tldr-github-svelte/public".into(),
     });
+
     app.at("/svelte/").nest(svelte);
     app.at("/svelte").get(|_req: Request<State>| async move {
         let content = async_std::fs::read_to_string("./tldr-github-svelte/public/index.html")
+            .await
+            .expect("Could not read index.html");
+        Response::new(200)
+            .body_string(content)
+            .set_header("Content-Type", "text/html")
+    });
+
+    let mut parcel = tide::new();
+    parcel.at("/:").get(StaticFilesEndpoint {
+        root: "./tldr-github-parcel/dist".into(),
+    });
+    app.at("/parcel/").nest(parcel);
+    app.at("/parcel").get(|_req: Request<State>| async move {
+        let content = async_std::fs::read_to_string("./tldr-github-parcel/dist/index.html")
             .await
             .expect("Could not read index.html");
         Response::new(200)

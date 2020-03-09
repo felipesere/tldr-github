@@ -4,8 +4,8 @@
   "description": "The dashboard UI to keep track of PRs/Issues on Github.",
   "scripts": {
     "prettier": "prettier --write **/*.tsx",
-    "dev": "parcel src/index.html",
-    "release": "parcel build src/index.html",
+    "dev": "parcel src/index.html --public-url ./parcel",
+    "release": "parcel build src/index.html --public-url ./parcel",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
