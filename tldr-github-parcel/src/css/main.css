@@ -11,3 +11,58 @@
 }
 
 @tailwind utilities;
+
+
+.grid {
+    display: grid;
+    grid-gap: 3rem;
+    grid-template-columns: repeat(auto-fill, 1fr);
+}
+
+@media only screen and (min-width: 500px) {
+    .grid {
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    }
+}
+
+.cluster {
+    --space: 1rem;
+    overflow: hidden;
+}
+
+.cluster > * > * {
+    margin: calc(var(--space) / 2);
+}
+
+.cluster > * {
+    display: flex;
+    flex-wrap: wrap;
+    margin: calc(var(--space) / 2 * -1);
+}
+
+.stack-sm > * + * {
+    margin-top: 0.5rem;
+}
+
+.stack > * + * {
+    margin-top: 1.5rem;
+}
+
+.octicon {
+    display: inline-block;
+}
+
+.active {
+    @apply bg-white inline-block border-l border-t border-r rounded-t py-2 px-4 text-blue-700 font-semibold -mb-px font-light
+}
+
+.inactive {
+    @apply bg-white inline-block py-2 px-4 text-blue-500 font-semibold font-light
+}
+.inactive:hover {
+    @apply text-blue-800
+}
+
+.card-content {
+    height: 370px;
+}
