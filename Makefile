@@ -28,4 +28,23 @@ migrate: ## Apply database migrations.
 setup: ## Install dependencies and build the application
 	cargo build
 	cd tldr-github-svelte && npm install
+	cd tldr-github-parcel && npm install
+
+.PHONY: build-svelte
+build-svelte: ## Build the svelte side of the UI
+	cd tldr-github-svelte && npm run build
+
+.PHONY: build-parcel
+build-parcel: ## Build the parcel side of the UI
+	cd tldr-github-parcel && npm run release
+
+.PHONY: build-ui
+build-ui: build-svelte build-parcel ## Build all UI components
+
+.PHONY: build-backend
+build-backend: ## Build the Rust backend side
+	cargo build
+
+.PHONY: build-all
+build-all: build-ui build-backend ## Build the entire app
 
