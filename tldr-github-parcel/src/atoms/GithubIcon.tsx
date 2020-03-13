@@ -1,6 +1,6 @@
 import * as React from "react";
 
-export type IconName = "gear"
+export type IconName = "gear" | "git-pull-request" | "issue-opened" | false
 
 type IconProps = {
     icon: IconName
