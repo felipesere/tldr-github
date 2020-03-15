@@ -6,7 +6,8 @@
     "prettier": "prettier --write **/*.tsx",
     "dev": "parcel src/index.html --public-url ./parcel",
     "release": "parcel build src/index.html --public-url ./parcel",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "check": "tsc --noEmit true"
   },
   "keywords": [],
   "author": "",
