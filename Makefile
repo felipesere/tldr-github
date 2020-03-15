@@ -38,6 +38,9 @@ build-svelte: ## Build the svelte side of the UI
 build-parcel: ## Build the parcel side of the UI
 	cd tldr-github-parcel && npm run release
 
+build-parcel-watch: ## Build the parcel side of the UI and keep watching for changes
+	cd tldr-github-parcel &&  watchexec --clear --exts css,js,ts,tsx,json --ignore dist npm run release
+
 .PHONY: build-ui
 build-ui: build-svelte build-parcel ## Build all UI components
 
@@ -47,4 +50,3 @@ build-backend: ## Build the Rust backend side
 
 .PHONY: build-all
 build-all: build-ui build-backend ## Build the entire app
-
