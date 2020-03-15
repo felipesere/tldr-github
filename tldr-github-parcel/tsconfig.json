@@ -1,13 +1,18 @@
 {
+  "$schema": "http://json.schemastore.org/tsconfig",
   "compilerOptions": {
+    "noEmit": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
     "target": "es6",
     "module": "commonjs",
     "jsx": "react",
-    "moduleResolution": "node",
     "lib": [
       "dom",
       "es6"
-    ]
+    ],
+    "allowSyntheticDefaultImports": true
   },
   "include": [
     "src/**/*"

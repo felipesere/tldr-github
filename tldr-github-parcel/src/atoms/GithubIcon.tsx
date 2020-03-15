@@ -1,5 +1,5 @@
 import * as React from "react";
-import Octicons, {gear, gitPullRequest, issueOpened} from "octicons-react";
+import Octicons, {Gear, GitPullRequest, IssueOpened} from "@primer/octicons-react";
 
 export type IconName = "gear" | "git-pull-request" | "issue-opened" | false
 
@@ -14,11 +14,11 @@ export function GithubIcon({icon}: IconProps): JSX.Element {
 function Icon({icon}: IconProps): JSX.Element {
     switch (icon) {
         case "issue-opened":
-            return <Octicons icon={issueOpened}/>;
+            return <Octicons icon={IssueOpened}/>;
         case "gear":
-            return <Octicons icon={gear}/>;
+            return <Octicons icon={Gear}/>;
         case "git-pull-request":
-            return <Octicons icon={gitPullRequest}/>;
+            return <Octicons icon={GitPullRequest}/>;
         case false:
             return <div/>
     }
