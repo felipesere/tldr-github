@@ -25,8 +25,8 @@ type TabsProps = {
 
 export function Tabs({className, onChangeTab}: TabsProps): JSX.Element {
     const [currentTab, setCurrentTab] = useState<TabNames>(defaultTab);
-    const tabActivityClass = ({value}) =>
-        value === currentTab ? "active" : "inactive";
+    const tabActivityClass = ({value}) => value === currentTab ? "active" : "inactive";
+
     return (
         <ul className={`flex border-b list-none ${className}`}>
             {tabs.map(tab => {
@@ -40,7 +40,7 @@ export function Tabs({className, onChangeTab}: TabsProps): JSX.Element {
                             }}
                         >
                             <GithubIcon icon={tab.icon}/>
-                            <span>{tab.text}</span>
+                            <span className="icon-text">{tab.text}</span>
                         </a>
                     </li>
                 );

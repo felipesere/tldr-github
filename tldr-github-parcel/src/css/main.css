@@ -7,7 +7,7 @@
 }
 
 .btn-normal {
-    @apply bg-transparent  text-gray-700 font-light py-2 px-4 border border-gray-500  rounded
+    @apply bg-transparent text-gray-700 font-light py-2 px-4 border border-gray-500 rounded
 }
 
 @tailwind utilities;
@@ -57,12 +57,19 @@
 }
 
 .inactive {
-    @apply bg-white inline-block py-2 px-4 text-blue-500 font-semibold font-light
+    @apply bg-white inline-block py-2 px-3 text-blue-500 font-semibold font-light
 }
+
 .inactive:hover {
     @apply text-blue-800
 }
 
 .card-content {
     height: 370px;
+}
+
+.svg-icon,
+.icon-text {
+    vertical-align: middle;
+    display: inline-block;
 }
