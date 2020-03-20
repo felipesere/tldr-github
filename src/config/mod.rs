@@ -6,7 +6,6 @@ use serde::{Deserialize, Deserializer};
 use crate::db::{self, Db};
 use std::sync::Arc;
 
-
 pub fn from_str(content: &str) -> Result<Config> {
     serde_json::from_str(content).with_context(|| "Unable to read config")
 }
