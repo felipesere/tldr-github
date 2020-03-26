@@ -1,8 +1,9 @@
 fmt:
- - npm run fmt
- - prettier --write src/css/*.css
+ - npx prettier --write "{src,test}/**/*.tsx"
+ - npx prettier --write src/css/*.css
 test: npm test
 check:
  - tsc
- - prettier --check {src,test}/**/*.tsx
- - prettier --check src/css/*.css
+ - npx prettier --check "{src,test}/**/*.tsx"
+ - npx prettier --check "src/css/*.css"
+
