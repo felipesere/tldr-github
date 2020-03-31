@@ -32,8 +32,8 @@ pub fn start(config: Config) {
             let updated = updated.unwrap();
 
             let result = match update(item, updated) {
-                Outcome::Update(u) => db.update_tracked_item(&repo, u),
-                Outcome::Remove(u) => db.remove_tracked_item(&repo, u),
+                Outcome::Update(u) => db.update_tracked_item(&repo, u).await,
+                Outcome::Remove(u) => db.remove_tracked_item(&repo, u).await,
                 Outcome::Ignore => Result::Ok(()),
             };
 

@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use std::fmt;
 use std::sync::Arc;
 
@@ -39,15 +40,20 @@ impl fmt::Debug for SqliteDB {
     }
 }
 
+#[async_trait]
 impl Db for SqliteDB {
-    fn find_repo(&self, repo_name: &str) -> Option<StoredRepo> {
+    async fn find_repo(&self, repo_name: &str) -> Option<StoredRepo> {
         use super::schema::repos::dsl::*;
         let conn = self.conn.get().unwrap();
 
         repos.filter(title.eq(repo_name)).first(&conn).ok()
     }
 
-    fn insert_tracked_items(&self, repo: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()> {
+    async fn insert_tracked_items(
+        &self,
+        repo: &StoredRepo,
+        items: Vec<NewTrackedItem>,
+    ) -> Result<()> {
         let conn = self.conn.get()?;
 
         conn.transaction::<_, anyhow::Error, _>(|| {
@@ -73,7 +79,7 @@ impl Db for SqliteDB {
         })
     }
 
-    fn update_tracked_item(&self, _repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
+    async fn update_tracked_item(&self, _repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
         use super::schema::tracked_items::dsl::*;
 
         diesel::update(tracked_items.filter(foreign_id.eq(item.foreign_id)))
@@ -87,7 +93,7 @@ impl Db for SqliteDB {
             .context(format!("failed to update item {}", item.title))
     }
 
-    fn remove_tracked_item(&self, _repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
+    async fn remove_tracked_item(&self, _repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
         use super::schema::tracked_items::dsl::*;
 
         diesel::delete(tracked_items.filter(foreign_id.eq(item.foreign_id)))
@@ -96,7 +102,7 @@ impl Db for SqliteDB {
             .context(format!("failed to delete item {}", item.title))
     }
 
-    fn all(&self) -> Result<Vec<FullStoredRepo>> {
+    async fn all(&self) -> Result<Vec<FullStoredRepo>> {
         let conn = self.conn.get()?;
 
         use super::schema::repos::dsl::*;
@@ -141,7 +147,7 @@ impl Db for SqliteDB {
         )
     }
 
-    fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo> {
+    async fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo> {
         let conn = self.conn.get()?;
 
         use super::schema::repos::dsl::*;
@@ -161,7 +167,7 @@ impl Db for SqliteDB {
         })
     }
 
-    fn delete(&self, repo: StoredRepo) -> Result<()> {
+    async fn delete(&self, repo: StoredRepo) -> Result<()> {
         let conn = self.conn.get()?;
 
         match diesel::delete(repos::table.filter(repos::id.eq(repo.id))).execute(&conn) {

@@ -122,7 +122,11 @@ fn main() -> anyhow::Result<()> {
         .at("/repos")
         .get(|req: Request<State>| async move {
             let db = req.state().db();
-            ApiResult::from(domain::get_all_repos(db).with_context(|| "failed to get all repos"))
+            ApiResult::from(
+                domain::get_all_repos(db)
+                    .await
+                    .with_context(|| "failed to get all repos"),
+            )
         })
         .post(|mut req: Request<State>| async move {
             let client = req.state().client();
@@ -130,7 +134,9 @@ fn main() -> anyhow::Result<()> {
             let AddNewRepo { name } = req.body_json().await.unwrap();
 
             ApiResult::empty(
-                domain::add_new_repo(db, client, name).with_context(|| "failed to add repo"),
+                domain::add_new_repo(db, client, name)
+                    .await
+                    .with_context(|| "failed to add repo"),
             )
         });
     api_routes
@@ -141,7 +147,7 @@ fn main() -> anyhow::Result<()> {
             let db = req.state().db();
             let AddTrackedItemsForRepo { items } = req.body_json().await.unwrap();
 
-            let maybe_repo = db.find_repo(&name);
+            let maybe_repo = db.find_repo(&name).await;
 
             if maybe_repo.is_none() {
                 return ApiResult::not_found();
@@ -162,7 +168,7 @@ fn main() -> anyhow::Result<()> {
             let client = req.state().client();
             let db = req.state().db();
 
-            let maybe_repo = db.find_repo(&name);
+            let maybe_repo = db.find_repo(&name).await;
 
             if maybe_repo.is_none() {
                 return ApiResult::not_found();
@@ -182,14 +188,14 @@ fn main() -> anyhow::Result<()> {
             let db = req.state().db();
             let name = from_url(req.param("name").unwrap());
 
-            let maybe_repo = db.find_repo(&name);
+            let maybe_repo = db.find_repo(&name).await;
 
             if maybe_repo.is_none() {
                 return ApiResult::not_found();
             }
 
             let repo = maybe_repo.unwrap();
-            ApiResult::empty(db.delete(repo).with_context(|| "failed to delete"))
+            ApiResult::empty(db.delete(repo).await.with_context(|| "failed to delete"))
         });
     app.at("/api").nest(api_routes);
     // this doesn't work because every GET request gets redirected here
@@ -200,7 +206,7 @@ fn main() -> anyhow::Result<()> {
         task::spawn(async move {
             let mut interval = stream::interval(Duration::from_secs(30));
             while let Some(_) = interval.next().await {
-                let all_repos = db.all().unwrap();
+                let all_repos = db.all().await.unwrap();
 
                 for repo in all_repos {
                     for item in repo.items() {

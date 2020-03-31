@@ -130,10 +130,6 @@ impl Label {
         raw.split(',').map(|l| Label(l.to_owned())).collect()
     }
 
-    pub fn map(raw: &[String]) -> Vec<Label> {
-        raw.iter().map(|r| Label::new(r.to_owned())).collect()
-    }
-
     pub fn expose(labels: &[Label]) -> Vec<String> {
         labels.iter().map(|l| l.0.clone()).collect()
     }
@@ -171,8 +167,8 @@ impl<T: Into<String>> From<T> for Author {
     }
 }
 
-pub fn get_all_repos(db: Arc<dyn Db>) -> anyhow::Result<Vec<api::Repo>> {
-    let repos = db.all()?;
+pub async fn get_all_repos(db: Arc<dyn Db>) -> anyhow::Result<Vec<api::Repo>> {
+    let repos = db.all().await?;
     let mut result = Vec::new();
     for repo in repos {
         result.push(api::Repo::from(repo))
@@ -181,7 +177,7 @@ pub fn get_all_repos(db: Arc<dyn Db>) -> anyhow::Result<Vec<api::Repo>> {
     Ok(result)
 }
 
-pub fn add_new_repo(
+pub async fn add_new_repo(
     db: Arc<dyn Db>,
     client: Arc<dyn ClientForRepositories>,
     maybe_name: String,
@@ -189,7 +185,7 @@ pub fn add_new_repo(
     let name = RepoName::from(maybe_name)?;
 
     if client.repo_exists(&name)? {
-        let repo = db.insert_new_repo(&name.to_string())?;
+        let repo = db.insert_new_repo(&name.to_string()).await?;
         Result::Ok(repo)
     } else {
         bail!("Repo {} not found on GitHub.", name.to_string())
@@ -234,77 +230,8 @@ pub async fn add_items_to_track(
             res.push(inner);
         }
 
-        db.insert_tracked_items(&repo, res)?;
+        db.insert_tracked_items(&repo, res).await?;
     }
 
     Ok(())
-}
-
-#[cfg(test)]
-mod test {
-    use anyhow::Result;
-    use async_std::task;
-    use mockall::mock;
-
-    use crate::db::{Db, FullStoredRepo, StoredRepo};
-
-    use super::*;
-
-    mock!(
-        pub Database { }
-        trait Db {
-            fn find_repo(&self, repo_name: &str) -> Option<StoredRepo>;
-            fn insert_tracked_items(
-                &self,
-                repo: &StoredRepo,
-                items: Vec<NewTrackedItem>,
-            ) -> Result<()>;
-            fn update_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()>;
-            fn remove_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()>;
-            fn all(&self) -> Result<Vec<FullStoredRepo>>;
-            fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
-            fn delete(&self, repo: StoredRepo) -> Result<()>;
-        }
-    );
-
-    mock!(
-        pub Github{ }
-
-        trait ClientForRepositories{
-            fn repo_exists(&self, repo: &RepoName) -> Result<bool>;
-            fn entire_repo(&self, repo: &RepoName) -> Result<Vec<NewTrackedItem>>;
-            fn issue(&self, repo: &RepoName, nr: i32) -> Result<NewTrackedItem>;
-            fn pull_request(&self, repo: &RepoName, nr: i32) -> Result<NewTrackedItem>;
-        }
-    );
-
-    #[test]
-    #[ignore]
-    fn does_not_add_items_to_a_non_existing_repo() {
-        let db = MockDatabase::new();
-        let github = MockGithub::new();
-
-        let repo = StoredRepo::new(32, "foo/bar");
-
-        let result = task::block_on(async move {
-            add_items_to_track(Arc::new(db), Arc::new(github), repo, Vec::new()).await
-        });
-
-        assert!(result.is_err(), "should have failed to to add items");
-    }
-
-    #[test]
-    #[ignore]
-    fn queries_github_for_details_on_items_and_stores_them() {
-        let db = MockDatabase::new();
-        let github = MockGithub::new();
-
-        let repo = StoredRepo::new(32, "foo/bar");
-
-        let result = task::block_on(async move {
-            add_items_to_track(Arc::new(db), Arc::new(github), repo, Vec::new()).await
-        });
-
-        assert!(result.is_err(), "should have failed to to add items");
-    }
 }

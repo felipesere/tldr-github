@@ -14,10 +14,6 @@ pub fn from_str(content: &str) -> Result<Config> {
 pub enum Backing {
     #[serde(rename = "sqlite")]
     Sqlite,
-    #[serde(rename = "inmemory")]
-    InMemory,
-    #[serde(rename = "json")]
-    Json,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -32,8 +28,6 @@ impl DatabaseConfig {
         let run_migrations = self.run_migrations.unwrap_or(true);
         match self.backing {
             Backing::Sqlite => db::sqlite(&self.file, run_migrations),
-            Backing::InMemory => db::in_memory(),
-            Backing::Json => db::json_backend(),
         }
     }
 }

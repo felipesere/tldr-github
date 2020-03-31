@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use std::sync::Arc;
 
 use anyhow::Result;
@@ -8,32 +9,26 @@ use schema::repos;
 
 use crate::domain::NewTrackedItem;
 
-mod in_memory;
-mod json_storage;
 mod schema;
 mod sqlite;
-
-pub fn in_memory() -> Result<Arc<dyn Db>> {
-    Ok(Arc::new(in_memory::new()))
-}
-
-pub fn json_backend() -> Result<Arc<dyn Db>> {
-    let path = std::env::current_dir().unwrap();
-    Ok(Arc::new(json_storage::new(path)))
-}
 
 pub fn sqlite(database_url: &str, run_migrations: bool) -> Result<Arc<dyn Db>> {
     sqlite::new(database_url, run_migrations)
 }
 
+#[async_trait]
 pub trait Db: Send + Sync {
-    fn find_repo(&self, repo_name: &str) -> Option<StoredRepo>;
-    fn insert_tracked_items(&self, repo: &StoredRepo, items: Vec<NewTrackedItem>) -> Result<()>;
-    fn update_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()>;
-    fn remove_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()>;
-    fn all(&self) -> Result<Vec<FullStoredRepo>>;
-    fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
-    fn delete(&self, repo: StoredRepo) -> Result<()>;
+    async fn find_repo(&self, repo_name: &str) -> Option<StoredRepo>;
+    async fn insert_tracked_items(
+        &self,
+        repo: &StoredRepo,
+        items: Vec<NewTrackedItem>,
+    ) -> Result<()>;
+    async fn update_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()>;
+    async fn remove_tracked_item(&self, repo: &StoredRepo, item: NewTrackedItem) -> Result<()>;
+    async fn all(&self) -> Result<Vec<FullStoredRepo>>;
+    async fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo>;
+    async fn delete(&self, repo: StoredRepo) -> Result<()>;
 }
 
 #[derive(Identifiable, Queryable, Debug, Clone)]
@@ -101,32 +96,37 @@ mod support {
     #[macro_export]
     macro_rules! behaves_like_a_db {
         ($setup_db:expr) => {
+            use async_std::task;
             #[test]
             fn it_finds_a_repo_that_was_added() {
                 let db = $setup_db();
 
-                let repo1 = db.insert_new_repo("foo/bar").unwrap();
-                let repo2 = db.insert_new_repo("other").unwrap();
+                task::block_on(async move {
+                    let repo1 = db.insert_new_repo("foo/bar").await.unwrap();
+                    let repo2 = db.insert_new_repo("other").await.unwrap();
 
-                let found1 = db.find_repo(&repo1.title);
-                let found2 = db.find_repo(&repo2.title);
+                    let found1 = db.find_repo(&repo1.title).await;
+                    let found2 = db.find_repo(&repo2.title).await;
 
-                assert!(found1.is_some());
-                assert_eq!(found2.unwrap().title, "other")
+                    assert!(found1.is_some());
+                    assert_eq!(found2.unwrap().title, "other")
+                })
             }
 
             #[test]
             fn a_deleted_item_can_not_be_found() {
                 let db = $setup_db();
 
-                let repo = db.insert_new_repo("foo/bar").unwrap();
+                task::block_on(async move {
+                    let repo = db.insert_new_repo("foo/bar").await.unwrap();
 
-                let title = repo.title.clone();
-                db.delete(repo).unwrap();
+                    let title = repo.title.clone();
+                    db.delete(repo).await.unwrap();
 
-                let found = db.find_repo(&title);
+                    let found = db.find_repo(&title).await;
 
-                assert!(found.is_none());
+                    assert!(found.is_none());
+                })
             }
 
             #[test]
@@ -136,32 +136,35 @@ mod support {
 
                 let db = $setup_db();
 
-                let repo = db.insert_new_repo("foo/bar").unwrap();
+                task::block_on(async move {
+                    let repo = db.insert_new_repo("foo/bar").await.unwrap();
 
-                db.insert_tracked_items(
-                    &repo,
-                    vec![NewTrackedItem {
-                        title: "some PR".to_string(),
-                        state: State::Open,
-                        link: "http://foo.bar".to_string(),
-                        by: Author::new("Steve Hawking"),
-                        labels: vec![],
-                        kind: ItemKind::PR,
-                        foreign_id: "sflhjsfklhjsd".to_string(),
-                        last_updated: Utc::now(),
-                        number: 1,
-                    }],
-                )
-                .expect("should have been able to insert tracked items");
+                    db.insert_tracked_items(
+                        &repo,
+                        vec![NewTrackedItem {
+                            title: "some PR".to_string(),
+                            state: State::Open,
+                            link: "http://foo.bar".to_string(),
+                            by: Author::new("Steve Hawking"),
+                            labels: vec![],
+                            kind: ItemKind::PR,
+                            foreign_id: "sflhjsfklhjsd".to_string(),
+                            last_updated: Utc::now(),
+                            number: 1,
+                        }],
+                    )
+                    .await
+                    .expect("should have been able to insert tracked items");
 
-                let all = db.all().unwrap();
+                    let all = db.all().await.unwrap();
 
-                let found = all
-                    .iter()
-                    .find(|item| item.title == "foo/bar".to_string())
-                    .unwrap();
+                    let found = all
+                        .iter()
+                        .find(|item| item.title == "foo/bar".to_string())
+                        .unwrap();
 
-                assert_eq!(found.items().len(), 1);
+                    assert_eq!(found.items().len(), 1);
+                })
             }
 
             #[test]
@@ -170,11 +173,67 @@ mod support {
                 use chrono::Utc;
                 let db = $setup_db();
 
-                let repo = db.insert_new_repo("totally/madeup").unwrap();
+                task::block_on(async move {
+                    let repo = db.insert_new_repo("totally/madeup").await.unwrap();
 
-                db.insert_tracked_items(
-                    &repo,
-                    vec![NewTrackedItem {
+                    db.insert_tracked_items(
+                        &repo,
+                        vec![NewTrackedItem {
+                            title: "some PR".to_string(),
+                            state: State::Open,
+                            link: "http://foo.bar".to_string(),
+                            by: Author::new("Steve Hawking"),
+                            labels: vec![],
+                            kind: ItemKind::PR,
+                            foreign_id: "sflhjsfklhjsd".to_string(),
+                            last_updated: Utc::now(),
+                            number: 1,
+                        }],
+                    )
+                    .await
+                    .unwrap();
+
+                    db.update_tracked_item(
+                        &repo,
+                        NewTrackedItem {
+                            title: "changed-the-title".to_string(),
+                            state: State::Open,
+                            link: "http://foo.bar".to_string(),
+                            by: Author::new("Steve Hawking"),
+                            labels: vec![],
+                            kind: ItemKind::PR,
+                            foreign_id: "sflhjsfklhjsd".to_string(),
+                            last_updated: Utc::now(),
+                            number: 1,
+                        },
+                    )
+                    .await
+                    .unwrap();
+
+                    let all = db.all().await.unwrap();
+
+                    let matching_repo = all
+                        .iter()
+                        .find(|r| r.title == "totally/madeup".to_string())
+                        .unwrap();
+
+                    assert_eq!(matching_repo.items().len(), 1);
+                    assert_eq!(
+                        matching_repo.items()[0].title,
+                        "changed-the-title".to_string()
+                    )
+                })
+            }
+
+            #[test]
+            fn an_added_tracked_item_can_be_removed() {
+                use crate::domain::{Author, ItemKind, NewTrackedItem, State};
+                use chrono::Utc;
+                let db = $setup_db();
+
+                task::block_on(async move {
+                    let repo = db.insert_new_repo("abc/123").await.unwrap();
+                    let tracked_item = NewTrackedItem {
                         title: "some PR".to_string(),
                         state: State::Open,
                         link: "http://foo.bar".to_string(),
@@ -184,71 +243,22 @@ mod support {
                         foreign_id: "sflhjsfklhjsd".to_string(),
                         last_updated: Utc::now(),
                         number: 1,
-                    }],
-                )
-                .unwrap();
+                    };
 
-                db.update_tracked_item(
-                    &repo,
-                    NewTrackedItem {
-                        title: "changed-the-title".to_string(),
-                        state: State::Open,
-                        link: "http://foo.bar".to_string(),
-                        by: Author::new("Steve Hawking"),
-                        labels: vec![],
-                        kind: ItemKind::PR,
-                        foreign_id: "sflhjsfklhjsd".to_string(),
-                        last_updated: Utc::now(),
-                        number: 1,
-                    },
-                )
-                .unwrap();
+                    db.insert_tracked_items(&repo, vec![tracked_item.clone()])
+                        .await
+                        .unwrap();
 
-                let all = db.all().unwrap();
+                    let all = db.all().await.unwrap();
+                    let matching_repo = all.iter().find(|r| r.title == repo.title).unwrap();
+                    assert_eq!(matching_repo.items().len(), 1);
 
-                let matching_repo = all
-                    .iter()
-                    .find(|r| r.title == "totally/madeup".to_string())
-                    .unwrap();
+                    db.remove_tracked_item(&repo, tracked_item).await.unwrap();
 
-                assert_eq!(matching_repo.items().len(), 1);
-                assert_eq!(
-                    matching_repo.items()[0].title,
-                    "changed-the-title".to_string()
-                )
-            }
-
-            #[test]
-            fn an_added_tracked_item_can_be_removed() {
-                use crate::domain::{Author, ItemKind, NewTrackedItem, State};
-                use chrono::Utc;
-                let db = $setup_db();
-
-                let repo = db.insert_new_repo("abc/123").unwrap();
-                let tracked_item = NewTrackedItem {
-                    title: "some PR".to_string(),
-                    state: State::Open,
-                    link: "http://foo.bar".to_string(),
-                    by: Author::new("Steve Hawking"),
-                    labels: vec![],
-                    kind: ItemKind::PR,
-                    foreign_id: "sflhjsfklhjsd".to_string(),
-                    last_updated: Utc::now(),
-                    number: 1,
-                };
-
-                db.insert_tracked_items(&repo, vec![tracked_item.clone()])
-                    .unwrap();
-
-                let all = db.all().unwrap();
-                let matching_repo = all.iter().find(|r| r.title == repo.title).unwrap();
-                assert_eq!(matching_repo.items().len(), 1);
-
-                db.remove_tracked_item(&repo, tracked_item).unwrap();
-
-                let all = db.all().unwrap();
-                let matching_repo = all.iter().find(|r| r.title == repo.title).unwrap();
-                assert_eq!(matching_repo.items().len(), 0);
+                    let all = db.all().await.unwrap();
+                    let matching_repo = all.iter().find(|r| r.title == repo.title).unwrap();
+                    assert_eq!(matching_repo.items().len(), 0);
+                })
             }
         };
     }
