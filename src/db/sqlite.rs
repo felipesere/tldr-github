@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use std::fmt;
 use std::sync::Arc;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{bail, Context, Error, Result};
 use chrono::{DateTime, NaiveDateTime, Utc};
 
 use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
@@ -47,7 +47,7 @@ impl Db for SqliteDB {
         repo: &StoredRepo,
         items: Vec<NewTrackedItem>,
     ) -> Result<()> {
-        let conn = self.conn.get()?;
+        let mut conn = self.conn.clone();
 
         conn.transaction::<_, anyhow::Error, _>(|| {
             for i in items.iter() {
@@ -87,12 +87,14 @@ impl Db for SqliteDB {
     }
 
     async fn remove_tracked_item(&self, _repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
-        use super::schema::tracked_items::dsl::*;
+        let mut conn = self.conn.clone();
 
-        diesel::delete(tracked_items.filter(foreign_id.eq(item.foreign_id)))
-            .execute(&self.conn.get().unwrap())
-            .map(|_affected| ())
-            .context(format!("failed to delete item {}", item.title))
+        sqlx::query("DELETE FROM TrackedItems WHERE foreign_id = ?")
+            .bind(item.foreign_id)
+            .execute(&conn)
+            .await
+            .map(|_| ())
+            .map_err(Error::msg)
     }
 
     async fn all(&self) -> Result<Vec<FullStoredRepo>> {
