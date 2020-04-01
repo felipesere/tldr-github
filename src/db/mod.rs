@@ -31,8 +31,7 @@ pub trait Db: Send + Sync {
     async fn delete(&self, repo: StoredRepo) -> Result<()>;
 }
 
-#[derive(Identifiable, Queryable, Debug, Clone)]
-#[table_name = "repos"]
+#[derive(sqlx::FromRow)]
 pub struct StoredRepo {
     pub id: i32,
     pub title: String,

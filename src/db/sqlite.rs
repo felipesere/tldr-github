@@ -4,34 +4,25 @@ use std::sync::Arc;
 
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, NaiveDateTime, Utc};
-use diesel::prelude::*;
-use diesel::r2d2::{ConnectionManager, Pool};
-use diesel::sqlite::SqliteConnection;
 
 use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
+
+use sqlx::sqlite::SqliteQueryAs;
+use sqlx::SqlitePool;
 
 use super::schema::{repos, tracked_items};
 use super::{Db, FullStoredRepo, NewRepo, StoredRepo};
 
-type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
-
 struct SqliteDB {
-    conn: Arc<SqlitePool>,
+    conn: SqlitePool,
 }
 
 embed_migrations!("./migrations");
 
-pub fn new(database_url: &str, run_migrations: bool) -> Result<Arc<dyn Db>> {
-    let pool = Pool::new(ConnectionManager::new(database_url))
-        .with_context(|| format!("failed to access db: {}", database_url))?;
+pub async fn new(database_url: &str, run_migrations: bool) -> Result<Arc<dyn Db>> {
+    let pool = SqlitePool::new(database_url).await?;
 
-    if run_migrations {
-        embedded_migrations::run_with_output(&pool.get().unwrap(), &mut std::io::stdout())?;
-    }
-
-    Ok(Arc::new(SqliteDB {
-        conn: Arc::new(pool),
-    }))
+    Ok(Arc::new(SqliteDB { conn: pool }))
 }
 
 impl fmt::Debug for SqliteDB {
@@ -43,10 +34,12 @@ impl fmt::Debug for SqliteDB {
 #[async_trait]
 impl Db for SqliteDB {
     async fn find_repo(&self, repo_name: &str) -> Option<StoredRepo> {
-        use super::schema::repos::dsl::*;
-        let conn = self.conn.get().unwrap();
-
-        repos.filter(title.eq(repo_name)).first(&conn).ok()
+        let mut conn = self.conn.clone();
+        sqlx::query_as::<_, StoredRepo>("SELECT * FROM Repos WHERE Title = ? LIMIT 1")
+            .bind(repo_name)
+            .fetch_one(&conn)
+            .await
+            .ok()
     }
 
     async fn insert_tracked_items(
