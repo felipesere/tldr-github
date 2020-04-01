@@ -73,17 +73,19 @@ impl Db for SqliteDB {
     }
 
     async fn update_tracked_item(&self, _repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
-        use super::schema::tracked_items::dsl::*;
+        let mut conn = self.conn.clone();
 
-        diesel::update(tracked_items.filter(foreign_id.eq(item.foreign_id)))
-            .set((
-                last_updated.eq(item.last_updated.naive_utc()),
-                labels.eq(Label::join(&item.labels)),
-                title.eq(item.title.clone()),
-            ))
-            .execute(&self.conn.get().unwrap())
-            .map(|_affected| ())
-            .context(format!("failed to update item {}", item.title))
+        sqlx::query(
+            "UPDATE TrackedItems SET last_updated = ?, labels = ?, title = ? WHERE foreign_id = ?",
+        )
+        .bind(item.last_updated.naive_utc())
+        .bind(Label::join(&item.labels[..]))
+        .bind(item.title)
+        .bind(item.foreign_id)
+        .execute(&conn)
+        .await
+        .map(|_affected| ())
+        .context(format!("failed to update item {}", item.title))
     }
 
     async fn remove_tracked_item(&self, _repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
