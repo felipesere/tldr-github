@@ -2,7 +2,7 @@ use async_trait::async_trait;
 use std::fmt;
 use std::sync::Arc;
 
-use anyhow::{bail, Context, Error, Result};
+use anyhow::{Context, Error, Result};
 use chrono::{DateTime, NaiveDateTime, Utc};
 
 use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
@@ -10,8 +10,19 @@ use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
 use sqlx::sqlite::SqliteQueryAs;
 use sqlx::SqlitePool;
 
-use super::schema::{repos, tracked_items};
+use super::schema::tracked_items;
 use super::{Db, FullStoredRepo, NewRepo, StoredRepo};
+
+pub fn placeholders(rows: usize, columns: usize) -> String {
+    (0..rows)
+        .format_with(",", |i, f| {
+            f(&format_args!(
+                "({})",
+                (1..=columns).format_with(",", |j, f| f(&format_args!("${}", j + (i * columns))))
+            ))
+        })
+        .to_string()
+}
 
 struct SqliteDB {
     conn: SqlitePool,
@@ -49,27 +60,22 @@ impl Db for SqliteDB {
     ) -> Result<()> {
         let mut conn = self.conn.clone();
 
-        conn.transaction::<_, anyhow::Error, _>(|| {
-            for i in items.iter() {
-                let item = InsertableTrackedItem {
-                    repo_id: repo.id,
-                    title: &i.title,
-                    link: &i.link,
-                    by: &i.by.name,
-                    labels: &Label::join(&i.labels),
-                    kind: i.kind.to_string(),
-                    foreign_id: &i.foreign_id,
-                    number: i.number,
-                    last_updated: i.last_updated.naive_utc(),
-                };
+        let insert = sqlx::query(&format!("INSERT INTO TrackedItems (repo_id, title, link, by, labels, kind, foreign_id, number, last_updated) VALUES {}", placeholders(items.len(), 9)));
 
-                diesel::insert_into(tracked_items::table)
-                    .values(&item)
-                    .execute(&conn)?;
-            }
+        for item in items.iter() {
+            insert.bind(repo.id);
+            insert.bind(item.title);
+            insert.bind(item.link);
+            insert.bind(Label::join(&item.labels[..]));
+            insert.bind(item.kind.to_string());
+            insert.bind(item.foreign_id);
+            insert.bind(item.number);
+            insert.bind(item.last_updated.naive_utc());
+        }
 
-            Result::Ok(())
-        })
+        insert.execute(&conn).await?;
+
+        Result::Ok(())
     }
 
     async fn update_tracked_item(&self, _repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
