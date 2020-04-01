@@ -151,23 +151,22 @@ impl Db for SqliteDB {
     }
 
     async fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo> {
-        let conn = self.conn.get()?;
+        let conn = self.conn.clone();
 
-        use super::schema::repos::dsl::*;
-        let new_repo = NewRepo { title: repo_name };
+        let mut tx = conn.begin().await?;
 
-        conn.transaction::<_, anyhow::Error, _>(|| {
-            diesel::insert_into(repos)
-                .values(&new_repo)
-                .execute(&conn)
-                .with_context(|| format!("failed to insert '{}'", repo_name))?;
+        sqlx::query("INSERT INTO Repos (name) VALUES (?)")
+            .bind(repo_name)
+            .execute(&mut tx)
+            .await?;
 
-            // this is kinda meh, but there is no 'RETURNING'
-            repos
-                .order(id.desc())
-                .first::<StoredRepo>(&conn)
-                .with_context(|| "retrieving stored repo")
-        })
+        let repo = sqlx::query_as::<_, StoredRepo>("SELECT * FROM Repos ORDER BY Id DESC")
+            .fetch_one(&mut tx)
+            .await?;
+
+        tx.commit();
+
+        Ok(repo)
     }
 
     async fn delete(&self, repo: StoredRepo) -> Result<()> {
