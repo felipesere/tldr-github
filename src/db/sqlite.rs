@@ -163,22 +163,19 @@ impl Db for SqliteDB {
     }
 
     async fn delete(&self, repo: StoredRepo) -> Result<()> {
-        let conn = self.conn.get()?;
+        let mut conn = self.conn.clone();
 
-        match diesel::delete(repos::table.filter(repos::id.eq(repo.id))).execute(&conn) {
-            Ok(size) if size == 1 => {}
-            Ok(_) => bail!("{} not found", repo.title),
-            Err(m) => bail!("could not delete repo: {}", m),
-        };
-
-        match diesel::delete(tracked_items::table.filter(tracked_items::repo_id.eq(repo.id)))
+        sqlx::query("DELETE FROM Repos WHERE Id = ?")
+            .bind(repo.id)
             .execute(&conn)
-        {
-            Ok(_) => {}
-            Err(m) => bail!("could not delete tracked for repo repo: {}", m),
-        };
+            .await?;
 
-        Ok(())
+        sqlx::query("DELETE FROM TrackedItems WHERE repo_id = ?")
+            .bind(repo.id)
+            .execute(&conn)
+            .await
+            .map(|_| ())
+            .map_err(Error::msg)
     }
 }
 
