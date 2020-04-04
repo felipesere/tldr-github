@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use std::fmt;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use anyhow::{Context, Error, Result};
 use chrono::{DateTime, NaiveDateTime, Utc};
@@ -8,10 +8,11 @@ use chrono::{DateTime, NaiveDateTime, Utc};
 use crate::domain::{Author, ItemKind, Label, NewTrackedItem, State};
 
 use sqlx::sqlite::SqliteQueryAs;
-use sqlx::SqlitePool;
+use sqlx::{Pool, SqlitePool};
 
-use super::schema::tracked_items;
-use super::{Db, FullStoredRepo, NewRepo, StoredRepo};
+use super::{Db, FullStoredRepo, StoredRepo};
+
+use itertools::Itertools;
 
 pub fn placeholders(rows: usize, columns: usize) -> String {
     (0..rows)
@@ -28,12 +29,16 @@ struct SqliteDB {
     conn: SqlitePool,
 }
 
-embed_migrations!("./migrations");
+pub fn new(database_url: &str, run_migrations: bool) -> Result<Arc<dyn Db>> {
+    let pool =
+        async_std::task::block_on(
+            async move { Pool::builder().max_size(10).build(database_url).await },
+        );
 
-pub async fn new(database_url: &str, run_migrations: bool) -> Result<Arc<dyn Db>> {
-    let pool = SqlitePool::new(database_url).await?;
-
-    Ok(Arc::new(SqliteDB { conn: pool }))
+    let db = SqliteDB {
+        conn: pool.unwrap(),
+    };
+    Ok(Arc::new(db))
 }
 
 impl fmt::Debug for SqliteDB {
@@ -45,8 +50,8 @@ impl fmt::Debug for SqliteDB {
 #[async_trait]
 impl Db for SqliteDB {
     async fn find_repo(&self, repo_name: &str) -> Option<StoredRepo> {
-        let mut conn = self.conn.clone();
-        sqlx::query_as::<_, StoredRepo>("SELECT * FROM Repos WHERE Title = ? LIMIT 1")
+        let conn = self.conn.clone();
+        sqlx::query_as::<_, StoredRepo>("SELECT * FROM Repos WHERE Title = ?")
             .bind(repo_name)
             .fetch_one(&conn)
             .await
@@ -58,19 +63,21 @@ impl Db for SqliteDB {
         repo: &StoredRepo,
         items: Vec<NewTrackedItem>,
     ) -> Result<()> {
-        let mut conn = self.conn.clone();
+        let conn = self.conn.clone();
 
-        let insert = sqlx::query(&format!("INSERT INTO TrackedItems (repo_id, title, link, by, labels, kind, foreign_id, number, last_updated) VALUES {}", placeholders(items.len(), 9)));
+        let sql = format!("INSERT INTO TrackedItems (repo_id, title, link, by, labels, kind, foreign_id, number, last_updated) VALUES {}", placeholders(items.len(), 9));
+        let mut insert = sqlx::query(&sql);
 
         for item in items.iter() {
-            insert.bind(repo.id);
-            insert.bind(item.title);
-            insert.bind(item.link);
-            insert.bind(Label::join(&item.labels[..]));
-            insert.bind(item.kind.to_string());
-            insert.bind(item.foreign_id);
-            insert.bind(item.number);
-            insert.bind(item.last_updated.naive_utc());
+            insert = insert
+                .bind(repo.id)
+                .bind(item.title.clone())
+                .bind(item.link.clone())
+                .bind(Label::join(&item.labels[..]))
+                .bind(item.kind.to_string())
+                .bind(item.foreign_id.clone())
+                .bind(item.number)
+                .bind(item.last_updated.naive_utc());
         }
 
         insert.execute(&conn).await?;
@@ -79,14 +86,14 @@ impl Db for SqliteDB {
     }
 
     async fn update_tracked_item(&self, _repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
-        let mut conn = self.conn.clone();
+        let conn = self.conn.clone();
 
         sqlx::query(
             "UPDATE TrackedItems SET last_updated = ?, labels = ?, title = ? WHERE foreign_id = ?",
         )
         .bind(item.last_updated.naive_utc())
         .bind(Label::join(&item.labels[..]))
-        .bind(item.title)
+        .bind(item.title.clone())
         .bind(item.foreign_id)
         .execute(&conn)
         .await
@@ -95,7 +102,7 @@ impl Db for SqliteDB {
     }
 
     async fn remove_tracked_item(&self, _repo: &StoredRepo, item: NewTrackedItem) -> Result<()> {
-        let mut conn = self.conn.clone();
+        let conn = self.conn.clone();
 
         sqlx::query("DELETE FROM TrackedItems WHERE foreign_id = ?")
             .bind(item.foreign_id)
@@ -106,71 +113,91 @@ impl Db for SqliteDB {
     }
 
     async fn all(&self) -> Result<Vec<FullStoredRepo>> {
-        let conn = self.conn.get()?;
+        let conn = self.conn.clone();
 
-        use super::schema::repos::dsl::*;
+        let rs: Vec<StoredRepo> = sqlx::query_as::<_, StoredRepo>("SELECT * FROM Repos")
+            .fetch_all(&conn)
+            .await?;
 
-        let rs: Vec<StoredRepo> = repos.load(&conn).with_context(|| "getting all repos")?;
+        let mut repos_by_id = HashMap::new();
 
-        let ids: Vec<i32> = rs.iter().map(|r| r.id).collect();
+        for repo in rs.iter() {
+            repos_by_id.insert(repo.id, repo);
+        }
 
-        let items: Vec<Vec<RawTrackedItem>> = tracked_items::table
-            .filter(tracked_items::columns::repo_id.eq_any(ids))
-            .load(&conn)
-            .context("loading tracked items")?
-            .grouped_by(&rs[..]);
+        let inner = (0..repos_by_id.len())
+            .map(|_| "?")
+            .collect::<Vec<_>>()
+            .join(",");
 
-        Result::Ok(
-            rs.into_iter()
-                .zip(items)
-                .map(|(repo, tracked)| {
-                    let (prs, issues) = tracked
-                        .iter()
-                        .map(|item| NewTrackedItem {
-                            state: State::Open, // TODO: Need to derive this, or should it be assumed to be always open?
-                            title: item.title.clone(),
-                            by: Author::from(item.by.clone()),
-                            number: item.number,
-                            link: item.link.clone(),
-                            labels: Label::split(&item.labels),
-                            kind: ItemKind::from(item.kind.clone()),
-                            foreign_id: item.foreign_id.clone(),
-                            last_updated: DateTime::from_utc(item.last_updated, Utc),
-                        })
-                        .partition(|item| item.kind == ItemKind::PR);
+        let sql = format!(
+            "SELECT * FROM TrackedItems WHERE repo_id IN ({}) GROUP BY repo_id",
+            inner
+        );
+        let mut q = sqlx::query_as::<_, RawTrackedItem>(&sql);
+        for (k, _) in repos_by_id.iter() {
+            q = q.bind(k);
+        }
 
-                    FullStoredRepo {
-                        id: repo.id,
-                        title: repo.title,
-                        prs,
-                        issues,
-                    }
-                })
-                .collect(),
-        )
+        let all_tracked_items = q.fetch_all(&conn).await?;
+
+        let mut tracked_items_per_repo: HashMap<i32, Vec<NewTrackedItem>> = HashMap::new();
+
+        for tracked in all_tracked_items.into_iter() {
+            let id = tracked.repo_id.clone();
+            let x = convert(tracked);
+            let items = tracked_items_per_repo
+                .entry(id)
+                .or_insert_with(|| Vec::new());
+            items.push(x)
+        }
+
+        let mut result = Vec::new();
+        for (repo_id, repo) in repos_by_id {
+            let items = tracked_items_per_repo
+                .remove(&repo_id)
+                .unwrap_or_else(|| Vec::new());
+            let (prs, issues) = items.into_iter().partition(|i| i.kind == ItemKind::PR);
+
+            result.push(FullStoredRepo {
+                id: repo_id,
+                title: repo.title.clone(),
+                issues,
+                prs,
+            });
+        }
+
+        Ok(result)
     }
 
     async fn insert_new_repo(&self, repo_name: &str) -> Result<StoredRepo> {
         let conn = self.conn.clone();
 
-        let mut tx = conn.begin().await?;
+        // let mut tx = conn.begin().await.with_context(|| "unable to get tx!")?;
 
-        sqlx::query("INSERT INTO Repos (name) VALUES (?)")
+        sqlx::query("INSERT INTO repos (title) VALUES (?)")
             .bind(repo_name)
-            .execute(&mut tx)
-            .await?;
+            .execute(&conn)
+            .await
+            .with_context(|| format!("failed to insert the initial repo: {}", repo_name))?;
 
-        let repo = sqlx::query_as::<_, StoredRepo>("SELECT * FROM Repos ORDER BY Id DESC")
-            .fetch_one(&mut tx)
-            .await?;
+        let repo = sqlx::query_as::<_, StoredRepo>("SELECT id, title FROM repos ORDER BY Id DESC")
+            .fetch_one(&conn)
+            .await
+            .with_context(|| {
+                format!(
+                    "failed to retrieve ID of recently stored repo: {}",
+                    repo_name
+                )
+            })?;
 
-        tx.commit();
+        // tx.commit().await.with_context(|| "unable to commit tx")?;
 
         Ok(repo)
     }
 
     async fn delete(&self, repo: StoredRepo) -> Result<()> {
-        let mut conn = self.conn.clone();
+        let conn = self.conn.clone();
 
         sqlx::query("DELETE FROM Repos WHERE Id = ?")
             .bind(repo.id)
@@ -186,8 +213,6 @@ impl Db for SqliteDB {
     }
 }
 
-#[derive(Insertable)]
-#[table_name = "tracked_items"]
 struct InsertableTrackedItem<'a> {
     repo_id: i32,
     foreign_id: &'a str,
@@ -200,11 +225,8 @@ struct InsertableTrackedItem<'a> {
     last_updated: NaiveDateTime,
 }
 
-#[derive(Associations, Identifiable, Queryable, Debug)]
-#[belongs_to(StoredRepo, foreign_key = "repo_id")]
-#[table_name = "tracked_items"]
+#[derive(sqlx::FromRow)]
 struct RawTrackedItem {
-    id: i32,
     repo_id: i32,
     foreign_id: String,
     number: i32,
@@ -214,8 +236,20 @@ struct RawTrackedItem {
     labels: String,
     kind: String,
     last_updated: NaiveDateTime,
-    created_at: NaiveDateTime,
-    updated_at: NaiveDateTime,
+}
+
+fn convert(item: RawTrackedItem) -> NewTrackedItem {
+    NewTrackedItem {
+        state: State::Open, // TODO: Need to derive this, or should it be assumed to be always open?
+        title: item.title.clone(),
+        by: Author::from(item.by.clone()),
+        number: item.number,
+        link: item.link.clone(),
+        labels: Label::split(&item.labels),
+        kind: ItemKind::from(item.kind.clone()),
+        foreign_id: item.foreign_id.clone(),
+        last_updated: DateTime::from_utc(item.last_updated, Utc),
+    }
 }
 
 #[cfg(test)]
@@ -227,8 +261,8 @@ mod test {
     fn test_db() -> Arc<dyn Db> {
         let config = DatabaseConfig {
             backing: Backing::Sqlite,
-            file: ":memory:".into(),
-            run_migrations: Some(true),
+            file: "sqlite://test.db".into(),
+            run_migrations: Some(false),
         };
 
         config.get().unwrap()

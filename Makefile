@@ -4,6 +4,12 @@
 help: ## Displays a list of make targets.
 	@grep -E '^[0-9a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
 
+.PHONY: migrate-test-db
+migrate-test-db: ## Runs all migrations against a test db
+	rm -rf test.db*
+	for filename in migrations/*/up.sql; do  sqlite3 test.db < $$filename; done
+
+
 .PHONY: test
 test: ## Runs all tests.
 	cargo test
